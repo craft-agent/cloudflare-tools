@@ -130,6 +130,18 @@ Add the server to the host's MCP configuration. Flags go in `args`:
 
 Each toolset comes with a skill that tells an agent how to use its tools.
 
+### Account (`account`)
+
+Account credentials, token verification, and audit logs.
+
+| Tool                      | What it does                                                                               | Class |
+| ------------------------- | ------------------------------------------------------------------------------------------ | ----- |
+| `cloudflare_account_read` | `view` account details and token status, `list` configured accounts, or query `audit` logs | read  |
+
+The skill is [`cloudflare-account`](skills/cloudflare-account/SKILL.md), shown as
+`cloudflare-tools:cloudflare-account` in Claude Code and
+`cloudflare-tools:account` in Hermes.
+
 ## Adding a tool
 
 1. Write the spec in `src/core/<domain>/<verb>.ts` with `defineTool`: an ID
