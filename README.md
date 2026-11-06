@@ -146,11 +146,13 @@ The skill is [`cloudflare-account`](skills/cloudflare-account/SKILL.md), shown a
 
 Zone lookup, settings (read and change), Universal SSL, certificates, and DNSSEC.
 
-| Tool                             | What it does                                                                       | Class          |
-| -------------------------------- | ---------------------------------------------------------------------------------- | -------------- |
-| `cloudflare_zone_read`           | `list` zones, `view` details, read `settings`, Universal `ssl` status, or `dnssec` | read           |
-| `cloudflare_zone_setting_edit`   | change 1–20 zone settings in order; refuses a change that lowers protection        | overwrite      |
-| `cloudflare_zone_setting_weaken` | change zone settings in ways that lower a visitor's protection; always asks first  | administrative |
+| Tool                              | What it does                                                                       | Class          |
+| --------------------------------- | ---------------------------------------------------------------------------------- | -------------- |
+| `cloudflare_zone_read`            | `list` zones, `view` details, read `settings`, Universal `ssl` status, or `dnssec` | read           |
+| `cloudflare_zone_setting_edit`    | change 1–20 zone settings in order; refuses a change that lowers protection        | overwrite      |
+| `cloudflare_zone_setting_weaken`  | change zone settings in ways that lower a visitor's protection; always asks first  | administrative |
+| `cloudflare_zone_cache_purge`     | purge cached copies of up to 100 URLs, hosts, prefixes or tags in a zone           | idempotent     |
+| `cloudflare_zone_cache_purge_all` | purge the whole cache of a zone; always asks first                                 | administrative |
 
 The skill is [`cloudflare-zones`](skills/cloudflare-zones/SKILL.md), shown as
 `cloudflare-tools:cloudflare-zones` in Claude Code and
