@@ -3,7 +3,8 @@ version: 0.0.0
 description: "Cloudflare tools for coding agents: zones, DNS, analytics, Workers, Pages, storage and tunnels."
 manifest_version: 1
 requires_hermes: ">=0.22"
-provides_tools: []
+provides_tools:
+  - cloudflare_account_read
 provides_hooks:
   - pre_tool_call
 config_schema:
