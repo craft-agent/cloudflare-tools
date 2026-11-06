@@ -38,6 +38,15 @@ tagged `v<version>`; consumers pin a tag or the same npm version.
   annotations are hints, never the boundary.
 - **Every program a tool runs goes through one runner**, which fixes a
   non-interactive environment and maps failures to error codes.
+- **Every Cloudflare call goes through the one client**, which checks the
+  route allowlist, follows no redirect and masks credentials; a tool never
+  calls `fetch` itself.
+- **A token comes from the environment only and never leaves the client.** No
+  argument or setting carries one, and nothing shaped like a credential
+  reaches a result, an error or a log. Tests use made-up tokens only.
+- **One label is one account.** A path naming the account is filled from the
+  label, never from an argument, and a zone is looked up only in that
+  account.
 - **Every commit stays small.** The pre-commit hook rejects a commit over 500
   reviewable changed lines; split the change instead of raising the limit.
 
