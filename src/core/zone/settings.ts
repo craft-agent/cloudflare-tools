@@ -34,6 +34,17 @@ export const settingItemSchema = z.object({
 
 export type SettingItem = z.infer<typeof settingItemSchema>
 
+/** A setting as Cloudflare returns it; a field that is missing or of the wrong type reads as null. */
+export function settingItem(result: unknown): SettingItem {
+  const raw = isPlainObject(result) ? result : {}
+  return {
+    value: raw.value !== undefined ? raw.value : null,
+    editable: typeof raw.editable === "boolean" ? raw.editable : null,
+    modified_on: typeof raw.modified_on === "string" ? raw.modified_on : null,
+    time_remaining: typeof raw.time_remaining === "number" ? raw.time_remaining : null,
+  }
+}
+
 export type SettingsArgs = {
   account?: string
   zone: string
@@ -67,13 +78,7 @@ export async function readSettings(
         const reply = await client.request<Record<string, unknown>>(ROUTES.zoneSetting, {
           path: { zone_id: zone.id, setting_id: settingId },
         })
-        const raw = isPlainObject(reply.result) ? reply.result : {}
-        settings[settingId] = {
-          value: raw.value !== undefined ? raw.value : null,
-          editable: typeof raw.editable === "boolean" ? raw.editable : null,
-          modified_on: typeof raw.modified_on === "string" ? raw.modified_on : null,
-          time_remaining: typeof raw.time_remaining === "number" ? raw.time_remaining : null,
-        }
+        settings[settingId] = settingItem(reply.result)
       } catch (error) {
         if (
           isToolError(error) &&

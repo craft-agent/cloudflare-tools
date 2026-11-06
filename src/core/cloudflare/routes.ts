@@ -25,6 +25,7 @@ export const ROUTES = Object.freeze({
   zones: defineRoute("GET", "/zones"),
   zone: defineRoute("GET", "/zones/{zone_id}"),
   zoneSetting: defineRoute("GET", "/zones/{zone_id}/settings/{setting_id}"),
+  zoneSettingEdit: defineRoute("PATCH", "/zones/{zone_id}/settings/{setting_id}"),
   universalSsl: defineRoute("GET", "/zones/{zone_id}/ssl/universal/settings"),
   certificatePacks: defineRoute("GET", "/zones/{zone_id}/ssl/certificate_packs"),
   dnssec: defineRoute("GET", "/zones/{zone_id}/dnssec"),
