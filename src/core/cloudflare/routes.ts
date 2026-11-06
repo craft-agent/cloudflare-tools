@@ -29,6 +29,7 @@ export const ROUTES = Object.freeze({
   universalSsl: defineRoute("GET", "/zones/{zone_id}/ssl/universal/settings"),
   certificatePacks: defineRoute("GET", "/zones/{zone_id}/ssl/certificate_packs"),
   dnssec: defineRoute("GET", "/zones/{zone_id}/dnssec"),
+  dnssecEdit: defineRoute("PATCH", "/zones/{zone_id}/dnssec"),
   cachePurge: defineRoute("POST", "/zones/{zone_id}/purge_cache"),
 } satisfies Record<string, Route>)
 
