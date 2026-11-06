@@ -144,11 +144,13 @@ The skill is [`cloudflare-account`](skills/cloudflare-account/SKILL.md), shown a
 
 ### Zones (`zones`)
 
-Zone lookup, settings, Universal SSL, certificates, and DNSSEC.
+Zone lookup, settings (read and change), Universal SSL, certificates, and DNSSEC.
 
-| Tool                   | What it does                                                                       | Class |
-| ---------------------- | ---------------------------------------------------------------------------------- | ----- |
-| `cloudflare_zone_read` | `list` zones, `view` details, read `settings`, Universal `ssl` status, or `dnssec` | read  |
+| Tool                             | What it does                                                                       | Class          |
+| -------------------------------- | ---------------------------------------------------------------------------------- | -------------- |
+| `cloudflare_zone_read`           | `list` zones, `view` details, read `settings`, Universal `ssl` status, or `dnssec` | read           |
+| `cloudflare_zone_setting_edit`   | change 1–20 zone settings in order; refuses a change that lowers protection        | overwrite      |
+| `cloudflare_zone_setting_weaken` | change zone settings in ways that lower a visitor's protection; always asks first  | administrative |
 
 The skill is [`cloudflare-zones`](skills/cloudflare-zones/SKILL.md), shown as
 `cloudflare-tools:cloudflare-zones` in Claude Code and

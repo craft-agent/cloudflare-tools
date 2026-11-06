@@ -1,15 +1,17 @@
 ---
 name: cloudflare-zones
-description: "Use when looking up Cloudflare zones, viewing zone details, reading zone settings, Universal SSL, certificates, or DNSSEC status."
+description: "Use when looking up Cloudflare zones, viewing zone details, reading or changing zone settings, Universal SSL, certificates, or DNSSEC status."
 ---
 
 # Zones
 
-The read tool inspects Cloudflare zones in the selected account:
+The read tool inspects Cloudflare zones in the selected account; two write tools change their settings:
 
-| Tool                   | Does                                                                     | Writes |
-| ---------------------- | ------------------------------------------------------------------------ | ------ |
-| `cloudflare_zone_read` | `list` zones, `view` details, read `settings`, `ssl` status, or `dnssec` | no     |
+| Tool                             | Does                                                                      | Writes                             |
+| -------------------------------- | ------------------------------------------------------------------------- | ---------------------------------- |
+| `cloudflare_zone_read`           | `list` zones, `view` details, read `settings`, `ssl` status, or `dnssec`  | no                                 |
+| `cloudflare_zone_setting_edit`   | changes 1–20 settings in order; refuses any change that lowers protection | yes (overwrites)                   |
+| `cloudflare_zone_setting_weaken` | changes settings in ways that lower protection                            | yes (always asks, then overwrites) |
 
 ## Methods
 
@@ -32,6 +34,30 @@ The `settings` method inspects 14 zone settings: `ssl`, `always_use_https`, `min
 
 - Setting values include `value`, `editable`, `modified_on`, and `time_remaining`.
 - Settings unavailable due to permissions, plan level, or invalid parameter are collected under `unavailable` (keyed by setting name as `<code>: <message>`) rather than failing the call.
+
+## Changing settings
+
+Both write tools take `zone`, an optional `account` and `changes`: 1 to 20 entries of `{ setting, value }`, each setting at most once. They read every setting first, apply the changes one at a time in the order given, and return each change with its value `before` and `after`.
+
+Values per setting:
+
+- `ssl`: `off`, `flexible`, `full`, `strict`.
+- `always_use_https`, `automatic_https_rewrites`, `http3`, `ipv6`, `websockets`, `development_mode`, `always_online`, `email_obfuscation`: `on` or `off`.
+- `min_tls_version`: `1.0`, `1.1`, `1.2`, `1.3`.
+- `tls_1_3`: `on`, `off`, `zrt`.
+- `security_level`: `off`, `essentially_off`, `low`, `medium`, `high`, `under_attack`.
+- `cache_level`: `basic`, `simplified`, `aggressive`.
+- `browser_cache_ttl`: seconds, as a number or a numeric string, one of the values Cloudflare lists (`0` respects the origin's headers, e.g. `3600`, `86400`, `31536000`).
+
+Every value but `browser_cache_ttl` is a string; a boolean is never accepted. Read the current value with the `settings` method first when unsure.
+
+**What lowers protection.** A step down `ssl` (`off` < `flexible` < `full` < `strict`), `min_tls_version` (`1.0` < … < `1.3`) or `security_level` (`off` < `essentially_off` < `low` < `medium` < `high` < `under_attack`), and turning `always_use_https`, `automatic_https_rewrites`, `tls_1_3` or `email_obfuscation` off. Such a change exposes visitors, so it is a separate tool: `cloudflare_zone_setting_edit` refuses it, naming the change and sending nothing, and `cloudflare_zone_setting_weaken` makes it, always after a confirmation. When the user asked for a lowering, use `cloudflare_zone_setting_weaken` for the whole call.
+
+**Refusals.** Before anything is sent, a call fails as `invalid_argument` when a value is not accepted for its setting, a setting is listed twice, a setting is already at the value, or a setting cannot be changed on the zone's plan (`editable` is false).
+
+**Partial results.** If the first change fails, the call fails and nothing changed. If a later one fails, the call does not throw: `changed` lists what was applied, `failed` names the setting and the error, and `not_sent` lists the settings after it. Do not repeat the changes already made.
+
+**Development mode** turns itself off after 3 hours; `time_remaining` in the result counts the seconds left.
 
 ## SSL and DNSSEC
 
