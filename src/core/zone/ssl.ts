@@ -121,27 +121,32 @@ export async function readSsl(args: SslArgs, ctx: ToolContext, deps?: Cloudflare
   }
 }
 
+/** Shapes Cloudflare DNSSEC response object into Dnssec. */
+export function shapeDnssec(raw: unknown): Dnssec {
+  const r = isPlainObject(raw) ? raw : {}
+  return {
+    status: typeof r.status === "string" ? r.status : null,
+    ds: typeof r.ds === "string" ? r.ds : null,
+    digest: typeof r.digest === "string" ? r.digest : null,
+    digest_type: typeof r.digest_type === "string" ? r.digest_type : null,
+    algorithm: typeof r.algorithm === "string" ? r.algorithm : null,
+    key_tag: typeof r.key_tag === "number" ? r.key_tag : null,
+    flags: typeof r.flags === "number" ? r.flags : null,
+    public_key: typeof r.public_key === "string" ? r.public_key : null,
+    modified_on: typeof r.modified_on === "string" ? r.modified_on : null,
+  }
+}
+
 /** Reads DNSSEC configuration for a zone. */
 export async function readDnssec(args: DnssecArgs, ctx: ToolContext, deps?: CloudflareDeps): Promise<DnssecOutput> {
   const client = cloudflareClient(args.account, { ...deps, signal: ctx.signal })
   const zone = await resolveZone(client, args.zone)
 
   const reply = await client.request<unknown>(ROUTES.dnssec, { path: { zone_id: zone.id } })
-  const r = isPlainObject(reply.result) ? reply.result : {}
 
   return {
     label: client.label,
     zone: { id: zone.id, name: zone.name },
-    dnssec: {
-      status: typeof r.status === "string" ? r.status : null,
-      ds: typeof r.ds === "string" ? r.ds : null,
-      digest: typeof r.digest === "string" ? r.digest : null,
-      digest_type: typeof r.digest_type === "string" ? r.digest_type : null,
-      algorithm: typeof r.algorithm === "string" ? r.algorithm : null,
-      key_tag: typeof r.key_tag === "number" ? r.key_tag : null,
-      flags: typeof r.flags === "number" ? r.flags : null,
-      public_key: typeof r.public_key === "string" ? r.public_key : null,
-      modified_on: typeof r.modified_on === "string" ? r.modified_on : null,
-    },
+    dnssec: shapeDnssec(reply.result),
   }
 }
