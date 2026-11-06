@@ -175,3 +175,84 @@ Every entry point takes the same settings:
   against a fake of that program on `PATH`.
 - A test file stays within about 300 lines, split by topic
   (`<name>.<topic>.test.ts`), so one commit can carry a change and its test.
+
+## Accounts and credentials
+
+- **Credentials come from the environment only.** `CLOUDFLARE_API_TOKEN`
+  with `CLOUDFLARE_ACCOUNT_ID` is the unlabeled pair, the names Wrangler
+  reads, so a set-up Wrangler environment works as it is.
+  `CLOUDFLARE_API_TOKEN_<LABEL>` with `CLOUDFLARE_ACCOUNT_ID_<LABEL>` adds one
+  pair per label. The lookup lives in one module, so another source can be
+  added without changing a tool; a setting or an argument never carries a
+  token.
+- **A label is 1 to 24 lowercase letters, digits and `_`**, starting and
+  ending with a letter or a digit, and its variables carry it in capitals
+  (`my_site` → `CLOUDFLARE_API_TOKEN_MY_SITE`). The prefix is fixed, so an
+  `_` inside a label cannot be misread.
+- **`account` picks the pair.** Left out, it picks the unlabeled pair; without
+  one, the only label; with several labels and no unlabeled pair, the call
+  fails as `invalid_argument` and lists them. The unlabeled pair is also named
+  `default`, which is therefore not a label. A server started inside a
+  repository receives that repository's own `CLOUDFLARE_API_TOKEN` next to
+  labels set for the whole environment, so both being set is normal, and the
+  unlabeled pair is what that environment means by default.
+- **A token always comes with its account id**; one without is
+  `unauthenticated`, naming the variable to set. Nothing is looked up to fill
+  it in: a user-owned token can reach several accounts, and a looked-up one
+  could change silently when the token gains a permission.
+- **One label is one account.** A zone is looked up only in the label's
+  account, and a zone of another account is refused before anything else is
+  read about it. A path naming the account is filled from the label, never
+  from an argument, so no call reaches an account the label does not name.
+- **A Global API Key is refused before anything is sent.** It reaches
+  everything the user can, and no tool needs more than a scoped API token.
+- **No credential is ever shown.** Anything shaped like a Cloudflare
+  credential is masked in every result, error message and log, not only the
+  token in use: an error body can echo another one.
+
+## The Cloudflare client
+
+- **Every Cloudflare call goes through one client**, as every program goes
+  through one runner: a fixed base URL, a route allowlist each tool's calls
+  are checked against, no redirect followed (a redirect would carry the token
+  elsewhere), a time limit with cancellation, and Cloudflare's failures mapped
+  to the error codes above. A tool never calls `fetch` itself.
+
+## What the tools never return
+
+- **Credentials and visitors' personal data, by any tool.** Tokens, secret
+  values and private keys cannot be taken back once they are in a transcript,
+  and visitors' IP addresses and the like are not the user's to hand to an
+  agent. An operation whose result would have to carry one is not offered.
+- **A user's own content only from read tools of its own.** Object bodies, KV
+  values, database rows and Worker source are returned only by read tools in
+  toolsets that are off by default; every other read returns names and
+  metadata. Such content often holds configuration or secrets and is a path
+  for injected instructions, so turning its toolset on is the opt-in. Once on,
+  it is returned as it is, like any text a tool reads.
+
+## Writes
+
+- **A write's arguments are the whole change.** They name what changes by id
+  and give the new values; nothing is chosen at run time from the current
+  state ("the previous deployment", "every matching record"). The harness
+  shows the arguments when it asks, so what it shows is what runs.
+- **A write returns what it changed**, before and after, so the result can be
+  checked and undone without another read.
+- **Only a write that could overwrite a concurrent change checks for one.**
+  Such a tool takes the value it expects to replace and refuses as `stale`
+  when Cloudflare's differs; which operations do is settled per domain.
+- **There is no preview step and no plan digest.** The harness's approval of
+  the arguments, with `targets` naming the account and the object, is the
+  confirmation. A consumer that shows its own approval card builds it from the
+  read tools, outside this package; a preview through a write tool would also
+  cost an approval of its own in an MCP client.
+
+## Toolsets
+
+- **One per domain**: `account`, `zones`, `dns`, `rules`, `analytics`,
+  `workers`, `pages`, `storage`, `tunnels`, `email`, one per other product,
+  and the content toolsets, which are never on by default.
+- **`account`, `zones`, `dns`, `workers` and `pages` are on by default.** The
+  package holds some 30 to 40 tools, and these five, about 15, cover running
+  a site or an app; the rest is one setting away.

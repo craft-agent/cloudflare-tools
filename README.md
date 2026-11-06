@@ -216,6 +216,30 @@ Lists are comma-separated in a flag or a variable. Where each harness reads them
   under `[mcp_servers]` in Codex's config with flags in `args` (as in
   [Any other MCP host](#any-other-mcp-host)) instead of using the plugin.
 
+### Credentials
+
+The tools call Cloudflare with API tokens read from the environment, never
+from a setting or an argument. Each token comes with the id of the one
+account it acts on:
+
+| Variables                                                       | Picked by                                    |
+| --------------------------------------------------------------- | -------------------------------------------- |
+| `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID`                 | `account` left out, or `account: "default"`  |
+| `CLOUDFLARE_API_TOKEN_<LABEL>`, `CLOUDFLARE_ACCOUNT_ID_<LABEL>` | `account: "<label>"`, the label in lowercase |
+
+- The unlabeled pair has the names Wrangler reads. A label is 1 to 24
+  lowercase letters, digits and `_`, written in capitals in its variables
+  (`my_site` → `CLOUDFLARE_API_TOKEN_MY_SITE`).
+- With `account` left out, a call takes the unlabeled pair, or the only label
+  when there is no unlabeled pair; with several labels and no unlabeled pair
+  it fails and lists them.
+- Use an API token scoped to what the tools should do; a Global API Key is
+  refused.
+- The variables reach the tools the way the settings do: in the environment
+  OpenCode, Hermes, Claude Code and Antigravity run in, and in the `env` of an
+  MCP host's server entry. Codex and Grok Build pass no environment to a
+  plugin's server, so add the server to their own MCP configuration instead.
+
 ## Layout
 
 - `src/project.ts` — the package's name, tool ID prefix, setting prefix and
