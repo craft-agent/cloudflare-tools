@@ -1,6 +1,6 @@
 {
   "name": "@craftsamo/cloudflare-tools",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "description": "Cloudflare tools for coding agents: zones, DNS, analytics, Workers, Pages, storage and tunnels.",
   "author": "craftsamo",
   "license": "MIT",

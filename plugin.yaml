@@ -1,5 +1,5 @@
 name: cloudflare-tools
-version: 0.0.0
+version: 0.1.0
 description: "Cloudflare tools for coding agents: zones, DNS, analytics, Workers, Pages, storage and tunnels."
 manifest_version: 1
 requires_hermes: ">=0.22"
