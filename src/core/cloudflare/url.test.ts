@@ -1,10 +1,8 @@
 import { describe, expect, test } from "bun:test"
 import { ToolError } from "../errors"
+import { ACCOUNT_ID, ZONE_ID } from "./client.fixtures"
 import { ROUTES } from "./routes"
 import { BASE_URL, TEMPLATE_PARAM_PATTERN, buildQuery, fillPath } from "./url"
-
-const ACCOUNT_ID = "0".repeat(31) + "a"
-const ZONE_ID = "f".repeat(32)
 
 describe("url", () => {
   describe("BASE_URL", () => {
