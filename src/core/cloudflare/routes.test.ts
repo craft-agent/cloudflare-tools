@@ -23,7 +23,7 @@ describe("routes", () => {
   })
 
   test("isAllowed refuses a route that is not listed", () => {
-    expect(isAllowed({ method: "GET", path: "/zones" })).toBe(false)
+    expect(isAllowed({ method: "GET", path: "/certificates" })).toBe(false)
     expect(isAllowed({ method: "DELETE", path: ROUTES.account.path })).toBe(false)
     expect(isAllowed({ method: "GET", path: "/accounts/0123/logs/audit" })).toBe(false)
   })

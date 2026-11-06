@@ -1,4 +1,5 @@
 import { z } from "zod"
+import { accountArg } from "../cloudflare/args"
 import { cloudflareClient, type CloudflareDeps } from "../cloudflare/client"
 import { listCredentials } from "../cloudflare/credentials"
 import { isPlainObject } from "../cloudflare/reply"
@@ -31,12 +32,7 @@ const input = z.object({
     .describe(
       'The operation to perform: "list" discovers configured credentials locally; "view" checks token validity and reads account details; "audit" queries account audit logs.',
     ),
-  account: z
-    .string()
-    .optional()
-    .describe(
-      'The label of the pair to use, or "default" for the unlabeled one; left out, the unlabeled pair, else the only label.',
-    ),
+  account: accountArg,
   ...auditInputFields,
 })
 
