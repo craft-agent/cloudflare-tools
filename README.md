@@ -142,6 +142,18 @@ The skill is [`cloudflare-account`](skills/cloudflare-account/SKILL.md), shown a
 `cloudflare-tools:cloudflare-account` in Claude Code and
 `cloudflare-tools:account` in Hermes.
 
+### Zones (`zones`)
+
+Zone lookup, settings, Universal SSL, certificates, and DNSSEC.
+
+| Tool                   | What it does                                                                       | Class |
+| ---------------------- | ---------------------------------------------------------------------------------- | ----- |
+| `cloudflare_zone_read` | `list` zones, `view` details, read `settings`, Universal `ssl` status, or `dnssec` | read  |
+
+The skill is [`cloudflare-zones`](skills/cloudflare-zones/SKILL.md), shown as
+`cloudflare-tools:cloudflare-zones` in Claude Code and
+`cloudflare-tools:zones` in Hermes.
+
 ## Adding a tool
 
 1. Write the spec in `src/core/<domain>/<verb>.ts` with `defineTool`: an ID

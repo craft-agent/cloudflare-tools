@@ -9,7 +9,7 @@ export const PROJECT = {
   /** Every setting's environment variable is `<envPrefix>_<SETTING>`. */
   envPrefix: "CLOUDFLARE_TOOLS",
   /** The toolsets, in the order `all` lists them. */
-  toolsets: ["account"] as readonly string[],
+  toolsets: ["account", "zones"] as readonly string[],
   /** The toolsets on when a setting names none. */
-  defaultToolsets: ["account"] as readonly string[],
+  defaultToolsets: ["account", "zones"] as readonly string[],
 } as const

@@ -5,6 +5,7 @@ manifest_version: 1
 requires_hermes: ">=0.22"
 provides_tools:
   - cloudflare_account_read
+  - cloudflare_zone_read
 provides_hooks:
   - pre_tool_call
 config_schema:
