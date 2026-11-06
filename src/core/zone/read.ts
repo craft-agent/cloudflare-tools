@@ -1,4 +1,5 @@
 import { z } from "zod"
+import { accountArg } from "../cloudflare/args"
 import { cloudflareClient, type CloudflareDeps } from "../cloudflare/client"
 import { isPlainObject } from "../cloudflare/reply"
 import { ROUTES } from "../cloudflare/routes"
@@ -36,12 +37,7 @@ const input = z.object({
     .describe(
       'The operation to perform: "list" lists zones in the account; "view" reads full zone details; "settings" reads zone settings; "ssl" reads Universal SSL and certificate packs; "dnssec" reads DNSSEC status.',
     ),
-  account: z
-    .string()
-    .optional()
-    .describe(
-      'The label of the credential pair to use, or "default" for the unlabeled one; left out, the unlabeled pair, else the only label.',
-    ),
+  account: accountArg,
   zone: z
     .string()
     .optional()
