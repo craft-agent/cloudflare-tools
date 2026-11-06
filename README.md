@@ -153,6 +153,8 @@ Zone lookup, settings (read and change), Universal SSL, certificates, and DNSSEC
 | `cloudflare_zone_setting_weaken`  | change zone settings in ways that lower a visitor's protection; always asks first  | administrative |
 | `cloudflare_zone_cache_purge`     | purge cached copies of up to 100 URLs, hosts, prefixes or tags in a zone           | idempotent     |
 | `cloudflare_zone_cache_purge_all` | purge the whole cache of a zone; always asks first                                 | administrative |
+| `cloudflare_zone_dnssec_enable`   | turn DNSSEC on for a zone; harmless until registrar publishes the DS record        | idempotent     |
+| `cloudflare_zone_dnssec_disable`  | turn DNSSEC off for a zone; requires DS removed at registrar first                 | administrative |
 
 The skill is [`cloudflare-zones`](skills/cloudflare-zones/SKILL.md), shown as
 `cloudflare-tools:cloudflare-zones` in Claude Code and

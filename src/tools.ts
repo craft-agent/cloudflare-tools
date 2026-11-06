@@ -1,6 +1,7 @@
 import { cloudflareAccountRead } from "./core/account/read"
 import { cloudflareZoneCachePurge } from "./core/zone/cache-purge"
 import { cloudflareZoneCachePurgeAll } from "./core/zone/cache-purge-all"
+import { cloudflareZoneDnssecDisable, cloudflareZoneDnssecEnable } from "./core/zone/dnssec"
 import { cloudflareZoneRead } from "./core/zone/read"
 import { cloudflareZoneSettingEdit, cloudflareZoneSettingWeaken } from "./core/zone/setting-edit"
 import type { ToolSpec } from "./core"
@@ -13,4 +14,6 @@ export const ALL_TOOLS: ToolSpec[] = [
   cloudflareZoneSettingWeaken,
   cloudflareZoneCachePurge,
   cloudflareZoneCachePurgeAll,
+  cloudflareZoneDnssecEnable,
+  cloudflareZoneDnssecDisable,
 ]

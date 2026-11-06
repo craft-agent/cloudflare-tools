@@ -7,6 +7,8 @@ provides_tools:
   - cloudflare_account_read
   - cloudflare_zone_cache_purge
   - cloudflare_zone_cache_purge_all
+  - cloudflare_zone_dnssec_disable
+  - cloudflare_zone_dnssec_enable
   - cloudflare_zone_read
   - cloudflare_zone_setting_edit
   - cloudflare_zone_setting_weaken
