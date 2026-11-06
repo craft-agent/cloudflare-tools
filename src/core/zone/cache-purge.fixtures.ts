@@ -1,6 +1,7 @@
 import { envFor, ZONE_ID } from "../cloudflare/client.fixtures"
 import { fakeCloudflare, ok, type FakeReply, type FakeRequest, type FakeRoute } from "../cloudflare/testing"
 import { defineZoneCachePurge } from "./cache-purge"
+import { defineZoneCachePurgeAll } from "./cache-purge-all"
 import { CTX, ZONE_PATH, ZONE_ROUTE } from "./fixtures"
 
 export { CTX, ZONE_PATH, ZONE_ROUTE }
@@ -15,12 +16,13 @@ export function purgeRoute(reply?: FakeReply | ((request: FakeRequest) => FakeRe
   }
 }
 
-/** The cache purge tool wired to a fake Cloudflare that answers `routes`. */
+/** Both cache purge tools wired to a fake Cloudflare that answers `routes`. */
 export function setup(routes: FakeRoute[]) {
   const { fetch, requests } = fakeCloudflare(routes)
   const deps = { fetch, env: envFor() }
   return {
     purge: defineZoneCachePurge(deps),
+    purgeAll: defineZoneCachePurgeAll(deps),
     requests,
   }
 }
