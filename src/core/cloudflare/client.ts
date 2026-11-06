@@ -44,6 +44,9 @@ export type ClientOptions = {
   signal?: AbortSignal
 }
 
+/** Dependencies a tool can inject into Cloudflare calls; tests pass a fake fetch and env. */
+export type CloudflareDeps = Pick<ClientOptions, "fetch" | "env">
+
 /** The one way a tool reaches Cloudflare: allowlisted routes, no redirect, a time limit, mapped failures and masked text. */
 export class CloudflareClient {
   readonly label: string
