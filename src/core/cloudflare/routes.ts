@@ -1,9 +1,16 @@
 export type Method = "GET" | "POST" | "PUT" | "PATCH" | "DELETE"
 
 /** One allowed Cloudflare call: a method and a path template under the base URL, e.g. "/accounts/{account_id}/logs/audit". */
-export type Route = { readonly method: Method; readonly path: string }
+export type Route = {
+  readonly method: Method
+  readonly path: string
+  readonly body?: Readonly<Record<string, unknown>>
+}
 
 const ID_PATTERN = /^[0-9a-f]{32}$/
+
+/** A KV namespace's id: 32 lowercase hexadecimal digits. */
+export const NAMESPACE_ID_PATTERN = ID_PATTERN
 
 /** A Worker's name: 1–63 lowercase letters, digits, `-` and `_`. */
 export const SCRIPT_NAME_PATTERN = /^[a-z0-9_-]{1,63}$/
@@ -13,6 +20,13 @@ export const PROJECT_NAME_PATTERN = /^[a-z0-9][a-z0-9-]{0,57}$/
 
 /** A Pages deployment's id: standard 8-4-4-4-12 lowercase hexadecimal UUID. */
 export const DEPLOYMENT_ID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/
+
+/** A D1 database's id: a lowercase hexadecimal UUID. */
+export const DATABASE_ID_PATTERN = DEPLOYMENT_ID_PATTERN
+
+/** The only SQL the schema route sends; excludes internal tables and never reads rows. */
+export const D1_SCHEMA_SQL =
+  "SELECT type, name, tbl_name, sql FROM sqlite_master WHERE type IN ('table', 'index', 'view', 'trigger') AND substr(name, 1, 7) != 'sqlite_' AND substr(name, 1, 4) != '_cf_' ORDER BY type, name"
 
 /** A custom domain's name: a lowercase dot-separated hostname up to 253 characters. */
 export const DOMAIN_NAME_PATTERN = /^(?=.{1,253}$)[a-z0-9_-]+(?:\.[a-z0-9_-]+)+$/
@@ -31,10 +45,12 @@ export const PATH_PARAMS: Readonly<Record<string, RegExp>> = Object.freeze({
   deployment_id: DEPLOYMENT_ID_PATTERN,
   domain_name: DOMAIN_NAME_PATTERN,
   bucket_name: BUCKET_NAME_PATTERN,
+  namespace_id: NAMESPACE_ID_PATTERN,
+  database_id: DATABASE_ID_PATTERN,
 })
 
-function defineRoute(method: Method, path: string): Route {
-  return Object.freeze({ method, path })
+function defineRoute(method: Method, path: string, body?: Route["body"]): Route {
+  return Object.freeze({ method, path, ...(body === undefined ? {} : { body: Object.freeze(body) }) })
 }
 
 /** Every call a tool may make; the client refuses any route that is not listed here. */
@@ -96,9 +112,16 @@ export const ROUTES = Object.freeze({
   r2BucketLifecycle: defineRoute("GET", "/accounts/{account_id}/r2/buckets/{bucket_name}/lifecycle"),
   r2BucketObjects: defineRoute("GET", "/accounts/{account_id}/r2/buckets/{bucket_name}/objects"),
   graphql: defineRoute("POST", "/graphql"),
+  kvNamespaces: defineRoute("GET", "/accounts/{account_id}/storage/kv/namespaces"),
+  kvNamespaceKeys: defineRoute("GET", "/accounts/{account_id}/storage/kv/namespaces/{namespace_id}/keys"),
+  d1Databases: defineRoute("GET", "/accounts/{account_id}/d1/database"),
+  d1Database: defineRoute("GET", "/accounts/{account_id}/d1/database/{database_id}"),
+  d1Schema: defineRoute("POST", "/accounts/{account_id}/d1/database/{database_id}/query", { sql: D1_SCHEMA_SQL }),
 } satisfies Record<string, Route>)
 
-/** Whether a route is one of `ROUTES`, compared by method and path. */
+/** Whether a route is one of `ROUTES`, including its fixed body when present. */
 export function isAllowed(route: Route): boolean {
-  return Object.values(ROUTES).some((allowed) => allowed.method === route.method && allowed.path === route.path)
+  return Object.values(ROUTES).some(
+    (allowed) => allowed.method === route.method && allowed.path === route.path && allowed.body === route.body,
+  )
 }
