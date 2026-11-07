@@ -11,6 +11,9 @@ export const SCRIPT_NAME_PATTERN = /^[a-z0-9_-]{1,63}$/
 /** A Pages project's name: 1–58 lowercase letters, digits and `-`, starting with a letter or digit. */
 export const PROJECT_NAME_PATTERN = /^[a-z0-9][a-z0-9-]{0,57}$/
 
+/** A Pages deployment's id: standard 8-4-4-4-12 lowercase hexadecimal UUID. */
+export const DEPLOYMENT_ID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/
+
 /** The patterns a path parameter must match; a template may use only names listed here. `account_id` is always filled from the credential, never from a caller. */
 export const PATH_PARAMS: Readonly<Record<string, RegExp>> = Object.freeze({
   account_id: ID_PATTERN,
@@ -19,6 +22,7 @@ export const PATH_PARAMS: Readonly<Record<string, RegExp>> = Object.freeze({
   setting_id: /^[a-z0-9_]{1,64}$/,
   script_name: SCRIPT_NAME_PATTERN,
   project_name: PROJECT_NAME_PATTERN,
+  deployment_id: DEPLOYMENT_ID_PATTERN,
 })
 
 function defineRoute(method: Method, path: string): Route {
@@ -57,6 +61,11 @@ export const ROUTES = Object.freeze({
   pagesProjects: defineRoute("GET", "/accounts/{account_id}/pages/projects"),
   pagesProject: defineRoute("GET", "/accounts/{account_id}/pages/projects/{project_name}"),
   pagesDeployments: defineRoute("GET", "/accounts/{account_id}/pages/projects/{project_name}/deployments"),
+  pagesDeploymentLogs: defineRoute(
+    "GET",
+    "/accounts/{account_id}/pages/projects/{project_name}/deployments/{deployment_id}/history/logs",
+  ),
+  pagesDomains: defineRoute("GET", "/accounts/{account_id}/pages/projects/{project_name}/domains"),
 } satisfies Record<string, Route>)
 
 /** Whether a route is one of `ROUTES`, compared by method and path. */

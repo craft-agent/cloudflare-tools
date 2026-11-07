@@ -59,18 +59,37 @@ describe("routes", () => {
     expect(isAllowed({ method: "GET", path: "/accounts/0123/logs/audit" })).toBe(false)
   })
 
-  test("the Pages routes use a project name only", () => {
+  test("the Pages routes use a project name and deployment id", () => {
     expect(ROUTES.pagesProjects).toEqual({ method: "GET", path: "/accounts/{account_id}/pages/projects" })
     expect(ROUTES.pagesProject).toEqual({ method: "GET", path: "/accounts/{account_id}/pages/projects/{project_name}" })
     expect(ROUTES.pagesDeployments).toEqual({
       method: "GET",
       path: "/accounts/{account_id}/pages/projects/{project_name}/deployments",
     })
+    expect(ROUTES.pagesDeploymentLogs).toEqual({
+      method: "GET",
+      path: "/accounts/{account_id}/pages/projects/{project_name}/deployments/{deployment_id}/history/logs",
+    })
+    expect(ROUTES.pagesDomains).toEqual({
+      method: "GET",
+      path: "/accounts/{account_id}/pages/projects/{project_name}/domains",
+    })
     for (const name of ["a", "0", "my-project-2", "a-", "a".repeat(58)]) {
       expect(PATH_PARAMS.project_name?.test(name)).toBe(true)
     }
     for (const name of ["", "A", "-a", "a_b", "a b", "a/b", "..", "a.b", "a".repeat(59)]) {
       expect(PATH_PARAMS.project_name?.test(name)).toBe(false)
+    }
+    expect(PATH_PARAMS.deployment_id?.test("11111111-1111-4111-8111-111111111111")).toBe(true)
+    for (const id of [
+      "",
+      "11111111",
+      "11111111-1111-4111-8111-11111111111",
+      "11111111-1111-4111-8111-1111111111111",
+      "11111111-1111-4111-8111-11111111111G",
+      "11111111-1111-4111-8111-AAAAAAAAAAAA",
+    ]) {
+      expect(PATH_PARAMS.deployment_id?.test(id)).toBe(false)
     }
   })
 })

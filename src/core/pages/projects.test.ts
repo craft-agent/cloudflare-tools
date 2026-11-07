@@ -2,8 +2,25 @@ import { expect, test } from "bun:test"
 import { rejection } from "../cloudflare/client.fixtures"
 import { fail } from "../cloudflare/testing"
 import { invoke } from "../tool"
-import { CTX, PROJECT, PROJECT_PATH, errorOf, toolFor } from "./fixtures"
-import { projectArg, projectName } from "./projects"
+import { DEPLOYMENT_ID, CTX, PROJECT, PROJECT_PATH, errorOf, toolFor } from "./fixtures"
+import { deploymentId, projectArg, projectName } from "./projects"
+
+test("deployment ids are trimmed and lowercased; non-UUIDs are refused", () => {
+  expect(deploymentId(` ${DEPLOYMENT_ID} \n`)).toBe(DEPLOYMENT_ID)
+  expect(deploymentId("11111111-1111-4111-8111-AAAAAAAAAAAA")).toBe("11111111-1111-4111-8111-aaaaaaaaaaaa")
+  for (const id of ["", "11111111", "not-a-uuid", "11111111-1111-4111-8111-11111111111g"]) {
+    try {
+      deploymentId(id)
+      throw new Error("Expected refusal")
+    } catch (error) {
+      const err = errorOf(error)
+      expect(err.code).toBe("invalid_argument")
+      expect(err.message).toBe(
+        "`deployment` must be a deployment's id (a UUID), as cloudflare_pages_read deployments shows it; not its short_id.",
+      )
+    }
+  }
+})
 
 test("project names are trimmed but never lowercased", () => {
   for (const name of ["a", "0", PROJECT, "a-", "a".repeat(58)]) expect(projectName(` ${name}\n`)).toBe(name)

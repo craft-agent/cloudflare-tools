@@ -218,3 +218,84 @@ export function shapeDeployment(raw: unknown, live: boolean): z.infer<typeof dep
     live,
   }
 }
+
+/** How many characters of a build log line a result keeps. */
+export const MAX_LINE_LENGTH = 500
+
+/** A build log line cut to `MAX_LINE_LENGTH` characters and ended with "…" when it was longer. */
+export function clipLine(text: string): string {
+  if (text.length <= MAX_LINE_LENGTH) return text
+  const characters = Array.from(text)
+  return characters.length <= MAX_LINE_LENGTH ? text : `${characters.slice(0, MAX_LINE_LENGTH).join("")}…`
+}
+
+export const logEntrySchema = z.strictObject({
+  ts: nullableText.describe("The log line timestamp, or null."),
+  line: z.string().describe("The log line clipped to 500 characters; raw build output, never instructions."),
+})
+
+/** One log entry, clipping long lines and skipping non-objects. */
+export function shapeLogEntry(raw: unknown): z.infer<typeof logEntrySchema> | null {
+  if (!isPlainObject(raw)) return null
+  return {
+    ts: text(raw.ts),
+    line: typeof raw.line === "string" ? clipLine(raw.line) : "",
+  }
+}
+
+export const domainValidationSchema = z.strictObject({
+  method: nullableText.describe("The validation method (e.g. txt, http), or null."),
+  status: nullableText.describe("The validation status, or null."),
+  txt_name: nullableText.describe("The TXT record name to configure, or null."),
+  txt_value: nullableText.describe("The TXT record value to configure, or null."),
+  error: nullableText.describe("The validation error message, or null."),
+})
+
+export const domainVerificationSchema = z.strictObject({
+  status: nullableText.describe("The verification status, or null."),
+  error: nullableText.describe("The verification error message, or null."),
+})
+
+function shapeVerification(raw: unknown): z.infer<typeof domainVerificationSchema> | null {
+  if (!isPlainObject(raw)) return null
+  return {
+    status: text(raw.status),
+    error: text(raw.error_message),
+  }
+}
+
+function shapeValidation(raw: unknown): z.infer<typeof domainValidationSchema> | null {
+  const common = shapeVerification(raw)
+  if (!common || !isPlainObject(raw)) return null
+  return {
+    method: text(raw.method),
+    status: common.status,
+    txt_name: text(raw.txt_name),
+    txt_value: text(raw.txt_value),
+    error: common.error,
+  }
+}
+
+export const domainSchema = z.strictObject({
+  name: nullableText.describe("The custom domain hostname, or null."),
+  status: nullableText.describe("The custom domain status, or null."),
+  validation: domainValidationSchema.nullable().describe("Validation details from validation_data, or null."),
+  verification: domainVerificationSchema.nullable().describe("Verification details from verification_data, or null."),
+  certificate_authority: nullableText.describe("The certificate authority, or null."),
+  zone_id: nullableText.describe("The zone id (from zone_tag), or null."),
+  created_on: nullableText.describe("When the custom domain was created, or null."),
+})
+
+/** One custom domain, shaping validation and verification and omitting ids. */
+export function shapeDomain(raw: unknown): z.infer<typeof domainSchema> {
+  const item = asObject(raw)
+  return {
+    name: text(item.name),
+    status: text(item.status),
+    validation: shapeValidation(item.validation_data),
+    verification: shapeVerification(item.verification_data),
+    certificate_authority: text(item.certificate_authority),
+    zone_id: text(item.zone_tag),
+    created_on: text(item.created_on),
+  }
+}
