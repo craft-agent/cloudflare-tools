@@ -162,12 +162,13 @@ The skill is [`cloudflare-zones`](skills/cloudflare-zones/SKILL.md), shown as
 
 ### DNS (`dns`)
 
-DNS records: list, read one in full, export the zone file, and add records.
+DNS records: list, read one in full, export the zone file, add records, and change them.
 
-| Tool                        | What it does                                                               | Class |
-| --------------------------- | -------------------------------------------------------------------------- | ----- |
-| `cloudflare_dns_read`       | `list` records, `view` one in full, or `export` the zone file in BIND form | read  |
-| `cloudflare_dns_record_add` | add 1–20 records of eight types in one all-or-nothing batch                | add   |
+| Tool                         | What it does                                                                 | Class     |
+| ---------------------------- | ---------------------------------------------------------------------------- | --------- |
+| `cloudflare_dns_read`        | `list` records, `view` one in full, or `export` the zone file in BIND form   | read      |
+| `cloudflare_dns_record_add`  | add 1–20 records of eight types in one all-or-nothing batch                  | add       |
+| `cloudflare_dns_record_edit` | change 1–20 records by id in one all-or-nothing batch; never a record's type | overwrite |
 
 The skill is [`cloudflare-dns`](skills/cloudflare-dns/SKILL.md), shown as
 `cloudflare-tools:cloudflare-dns` in Claude Code and
