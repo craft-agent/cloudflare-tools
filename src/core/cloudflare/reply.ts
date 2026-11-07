@@ -8,6 +8,21 @@ export type ResultInfo = {
   cursor?: string
 }
 
+/** Returns numeric paging fields, or null when Cloudflare did not send a number. */
+export function pagingFields(info: ResultInfo | undefined): {
+  page: number | null
+  per_page: number | null
+  total_count: number | null
+  total_pages: number | null
+} {
+  return {
+    page: typeof info?.page === "number" ? info.page : null,
+    per_page: typeof info?.per_page === "number" ? info.per_page : null,
+    total_count: typeof info?.total_count === "number" ? info.total_count : null,
+    total_pages: typeof info?.total_pages === "number" ? info.total_pages : null,
+  }
+}
+
 /** Cloudflare's standard API response wrapper. */
 export type Envelope = { success?: unknown; errors?: unknown; result?: unknown; result_info?: unknown }
 
