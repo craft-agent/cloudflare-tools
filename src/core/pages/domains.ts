@@ -1,8 +1,7 @@
 import { z } from "zod"
 import { accountArg } from "../cloudflare/args"
 import { cloudflareClient, type CloudflareClient, type CloudflareDeps } from "../cloudflare/client"
-import { refusedByCloudflare } from "../cloudflare/refusal"
-import { isPlainObject } from "../cloudflare/reply"
+import { failureOfWrite as failureOfCloudflareWrite } from "../cloudflare/refusal"
 import { ROUTES } from "../cloudflare/routes"
 import { recordListItemSchema, shapeRecord } from "../dns/records"
 import { targetHostname } from "../dns/names"
@@ -65,14 +64,6 @@ export function domainName(value: string): string {
   return result.host
 }
 
-/** `value` when it is an object, else `upstream_error` naming the `response` that was unexpected. */
-export function requireObject(value: unknown, response: string): Record<string, unknown> {
-  if (!isPlainObject(value)) {
-    throw new ToolError("upstream_error", `Cloudflare returned an unexpected Pages ${response} response.`)
-  }
-  return value
-}
-
 /**
  * The DNS records named exactly `hostname` in the zone `zoneId`, which must be in the client's account.
  * Null when `zoneId` is not a string: the zone is not on this account, or Cloudflare did not say.
@@ -128,14 +119,7 @@ function maybeDone(done: "added" | "removed"): string {
  * (5xx, timeout, network) may or may not have done it. A cancellation passes untouched.
  */
 export function failureOfWrite(error: unknown, done: "added" | "removed"): unknown {
-  if (isAbortError(error) || !(error instanceof ToolError)) return error
-  if (refusedByCloudflare(error)) {
-    return new ToolError(error.code, `${error.message} ${nothingDone(done)}`, { cause: error })
-  }
-  if (error.code === "upstream_error") {
-    return new ToolError("upstream_error", `${error.message} ${maybeDone(done)}`, { cause: error })
-  }
-  return error
+  return failureOfCloudflareWrite(error, { nothing: nothingDone(done), maybe: maybeDone(done) })
 }
 
 /** What a domain call writes to: the domain in its project and account; `*` when that cannot be told. */

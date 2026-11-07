@@ -1,5 +1,6 @@
 import { z } from "zod"
 import type { CloudflareClient, Reply, RequestOptions } from "../cloudflare/client"
+import { isPlainObject } from "../cloudflare/reply"
 import { DEPLOYMENT_ID_PATTERN, PROJECT_NAME_PATTERN, type Route } from "../cloudflare/routes"
 import { ToolError, isToolError } from "../errors"
 
@@ -36,6 +37,14 @@ export function projectName(value: string): string {
     throw new ToolError("invalid_argument", `\`project\` must be ${PROJECT_NAME_FORM}.`)
   }
   return name
+}
+
+/** `value` when it is an object, else `upstream_error` naming the `response` that was unexpected. */
+export function requireObject(value: unknown, response: string): Record<string, unknown> {
+  if (!isPlainObject(value)) {
+    throw new ToolError("upstream_error", `Cloudflare returned an unexpected Pages ${response} response.`)
+  }
+  return value
 }
 
 /** Calls a project's route, pointing missing projects at `list`. */

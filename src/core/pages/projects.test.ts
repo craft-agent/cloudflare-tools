@@ -3,7 +3,22 @@ import { rejection } from "../cloudflare/client.fixtures"
 import { fail } from "../cloudflare/testing"
 import { invoke } from "../tool"
 import { DEPLOYMENT_ID, CTX, PROJECT, PROJECT_PATH, errorOf, toolFor } from "./fixtures"
-import { deploymentId, projectArg, projectName } from "./projects"
+import { deploymentId, projectArg, projectName, requireObject } from "./projects"
+
+test("requireObject returns an object as is; anything else is an upstream_error", () => {
+  const value = { id: "x" }
+  expect(requireObject(value, "project")).toBe(value)
+  for (const bad of [null, [], "text"]) {
+    try {
+      requireObject(bad, "domain")
+      throw new Error("Expected refusal")
+    } catch (error) {
+      const err = errorOf(error)
+      expect(err.code).toBe("upstream_error")
+      expect(err.message).toBe("Cloudflare returned an unexpected Pages domain response.")
+    }
+  }
+})
 
 test("deployment ids are trimmed and lowercased; non-UUIDs are refused", () => {
   expect(deploymentId(` ${DEPLOYMENT_ID} \n`)).toBe(DEPLOYMENT_ID)

@@ -12,10 +12,9 @@ import {
   dnsSchema,
   failureOfWrite,
   readDnsStep,
-  requireObject,
   stepErrorsSchema,
 } from "./domains"
-import { projectName, requestProject } from "./projects"
+import { projectName, requestProject, requireObject } from "./projects"
 import { domainSchema, shapeDomain } from "./shape"
 
 const output = z.object({

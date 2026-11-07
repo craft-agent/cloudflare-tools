@@ -1,19 +1,20 @@
 import { z } from "zod"
 import { accountArg } from "../cloudflare/args"
 import { cloudflareClient, type CloudflareClient, type CloudflareDeps } from "../cloudflare/client"
-import { refusedByCloudflare } from "../cloudflare/refusal"
+import { failureOfWrite, type WriteFailureNotes } from "../cloudflare/refusal"
 import { isPlainObject } from "../cloudflare/reply"
 import { ROUTES } from "../cloudflare/routes"
-import { ToolError, isAbortError } from "../errors"
+import { isAbortError } from "../errors"
 import { ANY_TARGET } from "../targets"
 import { confirmWrite, defineTool, type ToolSpec } from "../tool"
-import { projectArg, projectName, requestProject } from "./projects"
+import { projectArg, projectName, requestProject, requireObject } from "./projects"
 import { checkServable, checkServing, confirmation, parseRequest } from "./rollback.checks"
 import { deploymentSchema, shapeDeployment, shapeLiveRef } from "./shape"
 
-const NOTHING_CHANGED = "Nothing changed."
-const MAYBE_CHANGED =
-  "Cloudflare may or may not have switched it; read cloudflare_pages_read deployments before sending it again."
+const WRITE_NOTES: WriteFailureNotes = {
+  nothing: "Nothing changed.",
+  maybe: "Cloudflare may or may not have switched it; read cloudflare_pages_read deployments before sending it again.",
+}
 
 const input = z.object({
   account: accountArg,
@@ -39,21 +40,6 @@ const output = z.object({
 
 type RollbackSpec = ToolSpec<typeof input, typeof output>
 
-/**
- * The failure of the one POST. Cloudflare's refusal means nothing changed; a failure that does not tell (5xx,
- * timeout, network) may or may not have switched production. A cancellation passes untouched.
- */
-function failureOfSend(error: unknown): unknown {
-  if (isAbortError(error) || !(error instanceof ToolError)) return error
-  if (refusedByCloudflare(error)) {
-    return new ToolError(error.code, `${error.message} ${NOTHING_CHANGED}`, { cause: error })
-  }
-  if (error.code === "upstream_error") {
-    return new ToolError("upstream_error", `${error.message} ${MAYBE_CHANGED}`, { cause: error })
-  }
-  return error
-}
-
 async function sendRollback(client: CloudflareClient, project: string, deployment: string): Promise<unknown> {
   try {
     const reply = await client.request<unknown>(ROUTES.pagesRollback, {
@@ -61,15 +47,8 @@ async function sendRollback(client: CloudflareClient, project: string, deploymen
     })
     return reply.result
   } catch (error) {
-    throw failureOfSend(error)
+    throw failureOfWrite(error, WRITE_NOTES)
   }
-}
-
-function requireObject(value: unknown, response: string): Record<string, unknown> {
-  if (!isPlainObject(value)) {
-    throw new ToolError("upstream_error", `Cloudflare returned an unexpected Pages ${response} response.`)
-  }
-  return value
 }
 
 /** Defines the `cloudflare_pages_rollback` tool spec with injected dependencies. */

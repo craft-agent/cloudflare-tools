@@ -11,10 +11,9 @@ import {
   dnsSchema,
   failureOfWrite,
   readDnsStep,
-  requireObject,
   stepErrorsSchema,
 } from "./domains"
-import { projectName, requestProject } from "./projects"
+import { projectName, requestProject, requireObject } from "./projects"
 import { domainSchema, shapeDomain } from "./shape"
 
 /** Cloudflare's code for a hostname that is not one of the project's domains; it answers HTTP 400 with it. */

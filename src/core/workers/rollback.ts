@@ -1,7 +1,7 @@
 import { z } from "zod"
 import { accountArg } from "../cloudflare/args"
 import { cloudflareClient, type CloudflareClient, type CloudflareDeps } from "../cloudflare/client"
-import { refusedByCloudflare } from "../cloudflare/refusal"
+import { failureOfWrite, refusedByCloudflare, type WriteFailureNotes } from "../cloudflare/refusal"
 import { isPlainObject } from "../cloudflare/reply"
 import { ROUTES } from "../cloudflare/routes"
 import { ToolError, isAbortError } from "../errors"
@@ -17,9 +17,11 @@ const MAX_PAGES = 10
 
 const SECRET_MENTION = /secret/i
 
-const NOTHING_DEPLOYED = "Nothing was deployed."
-const MAYBE_DEPLOYED =
-  "Cloudflare may or may not have deployed it; read cloudflare_workers_read deployments before sending it again."
+const WRITE_NOTES: WriteFailureNotes = {
+  nothing: "Nothing was deployed.",
+  maybe:
+    "Cloudflare may or may not have deployed it; read cloudflare_workers_read deployments before sending it again.",
+}
 
 const input = z.object({
   account: accountArg,
@@ -103,21 +105,19 @@ async function readDeployments(client: CloudflareClient, script: string): Promis
  * deployed. A cancellation passes untouched.
  */
 function failureOfSend(error: unknown, script: string): unknown {
-  if (isAbortError(error) || !(error instanceof ToolError)) return error
-  if (refusedByCloudflare(error)) {
-    if (SECRET_MENTION.test(error.message)) {
-      return new ToolError(
-        error.code,
-        `Cloudflare refused the rollback because Worker ${script}'s secrets changed since that version served: the old code would run with today's secrets. Rolling back past it is a decision for the user, in Wrangler (wrangler rollback) or the dashboard; this tool never forces it. ${NOTHING_DEPLOYED}`,
-        { cause: error },
-      )
-    }
-    return new ToolError(error.code, `${error.message} ${NOTHING_DEPLOYED}`, { cause: error })
+  if (
+    error instanceof ToolError &&
+    !isAbortError(error) &&
+    refusedByCloudflare(error) &&
+    SECRET_MENTION.test(error.message)
+  ) {
+    return new ToolError(
+      error.code,
+      `Cloudflare refused the rollback because Worker ${script}'s secrets changed since that version served: the old code would run with today's secrets. Rolling back past it is a decision for the user, in Wrangler (wrangler rollback) or the dashboard; this tool never forces it. ${WRITE_NOTES.nothing}`,
+      { cause: error },
+    )
   }
-  if (error.code === "upstream_error") {
-    return new ToolError("upstream_error", `${error.message} ${MAYBE_DEPLOYED}`, { cause: error })
-  }
-  return error
+  return failureOfWrite(error, WRITE_NOTES)
 }
 
 async function sendRollback(client: CloudflareClient, script: string, request: RollbackRequest): Promise<unknown> {
