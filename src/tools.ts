@@ -1,4 +1,5 @@
 import { cloudflareAccountRead } from "./core/account/read"
+import { cloudflareDnsRecordAdd } from "./core/dns/add"
 import { cloudflareDnsRead } from "./core/dns/read"
 import { cloudflareZoneCachePurge } from "./core/zone/cache-purge"
 import { cloudflareZoneCachePurgeAll } from "./core/zone/cache-purge-all"
@@ -18,4 +19,5 @@ export const ALL_TOOLS: ToolSpec[] = [
   cloudflareZoneDnssecEnable,
   cloudflareZoneDnssecDisable,
   cloudflareDnsRead,
+  cloudflareDnsRecordAdd,
 ]
