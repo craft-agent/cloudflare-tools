@@ -221,6 +221,20 @@ The skill is [`cloudflare-pages`](skills/cloudflare-pages/SKILL.md), shown as
 `cloudflare-tools:cloudflare-pages` in Claude Code and
 `cloudflare-tools:pages` in Hermes.
 
+### Storage (`storage`)
+
+Storage: list an account's R2 buckets and a bucket's objects and folders by name, size and date, and read whether a bucket is public (its r2.dev domain and custom domains), its CORS rules and the lifecycle rules that delete its objects. An object's body and custom metadata are never read, and only buckets in the default jurisdiction are listed. This toolset is off by default; turn it on with the `toolsets` setting (see [Settings](#settings)).
+
+| Tool                      | What it does                                                           | Class |
+| ------------------------- | ---------------------------------------------------------------------- | ----- |
+| `cloudflare_storage_read` | `buckets` of the account; one `bucket`'s details; a bucket's `objects` | read  |
+
+The token needs Account → Workers R2 Storage → Read.
+
+The skill is [`cloudflare-storage`](skills/cloudflare-storage/SKILL.md), shown as
+`cloudflare-tools:cloudflare-storage` in Claude Code and
+`cloudflare-tools:storage` in Hermes.
+
 ## Adding a tool
 
 1. Write the spec in `src/core/<domain>/<verb>.ts` with `defineTool`: an ID
