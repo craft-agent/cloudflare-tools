@@ -1,4 +1,5 @@
 import { cloudflareAccountRead } from "./core/account/read"
+import { cloudflareAnalyticsRead } from "./core/analytics/read"
 import { cloudflareDnsRecordAdd } from "./core/dns/add"
 import { cloudflareDnsRecordDelete } from "./core/dns/delete"
 import { cloudflareDnsRecordEdit } from "./core/dns/edit"
@@ -30,6 +31,7 @@ export const ALL_TOOLS: ToolSpec[] = [
   cloudflareDnsRecordAdd,
   cloudflareDnsRecordEdit,
   cloudflareDnsRecordDelete,
+  cloudflareAnalyticsRead,
   cloudflareWorkersRead,
   cloudflareWorkersRollback,
   cloudflarePagesRead,
