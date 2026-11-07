@@ -219,6 +219,11 @@ export function outputJsonSchema(spec: Pick<ToolSpec, "output">): z.core.JSONSch
   return z.toJSONSchema(spec.output)
 }
 
+/** The failed steps of a call that already did its write, keyed by step: the `errors` of a result {@link StepErrors} filled. */
+export const stepErrorsSchema = z
+  .record(z.string(), z.string())
+  .describe("The steps that failed after the write was done, keyed by step, as `code: message`; absent when none did.")
+
 /**
  * Collects the failures of steps that run after a tool has already created
  * something, so those steps never throw and the creation is not lost: the
