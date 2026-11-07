@@ -1,9 +1,10 @@
 import { z } from "zod"
 import { accountArg } from "../cloudflare/args"
 import { cloudflareClient, type CloudflareClient, type CloudflareDeps } from "../cloudflare/client"
+import { refusedByCloudflare } from "../cloudflare/refusal"
 import { isPlainObject } from "../cloudflare/reply"
 import { ROUTES } from "../cloudflare/routes"
-import { ToolError, isAbortError, isToolError, type ErrorCode } from "../errors"
+import { ToolError, isAbortError } from "../errors"
 import { ANY_TARGET } from "../targets"
 import { confirmWrite, defineTool, type ToolSpec } from "../tool"
 import { checkHistory, confirmation, parseRequest, toPercentage, type RollbackRequest } from "./rollback.checks"
@@ -14,18 +15,6 @@ const MAX_VERSIONS = 2
 const PAGE_SIZE = 100
 const MAX_PAGES = 10
 
-/** Codes of a failure Cloudflare raised before it deployed anything. */
-const REFUSED_CODES: readonly ErrorCode[] = [
-  "invalid_argument",
-  "not_found",
-  "forbidden",
-  "unauthenticated",
-  "rate_limited",
-  "stale",
-]
-
-/** An HTTP 4xx the client has no code for; Cloudflare refused that call too. */
-const OTHER_REFUSAL = /^Cloudflare answered HTTP 4\d\d: /
 const SECRET_MENTION = /secret/i
 
 const NOTHING_DEPLOYED = "Nothing was deployed."
@@ -106,10 +95,6 @@ async function readDeployments(client: CloudflareClient, script: string): Promis
     if (entries.length < PAGE_SIZE) break
   }
   return deployments
-}
-
-function refusedByCloudflare(error: ToolError): boolean {
-  return REFUSED_CODES.includes(error.code) || (error.code === "upstream_error" && OTHER_REFUSAL.test(error.message))
 }
 
 /**

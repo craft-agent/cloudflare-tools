@@ -58,4 +58,80 @@ describe("routes", () => {
     expect(isAllowed({ method: "DELETE", path: ROUTES.account.path })).toBe(false)
     expect(isAllowed({ method: "GET", path: "/accounts/0123/logs/audit" })).toBe(false)
   })
+
+  test("the Pages routes use a project name and deployment id", () => {
+    expect(ROUTES.pagesProjects).toEqual({ method: "GET", path: "/accounts/{account_id}/pages/projects" })
+    expect(ROUTES.pagesProject).toEqual({ method: "GET", path: "/accounts/{account_id}/pages/projects/{project_name}" })
+    expect(ROUTES.pagesDeployments).toEqual({
+      method: "GET",
+      path: "/accounts/{account_id}/pages/projects/{project_name}/deployments",
+    })
+    expect(ROUTES.pagesDeployment).toEqual({
+      method: "GET",
+      path: "/accounts/{account_id}/pages/projects/{project_name}/deployments/{deployment_id}",
+    })
+    expect(ROUTES.pagesRollback).toEqual({
+      method: "POST",
+      path: "/accounts/{account_id}/pages/projects/{project_name}/deployments/{deployment_id}/rollback",
+    })
+    expect(ROUTES.pagesDeploymentLogs).toEqual({
+      method: "GET",
+      path: "/accounts/{account_id}/pages/projects/{project_name}/deployments/{deployment_id}/history/logs",
+    })
+    expect(ROUTES.pagesDomains).toEqual({
+      method: "GET",
+      path: "/accounts/{account_id}/pages/projects/{project_name}/domains",
+    })
+    expect(ROUTES.pagesDomain).toEqual({
+      method: "GET",
+      path: "/accounts/{account_id}/pages/projects/{project_name}/domains/{domain_name}",
+    })
+    expect(ROUTES.pagesDomainAdd).toEqual({
+      method: "POST",
+      path: "/accounts/{account_id}/pages/projects/{project_name}/domains",
+    })
+    expect(ROUTES.pagesDomainRemove).toEqual({
+      method: "DELETE",
+      path: "/accounts/{account_id}/pages/projects/{project_name}/domains/{domain_name}",
+    })
+    for (const name of ["a.io", "shop.example.com", "xn--bcher-kva.example", "a_b-c.d", `${"a".repeat(250)}.io`]) {
+      expect(PATH_PARAMS.domain_name?.test(name)).toBe(true)
+    }
+    const invalid = [
+      "",
+      ".",
+      "..",
+      "a",
+      "a..io",
+      ".a.io",
+      "a.io.",
+      "A.io",
+      "a b",
+      "a/b",
+      "a?b",
+      "a#b",
+      "a%2fb",
+      "*.a.io",
+    ]
+    for (const name of [...invalid, `${"a".repeat(251)}.io`]) {
+      expect(PATH_PARAMS.domain_name?.test(name)).toBe(false)
+    }
+    for (const name of ["a", "0", "my-project-2", "a-", "a".repeat(58)]) {
+      expect(PATH_PARAMS.project_name?.test(name)).toBe(true)
+    }
+    for (const name of ["", "A", "-a", "a_b", "a b", "a/b", "..", "a.b", "a".repeat(59)]) {
+      expect(PATH_PARAMS.project_name?.test(name)).toBe(false)
+    }
+    expect(PATH_PARAMS.deployment_id?.test("11111111-1111-4111-8111-111111111111")).toBe(true)
+    for (const id of [
+      "",
+      "11111111",
+      "11111111-1111-4111-8111-11111111111",
+      "11111111-1111-4111-8111-1111111111111",
+      "11111111-1111-4111-8111-11111111111G",
+      "11111111-1111-4111-8111-AAAAAAAAAAAA",
+    ]) {
+      expect(PATH_PARAMS.deployment_id?.test(id)).toBe(false)
+    }
+  })
 })

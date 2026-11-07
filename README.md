@@ -190,6 +190,23 @@ The skill is [`cloudflare-workers`](skills/cloudflare-workers/SKILL.md), shown a
 `cloudflare-tools:cloudflare-workers` in Claude Code and
 `cloudflare-tools:workers` in Hermes.
 
+### Pages (`pages`)
+
+Pages: list projects, read their build settings, environment variable names and bindings, production and preview deployments, including which one is live, a build's logs, and custom domains; switch a project's production back or forward to a deployment that built successfully; and add or remove its custom domains. Building and deploying new code stay with Git and Wrangler; the DNS records of a custom domain stay with the DNS tools.
+
+| Tool                             | What it does                                                                       | Class          |
+| -------------------------------- | ---------------------------------------------------------------------------------- | -------------- |
+| `cloudflare_pages_read`          | `list` projects, `view` one, its `deployments`, a build's `logs`, custom `domains` | read           |
+| `cloudflare_pages_rollback`      | switch production to a deployment that built successfully; always asks first       | administrative |
+| `cloudflare_pages_domain_add`    | add a custom domain to a project, creating no DNS record; always asks first        | administrative |
+| `cloudflare_pages_domain_remove` | remove a custom domain from a project, deleting no DNS record; always asks first   | administrative |
+
+The token needs the Pages Read permission. The writes need Pages Write, and the DNS lookups of the domain tools need Zone Read and DNS Read.
+
+The skill is [`cloudflare-pages`](skills/cloudflare-pages/SKILL.md), shown as
+`cloudflare-tools:cloudflare-pages` in Claude Code and
+`cloudflare-tools:pages` in Hermes.
+
 ## Adding a tool
 
 1. Write the spec in `src/core/<domain>/<verb>.ts` with `defineTool`: an ID
