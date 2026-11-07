@@ -61,6 +61,14 @@ export const ROUTES = Object.freeze({
   pagesProjects: defineRoute("GET", "/accounts/{account_id}/pages/projects"),
   pagesProject: defineRoute("GET", "/accounts/{account_id}/pages/projects/{project_name}"),
   pagesDeployments: defineRoute("GET", "/accounts/{account_id}/pages/projects/{project_name}/deployments"),
+  pagesDeployment: defineRoute(
+    "GET",
+    "/accounts/{account_id}/pages/projects/{project_name}/deployments/{deployment_id}",
+  ),
+  pagesRollback: defineRoute(
+    "POST",
+    "/accounts/{account_id}/pages/projects/{project_name}/deployments/{deployment_id}/rollback",
+  ),
   pagesDeploymentLogs: defineRoute(
     "GET",
     "/accounts/{account_id}/pages/projects/{project_name}/deployments/{deployment_id}/history/logs",

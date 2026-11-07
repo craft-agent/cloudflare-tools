@@ -66,6 +66,14 @@ describe("routes", () => {
       method: "GET",
       path: "/accounts/{account_id}/pages/projects/{project_name}/deployments",
     })
+    expect(ROUTES.pagesDeployment).toEqual({
+      method: "GET",
+      path: "/accounts/{account_id}/pages/projects/{project_name}/deployments/{deployment_id}",
+    })
+    expect(ROUTES.pagesRollback).toEqual({
+      method: "POST",
+      path: "/accounts/{account_id}/pages/projects/{project_name}/deployments/{deployment_id}/rollback",
+    })
     expect(ROUTES.pagesDeploymentLogs).toEqual({
       method: "GET",
       path: "/accounts/{account_id}/pages/projects/{project_name}/deployments/{deployment_id}/history/logs",
