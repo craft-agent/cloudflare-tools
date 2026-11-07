@@ -8,6 +8,9 @@ const ID_PATTERN = /^[0-9a-f]{32}$/
 /** A Worker's name: 1–63 lowercase letters, digits, `-` and `_`. */
 export const SCRIPT_NAME_PATTERN = /^[a-z0-9_-]{1,63}$/
 
+/** A Pages project's name: 1–58 lowercase letters, digits and `-`, starting with a letter or digit. */
+export const PROJECT_NAME_PATTERN = /^[a-z0-9][a-z0-9-]{0,57}$/
+
 /** The patterns a path parameter must match; a template may use only names listed here. `account_id` is always filled from the credential, never from a caller. */
 export const PATH_PARAMS: Readonly<Record<string, RegExp>> = Object.freeze({
   account_id: ID_PATTERN,
@@ -15,6 +18,7 @@ export const PATH_PARAMS: Readonly<Record<string, RegExp>> = Object.freeze({
   dns_record_id: ID_PATTERN,
   setting_id: /^[a-z0-9_]{1,64}$/,
   script_name: SCRIPT_NAME_PATTERN,
+  project_name: PROJECT_NAME_PATTERN,
 })
 
 function defineRoute(method: Method, path: string): Route {
@@ -50,6 +54,9 @@ export const ROUTES = Object.freeze({
   workersDomains: defineRoute("GET", "/accounts/{account_id}/workers/domains"),
   workersSchedules: defineRoute("GET", "/accounts/{account_id}/workers/scripts/{script_name}/schedules"),
   workersSecrets: defineRoute("GET", "/accounts/{account_id}/workers/scripts/{script_name}/secrets"),
+  pagesProjects: defineRoute("GET", "/accounts/{account_id}/pages/projects"),
+  pagesProject: defineRoute("GET", "/accounts/{account_id}/pages/projects/{project_name}"),
+  pagesDeployments: defineRoute("GET", "/accounts/{account_id}/pages/projects/{project_name}/deployments"),
 } satisfies Record<string, Route>)
 
 /** Whether a route is one of `ROUTES`, compared by method and path. */
