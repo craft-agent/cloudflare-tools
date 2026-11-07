@@ -5,6 +5,7 @@ manifest_version: 1
 requires_hermes: ">=0.22"
 provides_tools:
   - cloudflare_account_read
+  - cloudflare_analytics_read
   - cloudflare_dns_read
   - cloudflare_dns_record_add
   - cloudflare_dns_record_delete

@@ -175,6 +175,20 @@ The skill is [`cloudflare-dns`](skills/cloudflare-dns/SKILL.md), shown as
 `cloudflare-tools:cloudflare-dns` in Claude Code and
 `cloudflare-tools:dns` in Hermes.
 
+### Analytics (`analytics`)
+
+Analytics: read a zone's traffic per day (requests, bandwidth, cache hits, threats, page views and unique visitors), the most requested paths, client countries and response statuses, what the security features did (not on the Free plan) and the latest security events, and the account's Workers invocations, errors and CPU time, over a recent time range. This toolset is off by default; turn it on with the `toolsets` setting (see [Settings](#settings)).
+
+| Tool                        | What it does                                                                                                    | Class |
+| --------------------------- | --------------------------------------------------------------------------------------------------------------- | ----- |
+| `cloudflare_analytics_read` | `traffic` per UTC day; the top `paths`, `countries` and `statuses`; `security` and `security_events`; `workers` | read  |
+
+The token needs Zone → Analytics → Read, and Zone Read to look the zone up; `workers` needs Account → Account Analytics → Read instead.
+
+The skill is [`cloudflare-analytics`](skills/cloudflare-analytics/SKILL.md), shown as
+`cloudflare-tools:cloudflare-analytics` in Claude Code and
+`cloudflare-tools:analytics` in Hermes.
+
 ### Workers (`workers`)
 
 Workers: list them, read one's settings and bindings, deployments and versions, a zone's Worker routes, custom domains, cron triggers and secret names and types, and roll a Worker back to versions that served before. Building, uploading and deploying new code stay with Wrangler; routes, custom domains and cron triggers are read here and changed in `wrangler.toml`.

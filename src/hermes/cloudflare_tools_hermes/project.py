@@ -12,7 +12,7 @@ CLI_NAME = "cloudflare-tools-cli"
 SKILL_PREFIX = "cloudflare-"
 
 #: The emoji each toolset is shown with; empty by default until a project adds its own.
-TOOLSET_EMOJI: dict[str, str] = {"account": "🪪", "zones": "🌐", "dns": "🧭", "workers": "⚙️", "pages": "📄"}
+TOOLSET_EMOJI: dict[str, str] = {"account": "🪪", "zones": "🌐", "dns": "🧭", "analytics": "📊", "workers": "⚙️", "pages": "📄"}
 
 __all__ = [
     "CLI_NAME",
