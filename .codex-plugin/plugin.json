@@ -1,5 +1,4 @@
 {
-  "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
   "name": "cloudflare-tools",
   "version": "0.5.0",
   "description": "Cloudflare tools for coding agents: zones, DNS, analytics, Workers, Pages, storage and tunnels.",
@@ -9,5 +8,20 @@
   },
   "homepage": "https://github.com/craft-agent/cloudflare-tools#readme",
   "repository": "https://github.com/craft-agent/cloudflare-tools",
-  "license": "MIT"
+  "license": "MIT",
+  "skills": "./skills",
+  "mcpServers": {
+    "cloudflare-tools": {
+      "command": "node",
+      "args": ["dist/mcp.js"],
+      "cwd": ".",
+      "env_vars": [
+        "CLOUDFLARE_TOOLS_TOOLSETS",
+        "CLOUDFLARE_TOOLS_READ_ONLY",
+        "CLOUDFLARE_TOOLS_TOOLS",
+        "CLOUDFLARE_TOOLS_EXCLUDE_TOOLS",
+        "CLOUDFLARE_TOOLS_CONFIRM"
+      ]
+    }
+  }
 }
