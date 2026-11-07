@@ -82,6 +82,40 @@ describe("routes", () => {
       method: "GET",
       path: "/accounts/{account_id}/pages/projects/{project_name}/domains",
     })
+    expect(ROUTES.pagesDomain).toEqual({
+      method: "GET",
+      path: "/accounts/{account_id}/pages/projects/{project_name}/domains/{domain_name}",
+    })
+    expect(ROUTES.pagesDomainAdd).toEqual({
+      method: "POST",
+      path: "/accounts/{account_id}/pages/projects/{project_name}/domains",
+    })
+    expect(ROUTES.pagesDomainRemove).toEqual({
+      method: "DELETE",
+      path: "/accounts/{account_id}/pages/projects/{project_name}/domains/{domain_name}",
+    })
+    for (const name of ["a.io", "shop.example.com", "xn--bcher-kva.example", "a_b-c.d", `${"a".repeat(250)}.io`]) {
+      expect(PATH_PARAMS.domain_name?.test(name)).toBe(true)
+    }
+    const invalid = [
+      "",
+      ".",
+      "..",
+      "a",
+      "a..io",
+      ".a.io",
+      "a.io.",
+      "A.io",
+      "a b",
+      "a/b",
+      "a?b",
+      "a#b",
+      "a%2fb",
+      "*.a.io",
+    ]
+    for (const name of [...invalid, `${"a".repeat(251)}.io`]) {
+      expect(PATH_PARAMS.domain_name?.test(name)).toBe(false)
+    }
     for (const name of ["a", "0", "my-project-2", "a-", "a".repeat(58)]) {
       expect(PATH_PARAMS.project_name?.test(name)).toBe(true)
     }
