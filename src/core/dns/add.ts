@@ -1,13 +1,14 @@
 import { z } from "zod"
 import { accountArg } from "../cloudflare/args"
-import { cloudflareClient, type CloudflareDeps } from "../cloudflare/client"
-import { ToolError, isAbortError } from "../errors"
-import { ANY_TARGET } from "../targets"
+import type { CloudflareDeps } from "../cloudflare/client"
+import { ToolError } from "../errors"
 import { defineTool, type ToolContext, type ToolSpec } from "../tool"
-import { resolveZone, zoneArg } from "../zone/lookup"
+import { zoneArg } from "../zone/lookup"
 import { sendBatch } from "./batch"
 import { recordLabel, recordName } from "./names"
 import { recordListItemSchema } from "./records"
+import { sortedJson } from "./sorted-json"
+import { resolveDnsTargets, resolveDnsZone } from "./targets"
 import { newRecordSchema, recordBody } from "./values"
 
 const MAX_RECORDS = 20
@@ -30,13 +31,6 @@ const output = z.object({
 
 type Args = z.output<typeof input>
 
-function sortedJson(value: unknown): string {
-  if (Array.isArray(value)) return `[${value.map(sortedJson).join(",")}]`
-  if (typeof value !== "object" || value === null) return JSON.stringify(value)
-  const entries = Object.entries(value).sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0))
-  return `{${entries.map(([key, item]) => `${JSON.stringify(key)}:${sortedJson(item)}`).join(",")}}`
-}
-
 /** What makes two bodies the same record: type, full name, value, and the priority an MX value carries. */
 function identityOf(body: Record<string, unknown>): string {
   return sortedJson([body.type, body.name, body.content ?? body.data, body.priority])
@@ -58,8 +52,7 @@ function assertDistinct(bodies: Record<string, unknown>[], zoneName: string): vo
 }
 
 async function addRecords(args: Args, ctx: ToolContext, deps?: CloudflareDeps) {
-  const client = cloudflareClient(args.account, { ...deps, signal: ctx.signal })
-  const zone = await resolveZone(client, args.zone)
+  const { client, zone } = await resolveDnsZone(args, ctx, deps)
   const posts = args.records.map((record, index) => recordBody(record, zone.name, `records[${index}]`))
   assertDistinct(posts, zone.name)
 
@@ -69,15 +62,12 @@ async function addRecords(args: Args, ctx: ToolContext, deps?: CloudflareDeps) {
 
 /** What a call writes to: each record name in the zone, as `<account_id>/zones/<zone_id>/dns_records/<name>`; `*` when that cannot be told. */
 async function addTargets(args: Args, ctx: ToolContext, deps?: CloudflareDeps): Promise<string[]> {
-  try {
-    const client = cloudflareClient(args.account, { ...deps, signal: ctx.signal })
-    const zone = await resolveZone(client, args.zone)
-    const names = new Set(args.records.map((record) => recordName(record.name, zone.name)))
-    return [...names].map((name) => `${client.accountId}/zones/${zone.id}/dns_records/${name}`)
-  } catch (error) {
-    if (isAbortError(error) || ctx.signal?.aborted) throw error
-    return [ANY_TARGET]
-  }
+  return resolveDnsTargets(
+    args,
+    ctx,
+    (_client, zone) => args.records.map((record) => recordName(record.name, zone.name)),
+    deps,
+  )
 }
 
 /** Defines the `cloudflare_dns_record_add` tool spec with injected dependencies. */

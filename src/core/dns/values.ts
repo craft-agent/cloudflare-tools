@@ -6,30 +6,30 @@ import { recordLabel, recordName, relativeName, targetHostname } from "./names"
 /** The record types the tools write. */
 export const WRITABLE_TYPES = ["A", "AAAA", "CNAME", "MX", "TXT", "NS", "CAA", "SRV"] as const
 
-type WritableType = (typeof WRITABLE_TYPES)[number]
+export type WritableType = (typeof WRITABLE_TYPES)[number]
 
-const AUTOMATIC_TTL = 1
-const MIN_TTL = 60
-const MAX_TTL = 86400
+export const AUTOMATIC_TTL = 1
+export const MIN_TTL = 60
+export const MAX_TTL = 86400
 const MAX_UINT8 = 255
 const MAX_UINT16 = 65535
 const MAX_TXT_LENGTH = 2048
 const MAX_CAA_VALUE_LENGTH = 255
-const MAX_COMMENT_LENGTH = 500
-const NO_SERVICE_TARGET = "."
+export const MAX_COMMENT_LENGTH = 500
+export const NO_SERVICE_TARGET = "."
 const CAA_TAGS = ["issue", "issuewild", "iodef", "issuemail", "issuevmc"] as const
 const CONTROL_CHARACTER = /[\x00-\x1f\x7f]/
 const LINE_BREAK = /[\r\n]/
 
-const CONTENT_TYPES: readonly WritableType[] = ["A", "AAAA", "CNAME", "MX", "TXT", "NS"]
-const HOSTNAME_TYPES: readonly WritableType[] = ["CNAME", "MX", "NS"]
-const PROXIABLE_TYPES: readonly WritableType[] = ["A", "AAAA", "CNAME"]
-const DATA_KEYS = {
+export const CONTENT_TYPES: readonly WritableType[] = ["A", "AAAA", "CNAME", "MX", "TXT", "NS"]
+export const HOSTNAME_TYPES: readonly WritableType[] = ["CNAME", "MX", "NS"]
+export const PROXIABLE_TYPES: readonly WritableType[] = ["A", "AAAA", "CNAME"]
+export const DATA_KEYS = {
   CAA: ["flags", "tag", "value"],
   SRV: ["priority", "weight", "port", "target"],
 } as const
 
-const dataSchema = z
+export const dataSchema = z
   .object({
     flags: z.number().int().optional().describe("CAA: the flags, 0–255 (0 for most records)."),
     tag: z
@@ -87,7 +87,7 @@ type Refuse = (problem: string) => never
 
 type Context = { record: NewRecord; zoneName: string; fullName: string; refuse: Refuse }
 
-function isOneOf<T extends string>(list: readonly T[], value: string): value is T {
+export function isOneOf<T extends string>(list: readonly T[], value: string): value is T {
   return (list as readonly string[]).includes(value)
 }
 
