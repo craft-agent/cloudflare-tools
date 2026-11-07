@@ -7,7 +7,7 @@ export { errorOf, refusalOf } from "../workers/fixtures"
 
 export { CTX, ZONE_NAME, ZONE_ROUTE } from "../zone/fixtures"
 
-export { ZONE_ID } from "../cloudflare/client.fixtures"
+export { ACCOUNT_ID, ZONE_ID } from "../cloudflare/client.fixtures"
 
 export const GRAPHQL_PATH = "/graphql"
 
@@ -32,6 +32,11 @@ export function graphqlRoute(reply: FakeReply): FakeRoute {
 /** The `data` of a query answered with the given dataset of a single zone. */
 export function zoneData(dataset: string, groups: unknown): unknown {
   return { viewer: { zones: [{ [dataset]: groups }] } }
+}
+
+/** The `data` of a query answered with the given dataset of a single account. */
+export function accountData(dataset: string, rows: unknown): unknown {
+  return { viewer: { accounts: [{ [dataset]: rows }] } }
 }
 
 const ZONES_ROUTE: FakeRoute = { method: "GET", path: "/zones", reply: ok([SAMPLE_ZONE]) }
