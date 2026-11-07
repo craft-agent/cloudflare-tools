@@ -45,6 +45,10 @@ export const ROUTES = Object.freeze({
   workersScriptSubdomain: defineRoute("GET", "/accounts/{account_id}/workers/scripts/{script_name}/subdomain"),
   workersDeployments: defineRoute("GET", "/accounts/{account_id}/workers/scripts/{script_name}/deployments"),
   workersVersions: defineRoute("GET", "/accounts/{account_id}/workers/scripts/{script_name}/versions"),
+  workersRoutes: defineRoute("GET", "/zones/{zone_id}/workers/routes"),
+  workersDomains: defineRoute("GET", "/accounts/{account_id}/workers/domains"),
+  workersSchedules: defineRoute("GET", "/accounts/{account_id}/workers/scripts/{script_name}/schedules"),
+  workersSecrets: defineRoute("GET", "/accounts/{account_id}/workers/scripts/{script_name}/secrets"),
 } satisfies Record<string, Route>)
 
 /** Whether a route is one of `ROUTES`, compared by method and path. */

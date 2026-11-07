@@ -7,7 +7,7 @@ export const SCRIPT = "my-worker"
 
 export const SCRIPTS_PATH = `/accounts/${ACCOUNT_ID}/workers/scripts`
 
-/** The path of one of a Worker's sub-resources: `settings`, `subdomain`, `deployments` or `versions`. */
+/** The path of one of a Worker's sub-resources. */
 export function scriptPath(part: string, script: string = SCRIPT): string {
   return `${SCRIPTS_PATH}/${script}/${part}`
 }

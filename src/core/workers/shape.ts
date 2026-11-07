@@ -86,6 +86,37 @@ export const versionSchema = z.object({
   tag: z.string().nullable().describe("The version's tag, clipped to 200 characters, or null."),
 })
 
+export const workerZoneSchema = z.object({
+  id: z.string().describe("The zone id."),
+  name: z.string().describe("The zone's domain name."),
+})
+
+export const routeSchema = z.object({
+  id: z.string().describe("The route id."),
+  pattern: z.string().describe("The URL pattern the route matches."),
+  script: z.string().nullable().describe("The Worker's name, or null when the pattern is excluded from every Worker."),
+})
+
+export const domainSchema = z.object({
+  id: z.string().describe("The custom domain id."),
+  hostname: z.string().describe("The custom domain's hostname."),
+  script: z.string().describe("The Worker served on the custom domain."),
+  zone: workerZoneSchema.describe("The zone the custom domain belongs to."),
+  enabled: z.boolean().describe("Whether the custom domain is enabled."),
+  previews_enabled: z.boolean().describe("Whether version previews are enabled on the custom domain."),
+})
+
+export const scheduleSchema = z.object({
+  cron: z.string().nullable().describe("The cron expression; times are UTC, or null when missing."),
+  created_on: z.string().nullable().describe("When the cron trigger was created, or null."),
+  modified_on: z.string().nullable().describe("When the cron trigger was last modified, or null."),
+})
+
+export const secretSchema = z.object({
+  name: z.string().describe("The secret's name."),
+  type: z.string().describe("The secret's type; never its value."),
+})
+
 type ScriptListItem = z.infer<typeof scriptListItemSchema>
 type ScriptSettings = {
   compatibility_date: string | null
@@ -181,4 +212,39 @@ export function shapeVersion(raw: unknown): Version {
     message: clippedOrNull(annotations[MESSAGE_ANNOTATION]),
     tag: clippedOrNull(annotations[TAG_ANNOTATION]),
   }
+}
+
+/** One route; a null script excludes the pattern from every Worker. */
+export function shapeRoute(raw: unknown): z.infer<typeof routeSchema> {
+  const item = asObject(raw)
+  return { id: textOr(item.id, ""), pattern: textOr(item.pattern, ""), script: textOr(item.script, null) }
+}
+
+/** One custom domain, without certificate or environment fields. */
+export function shapeDomain(raw: unknown): z.infer<typeof domainSchema> {
+  const item = asObject(raw)
+  return {
+    id: textOr(item.id, ""),
+    hostname: textOr(item.hostname, ""),
+    script: textOr(item.service, ""),
+    zone: { id: textOr(item.zone_id, ""), name: textOr(item.zone_name, "") },
+    enabled: item.enabled !== false,
+    previews_enabled: item.previews_enabled === true,
+  }
+}
+
+/** One cron trigger; cron times are UTC. */
+export function shapeSchedule(raw: unknown): z.infer<typeof scheduleSchema> {
+  const item = asObject(raw)
+  return {
+    cron: textOr(item.cron, null),
+    created_on: textOr(item.created_on, null),
+    modified_on: textOr(item.modified_on, null),
+  }
+}
+
+/** One secret's name and type only; other fields can hold values. */
+export function shapeSecret(raw: unknown): z.infer<typeof secretSchema> {
+  const item = asObject(raw)
+  return { name: textOr(item.name, ""), type: textOr(item.type, "") }
 }
