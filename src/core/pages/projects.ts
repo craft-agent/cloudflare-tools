@@ -10,12 +10,14 @@ export const PROJECT_DESCRIPTION = `The Pages project's name, as \`list\` shows 
 export const projectArg = z.string().describe(PROJECT_DESCRIPTION)
 
 /** A deployment's id, trimmed and lowercased; invalid UUIDs are refused. */
-export function deploymentId(value: string): string {
+export function deploymentId(value: string, field: "deployment" | "replaces" = "deployment"): string {
   const id = value.trim().toLowerCase()
   if (!DEPLOYMENT_ID_PATTERN.test(id)) {
+    const what =
+      field === "replaces" ? "the id (a UUID) of the production deployment serving now" : "a deployment's id (a UUID)"
     throw new ToolError(
       "invalid_argument",
-      "`deployment` must be a deployment's id (a UUID), as cloudflare_pages_read deployments shows it; not its short_id.",
+      `\`${field}\` must be ${what}, as cloudflare_pages_read deployments shows it; not its short_id.`,
     )
   }
   return id

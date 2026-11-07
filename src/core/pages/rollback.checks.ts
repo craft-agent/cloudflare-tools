@@ -1,5 +1,4 @@
 import type { z } from "zod"
-import { DEPLOYMENT_ID_PATTERN } from "../cloudflare/routes"
 import { ToolError } from "../errors"
 import { deploymentId } from "./projects"
 import type { deploymentSchema, liveRefSchema } from "./shape"
@@ -21,19 +20,9 @@ function refuse(problem: string): never {
   throw new ToolError("invalid_argument", problem)
 }
 
-function replacesId(value: string): string {
-  const id = value.trim().toLowerCase()
-  if (!DEPLOYMENT_ID_PATTERN.test(id)) {
-    refuse(
-      "`replaces` must be the id (a UUID) of the production deployment serving now, as cloudflare_pages_read deployments shows it; not its short_id.",
-    )
-  }
-  return id
-}
-
 /** Checks the arguments alone, before anything is read: both ids are UUIDs. */
 export function parseRequest(args: { deployment: string; replaces: string }): RollbackRequest {
-  return { deployment: deploymentId(args.deployment), replaces: replacesId(args.replaces) }
+  return { deployment: deploymentId(args.deployment), replaces: deploymentId(args.replaces, "replaces") }
 }
 
 function nameOf(shortId: string | null, id: string): string {
