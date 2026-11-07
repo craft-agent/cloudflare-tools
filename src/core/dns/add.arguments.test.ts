@@ -2,7 +2,8 @@ import { describe, expect, test } from "bun:test"
 import { rejection, ZONE_ID } from "../cloudflare/client.fixtures"
 import { isToolError } from "../errors"
 import { invoke } from "../tool"
-import { batchRoute, CTX, setup } from "./add.fixtures"
+import { CTX, setup } from "./add.fixtures"
+import { batchRoute } from "./fixtures"
 
 const RECORD = { type: "A" as const, name: "www", content: "192.0.2.1" }
 

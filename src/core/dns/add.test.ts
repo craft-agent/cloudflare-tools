@@ -4,8 +4,8 @@ import { fail, ok } from "../cloudflare/testing"
 import { annotations, invoke } from "../tool"
 import { OTHER_ACCOUNT_ID, SAMPLE_ZONE } from "../zone/fixtures"
 import { cloudflareDnsRecordAdd } from "./add"
-import { batchRequests, batchRoute, CTX, setup, ZONE_PATH } from "./add.fixtures"
-import { A_RECORD, CAA_RECORD, MX_RECORD, SHAPED_A_RECORD } from "./fixtures"
+import { CTX, setup, ZONE_PATH } from "./add.fixtures"
+import { A_RECORD, batchRequests, batchRoute, CAA_RECORD, MX_RECORD, SHAPED_A_RECORD } from "./fixtures"
 
 const SRV_RECORD = {
   id: "e".repeat(32),

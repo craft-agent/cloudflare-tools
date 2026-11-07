@@ -5,7 +5,7 @@ import { fail, fakeCloudflare, ok, type FakeRoute } from "../cloudflare/testing"
 import { isToolError } from "../errors"
 import { invoke } from "../tool"
 import { CTX, OTHER_ACCOUNT_ID, SAMPLE_ZONE, ZONE_NAME, ZONE_PATH, ZONE_ROUTE } from "../zone/fixtures"
-import { A_RECORD, A_RECORD_ID, EXPORT_PATH, RECORDS_PATH, ZONE_FILE } from "./fixtures"
+import { A_RECORD, A_RECORD_ID, EXPORT_PATH, RECORDS_PATH, recordPath, ZONE_FILE } from "./fixtures"
 import { defineDnsRead } from "./read"
 
 function toolFor(...routes: FakeRoute[]) {
@@ -21,30 +21,30 @@ describe("cloudflareDnsRead: view", () => {
   test("reads one record by id and returns it as Cloudflare sent it", async () => {
     const { tool, requests } = toolFor({
       method: "GET",
-      path: `${RECORDS_PATH}/${A_RECORD_ID}`,
+      path: recordPath(A_RECORD_ID),
       reply: ok(A_RECORD),
     })
     const result = await invoke(tool, { method: "view", zone: ZONE_ID, id: A_RECORD_ID }, CTX)
 
     expect(result).toEqual({ label: "default", zone: { id: ZONE_ID, name: ZONE_NAME }, record: A_RECORD })
-    expect(requests.map((request) => request.path)).toEqual([ZONE_PATH, `${RECORDS_PATH}/${A_RECORD_ID}`])
+    expect(requests.map((request) => request.path)).toEqual([ZONE_PATH, recordPath(A_RECORD_ID)])
   })
 
   test("lowercases the id in the path", async () => {
     const { tool, requests } = toolFor({
       method: "GET",
-      path: `${RECORDS_PATH}/${A_RECORD_ID}`,
+      path: recordPath(A_RECORD_ID),
       reply: ok(A_RECORD),
     })
     await invoke(tool, { method: "view", zone: ZONE_ID, id: A_RECORD_ID.toUpperCase() }, CTX)
 
-    expect(requests.at(-1)!.path).toBe(`${RECORDS_PATH}/${A_RECORD_ID}`)
+    expect(requests.at(-1)!.path).toBe(recordPath(A_RECORD_ID))
   })
 
   test("a record that does not exist is not_found", async () => {
     const { tool } = toolFor({
       method: "GET",
-      path: `${RECORDS_PATH}/${A_RECORD_ID}`,
+      path: recordPath(A_RECORD_ID),
       reply: fail(404, [{ code: 81044, message: "Record does not exist." }]),
     })
     const error = await rejection(invoke(tool, { method: "view", zone: ZONE_ID, id: A_RECORD_ID }, CTX))
@@ -53,7 +53,7 @@ describe("cloudflareDnsRead: view", () => {
   })
 
   test("a result that is not an object is upstream_error", async () => {
-    const { tool } = toolFor({ method: "GET", path: `${RECORDS_PATH}/${A_RECORD_ID}`, reply: ok([A_RECORD]) })
+    const { tool } = toolFor({ method: "GET", path: recordPath(A_RECORD_ID), reply: ok([A_RECORD]) })
     const error = await rejection(invoke(tool, { method: "view", zone: ZONE_ID, id: A_RECORD_ID }, CTX))
 
     expect(errorCode(error)).toBe("upstream_error")
@@ -123,7 +123,7 @@ describe("cloudflareDnsRead: account boundary", () => {
     const { fetch, requests } = fakeCloudflare([
       { method: "GET", path: ZONE_PATH, reply: ok({ ...SAMPLE_ZONE, account: { id: OTHER_ACCOUNT_ID } }) },
       { method: "GET", path: RECORDS_PATH, reply: ok([A_RECORD]) },
-      { method: "GET", path: `${RECORDS_PATH}/${A_RECORD_ID}`, reply: ok(A_RECORD) },
+      { method: "GET", path: recordPath(A_RECORD_ID), reply: ok(A_RECORD) },
       { method: "GET", path: EXPORT_PATH, reply: { status: 200, body: ZONE_FILE } },
     ])
     const tool = defineDnsRead({ fetch, env: envFor() })

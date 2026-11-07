@@ -4,21 +4,17 @@ import { ok } from "../cloudflare/testing"
 import { invoke } from "../tool"
 import { OTHER_ACCOUNT_ID, SAMPLE_ZONE } from "../zone/fixtures"
 import {
-  batchRequests,
-  batchRoute,
   CTX,
   HTTPS_RECORD,
   pathsOf,
   PLAIN_A_RECORD,
   PRODUCT_RECORD,
-  recordPath,
-  recordRoute,
   setup,
   setupWith,
   WORKER_RECORD,
   ZONE_PATH,
 } from "./edit.fixtures"
-import { A_RECORD, A_RECORD_ID } from "./fixtures"
+import { A_RECORD, A_RECORD_ID, batchRequests, batchRoute, recordPath, recordRoute } from "./fixtures"
 
 type Changes = Parameters<ReturnType<typeof setup>["tool"]["execute"]>[0]["changes"]
 

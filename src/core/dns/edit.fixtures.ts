@@ -1,11 +1,10 @@
 import { envFor } from "../cloudflare/client.fixtures"
 import { fakeCloudflare, ok, type FakeRequest, type FakeRoute } from "../cloudflare/testing"
 import { ZONE_NAME, ZONE_ROUTE } from "../zone/fixtures"
-import { batchRoute } from "./add.fixtures"
 import { defineDnsRecordEdit } from "./edit"
-import { A_RECORD, CAA_RECORD, RECORDS_PATH } from "./fixtures"
+import { A_RECORD, CAA_RECORD, batchRoute, recordRoute } from "./fixtures"
 
-export { batchRequests, batchRoute, CTX, ZONE_PATH } from "./add.fixtures"
+export { CTX, ZONE_PATH } from "./add.fixtures"
 
 /** An A record that is not proxied and has a ttl of 300, so it cannot be proxied without an automatic ttl. */
 export const PLAIN_A_RECORD = {
@@ -56,16 +55,6 @@ export const WORKER_RECORD = {
 }
 
 export const PRODUCT_RECORD = { ...A_RECORD, id: "6".repeat(32), name: `x.${ZONE_NAME}`, meta: { read_only: true } }
-
-/** The path of the record `id`. */
-export function recordPath(id: string): string {
-  return `${RECORDS_PATH}/${id}`
-}
-
-/** The single-record endpoint answering with `record`. */
-export function recordRoute(record: { id: string }): FakeRoute {
-  return { method: "GET", path: recordPath(record.id), reply: ok(record) }
-}
 
 /** The edit tool wired to a fake Cloudflare that answers `routes` and the zone lookup. */
 export function setup(...routes: FakeRoute[]) {

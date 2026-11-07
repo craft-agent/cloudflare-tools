@@ -4,7 +4,8 @@ import { fail, ok } from "../cloudflare/testing"
 import { isAbortError } from "../errors"
 import { writeTargets } from "../targets"
 import { OTHER_ACCOUNT_ID, SAMPLE_ZONE } from "../zone/fixtures"
-import { batchRoute, CTX, setup, ZONE_PATH } from "./add.fixtures"
+import { CTX, setup, ZONE_PATH } from "./add.fixtures"
+import { batchRoute } from "./fixtures"
 
 const BASE = `${ACCOUNT_ID}/zones/${ZONE_ID}/dns_records`
 

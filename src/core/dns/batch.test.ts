@@ -3,9 +3,8 @@ import { clientFor, rejection, toolError, VERIFY_USER_PATH, ZONE_ID } from "../c
 import { fail, ok, type FakeReply } from "../cloudflare/testing"
 import { isAbortError } from "../errors"
 import { sendBatch } from "./batch"
-import { A_RECORD, A_RECORD_ID, MX_RECORD, SHAPED_A_RECORD } from "./fixtures"
+import { A_RECORD, A_RECORD_ID, BATCH_PATH, MX_RECORD, SHAPED_A_RECORD } from "./fixtures"
 
-const BATCH_PATH = `/zones/${ZONE_ID}/dns_records/batch`
 const POST = { type: "A", name: "www.example.com", content: "192.0.2.1", ttl: 1 }
 
 function batchClient(reply: FakeReply) {

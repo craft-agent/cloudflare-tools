@@ -1,8 +1,30 @@
 import { ZONE_ID } from "../cloudflare/client.fixtures"
+import { ok, type FakeReply, type FakeRequest, type FakeRoute } from "../cloudflare/testing"
 import { ZONE_NAME } from "../zone/fixtures"
 
 export const RECORDS_PATH = `/zones/${ZONE_ID}/dns_records`
 export const EXPORT_PATH = `${RECORDS_PATH}/export`
+export const BATCH_PATH = `${RECORDS_PATH}/batch`
+
+/** The path of the record `id`. */
+export function recordPath(id: string): string {
+  return `${RECORDS_PATH}/${id}`
+}
+
+/** The single-record endpoint answering with `record`. */
+export function recordRoute(record: { id: string }): FakeRoute {
+  return { method: "GET", path: recordPath(record.id), reply: ok(record) }
+}
+
+/** The batch endpoint answering `reply`, by default with an empty result. */
+export function batchRoute(reply: FakeReply | ((request: FakeRequest) => FakeReply) = ok({})): FakeRoute {
+  return { method: "POST", path: BATCH_PATH, reply }
+}
+
+/** The requests that are batch posts. */
+export function batchRequests(requests: FakeRequest[]): FakeRequest[] {
+  return requests.filter((request) => request.path === BATCH_PATH)
+}
 
 export const A_RECORD_ID = "a".repeat(32)
 export const MX_RECORD_ID = "b".repeat(32)
