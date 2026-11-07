@@ -8,6 +8,7 @@ import { cloudflarePagesDomainAdd } from "./core/pages/domain-add"
 import { cloudflarePagesDomainRemove } from "./core/pages/domain-remove"
 import { cloudflarePagesRead } from "./core/pages/read"
 import { cloudflarePagesRollback } from "./core/pages/rollback"
+import { cloudflareStorageRead } from "./core/storage/read"
 import { cloudflareWorkersRead } from "./core/workers/read"
 import { cloudflareWorkersRollback } from "./core/workers/rollback"
 import { cloudflareZoneCachePurge } from "./core/zone/cache-purge"
@@ -38,4 +39,5 @@ export const ALL_TOOLS: ToolSpec[] = [
   cloudflarePagesRollback,
   cloudflarePagesDomainAdd,
   cloudflarePagesDomainRemove,
+  cloudflareStorageRead,
 ]
