@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test"
 import { isToolError } from "../errors"
-import { recordName, relativeName } from "./names"
+import { recordLabel, recordName, relativeName, targetHostname } from "./names"
 
 const ZONE = "example.com"
 
@@ -130,5 +130,32 @@ describe("relativeName", () => {
   test("keeps a name outside the zone", () => {
     expect(relativeName("other.org", ZONE)).toBe("other.org")
     expect(relativeName("notexample.com", ZONE)).toBe("notexample.com")
+  })
+})
+
+describe("recordLabel", () => {
+  test("formats the type and relative name in parentheses", () => {
+    expect(recordLabel("A", "www.example.com", ZONE)).toBe("(A www)")
+    expect(recordLabel("A", "example.com", ZONE)).toBe("(A @)")
+    expect(recordLabel("SRV", "_sip._tcp.example.com", ZONE)).toBe("(SRV _sip._tcp)")
+  })
+})
+
+describe("targetHostname", () => {
+  test("normalizes a valid hostname", () => {
+    expect(targetHostname("  WWW.Example.COM. ")).toEqual({ host: "www.example.com" })
+    expect(targetHostname("mail.bücher.example.")).toEqual({ host: "mail.xn--bcher-kva.example" })
+  })
+
+  test("reports problems for invalid hostnames", () => {
+    expect(targetHostname("localhost")).toEqual({ problem: "it needs at least one dot, as in mail.example.com" })
+    expect(targetHostname(" ")).toEqual({ problem: "it is empty" })
+    expect(targetHostname("*.example.com")).toEqual({ problem: "a wildcard `*` is not allowed here" })
+    expect(targetHostname("a..example.com")).toEqual({ problem: "it has an empty label" })
+    expect(targetHostname("-a.example.com")).toEqual({ problem: 'label "-a" starts or ends with `-`' })
+    expect(targetHostname(`${"a".repeat(64)}.example.com`)).toEqual({
+      problem: "a label is longer than 63 characters",
+    })
+    expect(targetHostname(`${"a.".repeat(130)}org`)).toEqual({ problem: "it is longer than 253 characters" })
   })
 })
