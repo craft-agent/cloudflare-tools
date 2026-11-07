@@ -223,13 +223,13 @@ The skill is [`cloudflare-pages`](skills/cloudflare-pages/SKILL.md), shown as
 
 ### Storage (`storage`)
 
-Storage: list an account's R2 buckets and a bucket's objects and folders by name, size and date, and read whether a bucket is public (its r2.dev domain and custom domains), its CORS rules and the lifecycle rules that delete its objects. An object's body and custom metadata are never read, and only buckets in the default jurisdiction are listed. This toolset is off by default; turn it on with the `toolsets` setting (see [Settings](#settings)).
+Storage: list an account's R2 buckets and a bucket's objects and folders by name, size and date, and read whether a bucket is public (its r2.dev domain and custom domains), its CORS rules and the lifecycle rules that delete its objects; list Workers KV namespaces and their key names; list D1 databases and read one's size and schema. An object's body, a KV value and a table's rows are never read, the D1 schema comes from one fixed statement, and only the default jurisdiction is listed. This toolset is off by default; turn it on with the `toolsets` setting (see [Settings](#settings)).
 
-| Tool                      | What it does                                                           | Class |
-| ------------------------- | ---------------------------------------------------------------------- | ----- |
-| `cloudflare_storage_read` | `buckets` of the account; one `bucket`'s details; a bucket's `objects` | read  |
+| Tool                      | What it does                                                                                                            | Class |
+| ------------------------- | ----------------------------------------------------------------------------------------------------------------------- | ----- |
+| `cloudflare_storage_read` | R2 `buckets`, a `bucket`'s details, its `objects`; KV `namespaces`, their `keys`; D1 `databases`, a `database`'s schema | read  |
 
-The token needs Account → Workers R2 Storage → Read.
+The token needs Account → Workers R2 Storage → Read, Workers KV Storage → Read or D1 → Read, for the store it reads.
 
 The skill is [`cloudflare-storage`](skills/cloudflare-storage/SKILL.md), shown as
 `cloudflare-tools:cloudflare-storage` in Claude Code and
