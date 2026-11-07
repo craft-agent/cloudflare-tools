@@ -12,7 +12,36 @@ export const PROJECT_PATH = `${PROJECTS_PATH}/${PROJECT}`
 export const DEPLOYMENTS_PATH = `${PROJECT_PATH}/deployments`
 export const DEPLOYMENT_ID = "11111111-1111-4111-8111-111111111111"
 export const PREVIEW_ID = "22222222-2222-4222-8222-222222222222"
+export const DEPLOYMENT_LOGS_PATH = `${PROJECT_PATH}/deployments/${DEPLOYMENT_ID}/history/logs`
+export const DOMAINS_PATH = `${PROJECT_PATH}/domains`
+export const ZONE_ID = "33333333333333333333333333333333"
 export const PAGING = { page: 2, per_page: 25, total_count: 30, total_pages: 2 }
+
+export const LOG_ENTRY = {
+  ts: "2024-01-01T00:00:00Z",
+  line: "Success: Compiled successfully.",
+}
+
+export const DOMAIN_ENTRY = {
+  id: "44444444-4444-4444-8444-444444444444",
+  domain_id: "55555555-5555-4555-8555-555555555555",
+  name: "custom.example.com",
+  status: "active",
+  validation_data: {
+    method: "txt",
+    status: "active",
+    txt_name: "_cf-custom-hostname.custom.example.com",
+    txt_value: "txt-validation-value",
+    error_message: null,
+  },
+  verification_data: {
+    status: "active",
+    error_message: null,
+  },
+  certificate_authority: "lets_encrypt",
+  zone_tag: ZONE_ID,
+  created_on: "2024-01-01T00:00:00Z",
+}
 
 /** The read tool with a fake Cloudflare answering only these routes. */
 export function toolFor(...routes: FakeRoute[]) {
