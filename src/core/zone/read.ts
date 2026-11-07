@@ -1,7 +1,7 @@
 import { z } from "zod"
-import { accountArg } from "../cloudflare/args"
+import { accountArg, assertAcceptedKeys } from "../cloudflare/args"
 import { cloudflareClient, type CloudflareDeps } from "../cloudflare/client"
-import { isPlainObject } from "../cloudflare/reply"
+import { isPlainObject, pagingFields } from "../cloudflare/reply"
 import { ROUTES } from "../cloudflare/routes"
 import { ToolError } from "../errors"
 import { defineTool, type ToolContext, type ToolSpec } from "../tool"
@@ -17,16 +17,6 @@ const ACCEPTED_KEYS: Record<Method, readonly string[]> = {
   settings: ["account", "zone", "setting"],
   ssl: ["account", "zone", "page"],
   dnssec: ["account", "zone"],
-}
-
-function assertAcceptedKeys(method: Method, args: Record<string, unknown>): void {
-  const allowed = new Set(ACCEPTED_KEYS[method])
-  for (const [key, value] of Object.entries(args)) {
-    if (key === "method" || value === undefined) continue
-    if (!allowed.has(key)) {
-      throw new ToolError("invalid_argument", `Method "${method}" takes no \`${key}\`.`)
-    }
-  }
 }
 
 const DEFAULT_PER_PAGE = 20
@@ -134,10 +124,7 @@ async function listZones(
   return {
     label: client.label,
     zones,
-    page: typeof reply.resultInfo?.page === "number" ? reply.resultInfo.page : null,
-    per_page: typeof reply.resultInfo?.per_page === "number" ? reply.resultInfo.per_page : null,
-    total_count: typeof reply.resultInfo?.total_count === "number" ? reply.resultInfo.total_count : null,
-    total_pages: typeof reply.resultInfo?.total_pages === "number" ? reply.resultInfo.total_pages : null,
+    ...pagingFields(reply.resultInfo),
   }
 }
 
@@ -176,7 +163,7 @@ export function defineZoneRead(deps?: CloudflareDeps): ToolSpec<typeof input, ty
     input,
     output,
     async execute(args, ctx) {
-      assertAcceptedKeys(args.method, args)
+      assertAcceptedKeys(ACCEPTED_KEYS, args.method, args)
 
       if (args.method === "list") {
         return listZones(args, ctx, deps)

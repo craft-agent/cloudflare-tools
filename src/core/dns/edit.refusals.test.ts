@@ -3,18 +3,19 @@ import { toolError, ZONE_ID } from "../cloudflare/client.fixtures"
 import { ok } from "../cloudflare/testing"
 import { invoke } from "../tool"
 import { OTHER_ACCOUNT_ID, SAMPLE_ZONE } from "../zone/fixtures"
+import { CTX, pathsOf, setup, setupWith, ZONE_PATH } from "./edit.fixtures"
 import {
-  CTX,
+  A_RECORD,
+  A_RECORD_ID,
+  batchRequests,
+  batchRoute,
   HTTPS_RECORD,
-  pathsOf,
   PLAIN_A_RECORD,
   PRODUCT_RECORD,
-  setup,
-  setupWith,
+  recordPath,
+  recordRoute,
   WORKER_RECORD,
-  ZONE_PATH,
-} from "./edit.fixtures"
-import { A_RECORD, A_RECORD_ID, batchRequests, batchRoute, recordPath, recordRoute } from "./fixtures"
+} from "./fixtures"
 
 type Changes = Parameters<ReturnType<typeof setup>["tool"]["execute"]>[0]["changes"]
 

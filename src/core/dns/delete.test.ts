@@ -4,16 +4,18 @@ import { fail } from "../cloudflare/testing"
 import { annotations, invoke, REQUIRES_USER_INTERACTION, toolMeta } from "../tool"
 import { cloudflareDnsRecordDelete } from "./delete"
 import { CTX, setup, setupWith } from "./delete.fixtures"
-import { CNAME_RECORD, HTTPS_RECORD, SRV_RECORD } from "./edit.fixtures"
 import {
   A_RECORD,
   A_RECORD_ID,
   batchRequests,
   batchRoute,
   CAA_RECORD,
+  CNAME_RECORD,
+  HTTPS_RECORD,
   MX_RECORD,
   recordRoute,
   SHAPED_A_RECORD,
+  SRV_RECORD,
   TXT_RECORD,
 } from "./fixtures"
 import { shapeRecord } from "./records"

@@ -5,8 +5,16 @@ import { isToolError } from "../errors"
 import { invoke } from "../tool"
 import { OTHER_ACCOUNT_ID, SAMPLE_ZONE } from "../zone/fixtures"
 import { confirming, CTX, setup, setupWith, ZONE_PATH } from "./delete.fixtures"
-import { PRODUCT_RECORD, WORKER_RECORD } from "./edit.fixtures"
-import { A_RECORD, A_RECORD_ID, batchRequests, batchRoute, recordPath, recordRoute } from "./fixtures"
+import {
+  A_RECORD,
+  A_RECORD_ID,
+  batchRequests,
+  batchRoute,
+  PRODUCT_RECORD,
+  recordPath,
+  recordRoute,
+  WORKER_RECORD,
+} from "./fixtures"
 
 const NEW_A = { type: "A" as const, name: "api", content: "192.0.2.9" }
 

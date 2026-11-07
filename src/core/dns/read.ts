@@ -1,6 +1,7 @@
 import { z } from "zod"
-import { accountArg } from "../cloudflare/args"
+import { accountArg, assertAcceptedKeys } from "../cloudflare/args"
 import { cloudflareClient, type CloudflareClient, type CloudflareDeps } from "../cloudflare/client"
+import { pagingFields } from "../cloudflare/reply"
 import { ROUTES } from "../cloudflare/routes"
 import { ToolError } from "../errors"
 import { defineTool, type ToolContext, type ToolSpec } from "../tool"
@@ -14,16 +15,6 @@ const ACCEPTED_KEYS: Record<Method, readonly string[]> = {
   list: ["account", "zone", "type", "name", "content", "proxied", "page", "per_page"],
   view: ["account", "zone", "id"],
   export: ["account", "zone"],
-}
-
-function assertAcceptedKeys(method: Method, args: Record<string, unknown>): void {
-  const allowed = new Set(ACCEPTED_KEYS[method])
-  for (const [key, value] of Object.entries(args)) {
-    if (key === "method" || value === undefined) continue
-    if (!allowed.has(key)) {
-      throw new ToolError("invalid_argument", `Method "${method}" takes no \`${key}\`.`)
-    }
-  }
 }
 
 const DEFAULT_PER_PAGE = 50
@@ -88,10 +79,6 @@ async function resolveTarget(args: Args, ctx: ToolContext, deps?: CloudflareDeps
   return { client, zone: { id, name } }
 }
 
-function pagingField(value: unknown): number | null {
-  return typeof value === "number" ? value : null
-}
-
 async function listRecords(args: Args, ctx: ToolContext, deps?: CloudflareDeps) {
   const { client, zone } = await resolveTarget(args, ctx, deps)
   const query = {
@@ -112,10 +99,7 @@ async function listRecords(args: Args, ctx: ToolContext, deps?: CloudflareDeps) 
     label: client.label,
     zone,
     records: reply.result.map(shapeRecord),
-    page: pagingField(reply.resultInfo?.page),
-    per_page: pagingField(reply.resultInfo?.per_page),
-    total_count: pagingField(reply.resultInfo?.total_count),
-    total_pages: pagingField(reply.resultInfo?.total_pages),
+    ...pagingFields(reply.resultInfo),
   }
 }
 
@@ -166,7 +150,7 @@ export function defineDnsRead(deps?: CloudflareDeps): ToolSpec<typeof input, typ
     input,
     output,
     async execute(args, ctx) {
-      assertAcceptedKeys(args.method, args)
+      assertAcceptedKeys(ACCEPTED_KEYS, args.method, args)
 
       if (args.method === "list") return listRecords(args, ctx, deps)
       if (args.method === "view") return viewRecord(args, ctx, deps)

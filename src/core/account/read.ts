@@ -1,10 +1,10 @@
 import { z } from "zod"
-import { accountArg } from "../cloudflare/args"
+import { accountArg, assertAcceptedKeys } from "../cloudflare/args"
 import { cloudflareClient, type CloudflareDeps } from "../cloudflare/client"
 import { listCredentials } from "../cloudflare/credentials"
 import { isPlainObject } from "../cloudflare/reply"
 import { ROUTES } from "../cloudflare/routes"
-import { ToolError, isToolError } from "../errors"
+import { isToolError } from "../errors"
 import { defineTool, type ToolContext, type ToolSpec } from "../tool"
 import { AUDIT_PARAM_KEYS, auditInputFields, readAudit } from "./audit"
 
@@ -14,16 +14,6 @@ const ACCEPTED_KEYS: Record<Method, readonly string[]> = {
   list: [],
   view: ["account"],
   audit: ["account", ...AUDIT_PARAM_KEYS],
-}
-
-function assertAcceptedKeys(method: Method, args: Record<string, unknown>): void {
-  const allowed = new Set(ACCEPTED_KEYS[method])
-  for (const [key, value] of Object.entries(args)) {
-    if (key === "method" || value === undefined) continue
-    if (!allowed.has(key)) {
-      throw new ToolError("invalid_argument", `Method "${method}" takes no \`${key}\`.`)
-    }
-  }
 }
 
 const input = z.object({
@@ -142,7 +132,7 @@ export function defineAccountRead(deps?: CloudflareDeps): ToolSpec<typeof input,
     input,
     output,
     async execute(args, ctx) {
-      assertAcceptedKeys(args.method, args)
+      assertAcceptedKeys(ACCEPTED_KEYS, args.method, args)
 
       if (args.method === "list") {
         return listAccounts(deps)

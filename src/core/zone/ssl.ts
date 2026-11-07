@@ -1,6 +1,6 @@
 import { z } from "zod"
 import { cloudflareClient, type CloudflareDeps } from "../cloudflare/client"
-import { isPlainObject } from "../cloudflare/reply"
+import { isPlainObject, pagingFields } from "../cloudflare/reply"
 import { ROUTES } from "../cloudflare/routes"
 import type { ToolContext } from "../tool"
 import { resolveZone } from "./lookup"
@@ -110,14 +110,16 @@ export async function readSsl(args: SslArgs, ctx: ToolContext, deps?: Cloudflare
     }
   })
 
+  const { page, total_count, total_pages } = pagingFields(certsReply.resultInfo)
+
   return {
     label: client.label,
     zone: { id: zone.id, name: zone.name },
     universal_ssl: universalSsl,
     certificate_packs: certificatePacks,
-    page: typeof certsReply.resultInfo?.page === "number" ? certsReply.resultInfo.page : null,
-    total_count: typeof certsReply.resultInfo?.total_count === "number" ? certsReply.resultInfo.total_count : null,
-    total_pages: typeof certsReply.resultInfo?.total_pages === "number" ? certsReply.resultInfo.total_pages : null,
+    page,
+    total_count,
+    total_pages,
   }
 }
 
