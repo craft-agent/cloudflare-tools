@@ -1,13 +1,12 @@
 import { z } from "zod"
 import { accountArg } from "../cloudflare/args"
 import { cloudflareClient, type CloudflareClient, type CloudflareDeps } from "../cloudflare/client"
-import { isPlainObject } from "../cloudflare/reply"
 import { ROUTES } from "../cloudflare/routes"
 import { ToolError } from "../errors"
 import { defineTool, type ToolContext, type ToolSpec } from "../tool"
 import { resolveZone, zoneArg } from "../zone/lookup"
 import { recordName } from "./names"
-import { RECORD_TYPES, recordIdArg, recordListItemSchema, shapeRecord } from "./records"
+import { RECORD_TYPES, fetchRecord, recordIdArg, recordListItemSchema, shapeRecord } from "./records"
 
 type Method = "list" | "view" | "export"
 
@@ -125,13 +124,7 @@ async function viewRecord(args: Args, ctx: ToolContext, deps?: CloudflareDeps) {
     throw new ToolError("invalid_argument", 'Method "view" requires `id`.')
   }
   const { client, zone } = await resolveTarget(args, ctx, deps)
-  const reply = await client.request<unknown>(ROUTES.dnsRecord, {
-    path: { zone_id: zone.id, dns_record_id: args.id.toLowerCase() },
-  })
-  if (!isPlainObject(reply.result)) {
-    throw new ToolError("upstream_error", "Cloudflare returned an unexpected DNS record response.")
-  }
-  return { label: client.label, zone, record: reply.result }
+  return { label: client.label, zone, record: await fetchRecord(client, zone.id, args.id) }
 }
 
 /** Whether a record line is one `list` does not return: the SOA, or an NS of the zone's own name (its nameservers). */

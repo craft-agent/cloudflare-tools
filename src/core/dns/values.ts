@@ -2,6 +2,7 @@ import { isIPv4, isIPv6 } from "node:net"
 import { z } from "zod"
 import { ToolError } from "../errors"
 import { recordLabel, recordName, relativeName, targetHostname } from "./names"
+import { sortedJson } from "./sorted-json"
 
 /** The record types the tools write. */
 export const WRITABLE_TYPES = ["A", "AAAA", "CNAME", "MX", "TXT", "NS", "CAA", "SRV"] as const
@@ -233,6 +234,32 @@ function fullNameOf(record: NewRecord, zoneName: string, where: string): string 
       throw new ToolError(error.code, `${where} (${record.type}): ${error.message}`, { cause: error })
     }
     throw error
+  }
+}
+
+/** The full lowercased ASCII name of each record in `records` within `zoneName`. */
+export function recordNames(records: readonly { name: string }[], zoneName: string): string[] {
+  return records.map((record) => recordName(record.name, zoneName))
+}
+
+/** What makes two bodies the same record: type, full name, value, and the priority an MX value carries. */
+function identityOf(body: Record<string, unknown>): string {
+  return sortedJson([body.type, body.name, body.content ?? body.data, body.priority])
+}
+
+/** Refuses a body that repeats an earlier one of `bodies`, naming both as `where[index]`. */
+export function assertDistinct(bodies: Record<string, unknown>[], zoneName: string, where: string): void {
+  const firstSeen = new Map<string, number>()
+  for (const [index, body] of bodies.entries()) {
+    const identity = identityOf(body)
+    const earlier = firstSeen.get(identity)
+    if (earlier !== undefined) {
+      throw new ToolError(
+        "invalid_argument",
+        `${where}[${index}] repeats ${where}[${earlier}] ${recordLabel(String(body.type), String(body.name), zoneName)}: the same type, name and value cannot be added twice.`,
+      )
+    }
+    firstSeen.set(identity, index)
   }
 }
 

@@ -1,15 +1,20 @@
 import { z } from "zod"
 import { accountArg } from "../cloudflare/args"
 import type { CloudflareClient, CloudflareDeps } from "../cloudflare/client"
-import { isPlainObject } from "../cloudflare/reply"
-import { ROUTES } from "../cloudflare/routes"
-import { ToolError, isToolError } from "../errors"
+import { ToolError } from "../errors"
 import { defineTool, type ToolContext, type ToolSpec } from "../tool"
 import { zoneArg, type Zone } from "../zone/lookup"
 import { sendBatch } from "./batch"
 import { EDITABLE_FIELDS, changedFields, currentForm, withChange } from "./current"
 import { recordLabel, recordName } from "./names"
-import { RECORD_TYPES, recordIdArg, recordListItemSchema, shapeRecord, type RecordListItem } from "./records"
+import {
+  RECORD_TYPES,
+  assertWritableRecord,
+  readRecords,
+  recordIdArg,
+  recordListItemSchema,
+  type FetchedRecord,
+} from "./records"
 import { resolveDnsTargets, resolveDnsZone } from "./targets"
 import {
   AUTOMATIC_TTL,
@@ -107,7 +112,6 @@ const output = z.object({
 
 type Args = z.output<typeof input>
 type Change = Args["changes"][number]
-type Current = { raw: Record<string, unknown>; record: RecordListItem }
 
 function refuse(problem: string): never {
   throw new ToolError("invalid_argument", problem)
@@ -130,45 +134,12 @@ function assertWorkable(changes: Change[]): void {
   }
 }
 
-async function readRecord(client: CloudflareClient, zone: Zone, change: Change, index: number): Promise<Current> {
-  const id = change.id.toLowerCase()
-  let result: unknown
-  try {
-    result = (await client.request<unknown>(ROUTES.dnsRecord, { path: { zone_id: zone.id, dns_record_id: id } })).result
-  } catch (error) {
-    if (!isToolError(error) || error.code !== "not_found") throw error
-    throw new ToolError(
-      "not_found",
-      `changes[${index}]: no record ${id} in the zone ${zone.name}; cloudflare_dns_read list shows its records.`,
-      { cause: error },
-    )
-  }
-  if (!isPlainObject(result)) {
-    throw new ToolError("upstream_error", `changes[${index}]: Cloudflare returned an unexpected DNS record response.`)
-  }
-  return { raw: result, record: shapeRecord(result) }
-}
-
-/** The current record of every change, in order; when several reads fail, the first in order is thrown. */
-async function readRecords(client: CloudflareClient, zone: Zone, changes: Change[]): Promise<Current[]> {
-  const settled = await Promise.allSettled(changes.map((change, index) => readRecord(client, zone, change, index)))
-  return settled.map((result) => {
-    if (result.status === "rejected") throw result.reason
-    return result.value
-  })
-}
-
-function managedBy({ raw }: Current): string {
-  const hasWorker = isPlainObject(raw.meta) && typeof raw.meta.origin_worker_id === "string"
-  return hasWorker ? "another Cloudflare product (a Worker's custom domain)" : "another Cloudflare product"
-}
-
 /** The batch patch for one change: `{ id, type }` and the fields that differ; refused when the change is not allowed or changes nothing. */
-function patchFor(change: Change, index: number, current: Current, zoneName: string): Record<string, unknown> {
+function patchFor(change: Change, index: number, current: FetchedRecord, zoneName: string): Record<string, unknown> {
   const { record } = current
   const where = `changes[${index}]`
   const label = `${where} ${recordLabel(record.type, record.name, zoneName)}`
-  if (record.read_only) refuse(`${label}: is managed by ${managedBy(current)} and is changed there.`)
+  assertWritableRecord(current.raw, record, zoneName, where)
   if (!isOneOf(WRITABLE_TYPES, record.type)) {
     refuse(`${label}: a ${record.type} record can be read and deleted with these tools, not changed.`)
   }
@@ -188,7 +159,12 @@ function patchFor(change: Change, index: number, current: Current, zoneName: str
 async function editRecords(args: Args, ctx: ToolContext, deps?: CloudflareDeps) {
   assertWorkable(args.changes)
   const { client, zone } = await resolveDnsZone(args, ctx, deps)
-  const currents = await readRecords(client, zone, args.changes)
+  const currents = await readRecords(
+    client,
+    zone,
+    args.changes.map((change) => change.id),
+    "changes",
+  )
   const patches = args.changes.map((change, index) => patchFor(change, index, currents[index]!, zone.name))
 
   const result = await sendBatch(client, zone.id, { patches })
@@ -209,7 +185,12 @@ async function editTargets(args: Args, ctx: ToolContext, deps?: CloudflareDeps):
     args,
     ctx,
     async (client, zone) => {
-      const currents = await readRecords(client, zone, args.changes)
+      const currents = await readRecords(
+        client,
+        zone,
+        args.changes.map((change) => change.id),
+        "changes",
+      )
       return args.changes.flatMap((change, index) => [
         currents[index]!.record.name.toLowerCase(),
         ...(change.name !== undefined ? [recordName(change.name, zone.name)] : []),

@@ -1,15 +1,12 @@
 import { z } from "zod"
 import { accountArg } from "../cloudflare/args"
 import type { CloudflareDeps } from "../cloudflare/client"
-import { ToolError } from "../errors"
 import { defineTool, type ToolContext, type ToolSpec } from "../tool"
 import { zoneArg } from "../zone/lookup"
 import { sendBatch } from "./batch"
-import { recordLabel, recordName } from "./names"
 import { recordListItemSchema } from "./records"
-import { sortedJson } from "./sorted-json"
 import { resolveDnsTargets, resolveDnsZone } from "./targets"
-import { newRecordSchema, recordBody } from "./values"
+import { assertDistinct, newRecordSchema, recordBody, recordNames } from "./values"
 
 const MAX_RECORDS = 20
 
@@ -31,30 +28,10 @@ const output = z.object({
 
 type Args = z.output<typeof input>
 
-/** What makes two bodies the same record: type, full name, value, and the priority an MX value carries. */
-function identityOf(body: Record<string, unknown>): string {
-  return sortedJson([body.type, body.name, body.content ?? body.data, body.priority])
-}
-
-function assertDistinct(bodies: Record<string, unknown>[], zoneName: string): void {
-  const firstSeen = new Map<string, number>()
-  for (const [index, body] of bodies.entries()) {
-    const identity = identityOf(body)
-    const earlier = firstSeen.get(identity)
-    if (earlier !== undefined) {
-      throw new ToolError(
-        "invalid_argument",
-        `records[${index}] repeats records[${earlier}] ${recordLabel(String(body.type), String(body.name), zoneName)}: the same type, name and value cannot be added twice.`,
-      )
-    }
-    firstSeen.set(identity, index)
-  }
-}
-
 async function addRecords(args: Args, ctx: ToolContext, deps?: CloudflareDeps) {
   const { client, zone } = await resolveDnsZone(args, ctx, deps)
   const posts = args.records.map((record, index) => recordBody(record, zone.name, `records[${index}]`))
-  assertDistinct(posts, zone.name)
+  assertDistinct(posts, zone.name, "records")
 
   const result = await sendBatch(client, zone.id, { posts })
   return { label: client.label, zone: { id: zone.id, name: zone.name }, added: result.posts }
@@ -62,12 +39,7 @@ async function addRecords(args: Args, ctx: ToolContext, deps?: CloudflareDeps) {
 
 /** What a call writes to: each record name in the zone, as `<account_id>/zones/<zone_id>/dns_records/<name>`; `*` when that cannot be told. */
 async function addTargets(args: Args, ctx: ToolContext, deps?: CloudflareDeps): Promise<string[]> {
-  return resolveDnsTargets(
-    args,
-    ctx,
-    (_client, zone) => args.records.map((record) => recordName(record.name, zone.name)),
-    deps,
-  )
+  return resolveDnsTargets(args, ctx, (_client, zone) => recordNames(args.records, zone.name), deps)
 }
 
 /** Defines the `cloudflare_dns_record_add` tool spec with injected dependencies. */
