@@ -42,7 +42,7 @@ export function durationDays(text: string): number | undefined {
   return wholeDays >= 1 ? wholeDays : undefined
 }
 
-/** `text` ending as a sentence, with a period added unless it already ends with one (or `!`, `?`). */
+/** `text` ending as a sentence, with a period added unless it already ends with one, an exclamation or a question mark. */
 export function sentence(text: string): string {
   return SENTENCE_END_PATTERN.test(text) ? text : `${text}.`
 }
