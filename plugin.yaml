@@ -9,6 +9,8 @@ provides_tools:
   - cloudflare_dns_record_add
   - cloudflare_dns_record_delete
   - cloudflare_dns_record_edit
+  - cloudflare_pages_domain_add
+  - cloudflare_pages_domain_remove
   - cloudflare_pages_read
   - cloudflare_pages_rollback
   - cloudflare_workers_read

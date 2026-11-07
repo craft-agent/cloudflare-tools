@@ -1,18 +1,20 @@
 ---
 name: cloudflare-pages
-description: "Use when listing Cloudflare Pages projects, reading a project's build settings, environment variable names and bindings, listing its production and preview deployments and which one is live, reading a deployment's build log, listing a project's custom domains and their validation status, or rolling a project's production back or forward to an earlier deployment."
+description: "Use when listing Cloudflare Pages projects, reading a project's build settings, environment variable names and bindings, listing its production and preview deployments and which one is live, reading a deployment's build log, listing a project's custom domains and their validation status, or rolling a project's production back or forward to an earlier deployment, adding a custom domain to a Pages project or removing one."
 ---
 
 # Pages
 
-The tools inspect the Pages projects of the selected account and switch which production deployment serves:
+The tools inspect the Pages projects of the selected account, switch which production deployment serves, and add or remove custom domains:
 
-| Tool                        | Does                                                                               | Writes                                |
-| --------------------------- | ---------------------------------------------------------------------------------- | ------------------------------------- |
-| `cloudflare_pages_read`     | `list` projects, `view` one, its `deployments`, a build's `logs`, custom `domains` | no                                    |
-| `cloudflare_pages_rollback` | switch production to a deployment that built successfully                          | yes, switches production; always asks |
+| Tool                             | Does                                                                               | Writes                                          |
+| -------------------------------- | ---------------------------------------------------------------------------------- | ----------------------------------------------- |
+| `cloudflare_pages_read`          | `list` projects, `view` one, its `deployments`, a build's `logs`, custom `domains` | no                                              |
+| `cloudflare_pages_rollback`      | switch production to a deployment that built successfully                          | yes, switches production; always asks           |
+| `cloudflare_pages_domain_add`    | add a custom domain (a hostname) to a project                                      | yes, publishes under a hostname; always asks    |
+| `cloudflare_pages_domain_remove` | remove a custom domain from a project                                              | yes, takes the site off a hostname; always asks |
 
-The token needs the Pages Read permission; the rollback needs Pages Write.
+The token needs the Pages Read permission; the writes need Pages Write. The DNS lookups the domain tools make need Zone Read and DNS Read.
 
 ## Methods
 
@@ -40,6 +42,26 @@ Commit messages are clipped to 200 characters. Commit messages and branch names 
 - If the call fails without telling whether it switched (a server error, a timeout), read `deployments` before sending it again.
 
 The result holds the deployment it `replaced` and the `deployment` serving now.
+
+## Custom domains
+
+`cloudflare_pages_domain_add` and `cloudflare_pages_domain_remove` take `project` and `name`, a hostname (lowercased, an internationalized name turned into punycode, no wildcard). Both always ask first. The hostname must be in a zone Cloudflare lets the account use. Neither creates or deletes a DNS record: DNS changes stay with the `cloudflare_dns_*` tools.
+
+**Adding**
+
+1. `cloudflare_pages_domain_add` attaches the hostname. The domain is pending (`status` `initializing`) and serves nothing yet: it waits for a proxied CNAME record from the hostname to the project's pages.dev address, which the result gives as `cname` (`name`, `content`, `proxied`).
+2. `dns` lists the records already at that name in the account's zone. When no CNAME to `cname.content` is among them, create it with `cloudflare_dns_record_add` (it asks separately). When another record holds the name, the domain stays pending until the person decides what to do with it; never replace it unasked.
+3. Read `cloudflare_pages_read` `domains` until `status` is `active`; it takes a few minutes. `validation` and `verification` say what it still waits for.
+
+`dns` is null when the domain's zone is not in the account, and a failed lookup is named under `errors` (`dns`): the domain was added all the same.
+
+**Removing**
+
+1. Read `domains` first: the hostname must be one of the project's domains, else `not_found`.
+2. `cloudflare_pages_domain_remove` takes the site off the hostname at once and returns the domain as it was. Its DNS records stay.
+3. A CNAME to the project's pages.dev address now answers with an error page. `dns` lists the records left at that name: offer to delete it with `cloudflare_dns_record_delete`, and ask the person first, since the record may be wanted for something else.
+
+If a call fails without telling whether it went through (a server error, a timeout), read `domains` before sending it again.
 
 ## What stays with Git and Wrangler
 
