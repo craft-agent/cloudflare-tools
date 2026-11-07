@@ -5,7 +5,7 @@ import { isPlainObject, pagingFields } from "../cloudflare/reply"
 import { ROUTES } from "../cloudflare/routes"
 import { ToolError } from "../errors"
 import { defineTool, type ToolContext, type ToolSpec } from "../tool"
-import { PROJECT_DESCRIPTION, deploymentId, projectArg, projectName, requestProject } from "./projects"
+import { PROJECT_DESCRIPTION, deploymentId, projectArg, projectName, requestProject, requireObject } from "./projects"
 import {
   deploymentSchema,
   domainSchema,
@@ -125,13 +125,6 @@ function requireArray(value: unknown, response: string): unknown[] {
   return value
 }
 
-function requireProject(value: unknown): Record<string, unknown> {
-  if (!isPlainObject(value)) {
-    throw new ToolError("upstream_error", "Cloudflare returned an unexpected Pages project response.")
-  }
-  return value
-}
-
 function clientFor(args: Args, ctx: ToolContext, deps?: CloudflareDeps): CloudflareClient {
   return cloudflareClient(args.account, { ...deps, signal: ctx.signal })
 }
@@ -156,7 +149,7 @@ const view: Handler = async (args, ctx, deps) => {
   const project = requiredProject(args)
   const client = clientFor(args, ctx, deps)
   const reply = await requestProject<unknown>(client, ROUTES.pagesProject, project)
-  return { label: client.label, project: shapeProjectView(requireProject(reply.result)) }
+  return { label: client.label, project: shapeProjectView(requireObject(reply.result, "project")) }
 }
 
 const deployments: Handler = async (args, ctx, deps) => {
@@ -168,7 +161,7 @@ const deployments: Handler = async (args, ctx, deps) => {
       query: { env: args.environment, ...pagingQuery(args) },
     }),
   ])
-  const live = shapeLiveRef(requireProject(projectReply.result).canonical_deployment)
+  const live = shapeLiveRef(requireObject(projectReply.result, "project").canonical_deployment)
   const entries = requireArray(reply.result, "deployments")
   return {
     label: client.label,
