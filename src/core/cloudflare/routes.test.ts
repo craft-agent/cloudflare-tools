@@ -1,5 +1,13 @@
 import { describe, expect, test } from "bun:test"
-import { DATABASE_ID_PATTERN, D1_SCHEMA_SQL, NAMESPACE_ID_PATTERN, PATH_PARAMS, ROUTES, isAllowed } from "./routes"
+import {
+  D1_NAME_PATTERN,
+  DATABASE_ID_PATTERN,
+  D1_SCHEMA_SQL,
+  NAMESPACE_ID_PATTERN,
+  PATH_PARAMS,
+  ROUTES,
+  isAllowed,
+} from "./routes"
 
 describe("routes", () => {
   test("KV and D1 routes constrain identifiers and the schema query body", () => {
@@ -193,6 +201,35 @@ describe("routes", () => {
     }
     for (const name of ["", "a", "ab", "A-bucket", "-ab", "ab-", "a_b", "a/b", "a b", "a".repeat(64)]) {
       expect(PATH_PARAMS.bucket_name?.test(name)).toBe(false)
+    }
+  })
+
+  test("the storage write routes are listed, each store with its own method and path", () => {
+    expect(ROUTES.r2BucketCreate).toEqual({ method: "POST", path: "/accounts/{account_id}/r2/buckets" })
+    expect(ROUTES.r2BucketDelete).toEqual({
+      method: "DELETE",
+      path: "/accounts/{account_id}/r2/buckets/{bucket_name}",
+    })
+    expect(ROUTES.kvNamespace).toEqual({
+      method: "GET",
+      path: "/accounts/{account_id}/storage/kv/namespaces/{namespace_id}",
+    })
+    expect(ROUTES.kvNamespaceCreate).toEqual({ method: "POST", path: "/accounts/{account_id}/storage/kv/namespaces" })
+    expect(ROUTES.kvNamespaceDelete).toEqual({
+      method: "DELETE",
+      path: "/accounts/{account_id}/storage/kv/namespaces/{namespace_id}",
+    })
+    expect(ROUTES.d1DatabaseCreate).toEqual({ method: "POST", path: "/accounts/{account_id}/d1/database" })
+    expect(ROUTES.d1DatabaseDelete).toEqual({
+      method: "DELETE",
+      path: "/accounts/{account_id}/d1/database/{database_id}",
+    })
+  })
+
+  test("a D1 database's name is 1–63 lowercase letters, digits, `-` and `_`, starting with a letter or digit", () => {
+    for (const name of ["a", "0", "my-db_2", "a".repeat(63)]) expect(D1_NAME_PATTERN.test(name)).toBe(true)
+    for (const name of ["", "A", "-a", "_a", "a b", "a/b", "a.b", "a".repeat(64), "a\n"]) {
+      expect(D1_NAME_PATTERN.test(name)).toBe(false)
     }
   })
 })

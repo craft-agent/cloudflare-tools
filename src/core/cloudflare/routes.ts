@@ -34,6 +34,9 @@ export const DOMAIN_NAME_PATTERN = /^(?=.{1,253}$)[a-z0-9_-]+(?:\.[a-z0-9_-]+)+$
 /** An R2 bucket's name: 3–63 lowercase letters, digits and `-`, starting and ending with a letter or digit. */
 export const BUCKET_NAME_PATTERN = /^[a-z0-9][a-z0-9-]{1,61}[a-z0-9]$/
 
+/** A D1 database's name: 1–63 lowercase letters, digits, `-` and `_`, starting with a letter or digit. */
+export const D1_NAME_PATTERN = /^[a-z0-9][a-z0-9_-]{0,62}$/
+
 /** The patterns a path parameter must match; a template may use only names listed here. `account_id` is always filled from the credential, never from a caller. */
 export const PATH_PARAMS: Readonly<Record<string, RegExp>> = Object.freeze({
   account_id: ID_PATTERN,
@@ -111,11 +114,18 @@ export const ROUTES = Object.freeze({
   r2BucketCors: defineRoute("GET", "/accounts/{account_id}/r2/buckets/{bucket_name}/cors"),
   r2BucketLifecycle: defineRoute("GET", "/accounts/{account_id}/r2/buckets/{bucket_name}/lifecycle"),
   r2BucketObjects: defineRoute("GET", "/accounts/{account_id}/r2/buckets/{bucket_name}/objects"),
+  r2BucketCreate: defineRoute("POST", "/accounts/{account_id}/r2/buckets"),
+  r2BucketDelete: defineRoute("DELETE", "/accounts/{account_id}/r2/buckets/{bucket_name}"),
   graphql: defineRoute("POST", "/graphql"),
   kvNamespaces: defineRoute("GET", "/accounts/{account_id}/storage/kv/namespaces"),
+  kvNamespace: defineRoute("GET", "/accounts/{account_id}/storage/kv/namespaces/{namespace_id}"),
   kvNamespaceKeys: defineRoute("GET", "/accounts/{account_id}/storage/kv/namespaces/{namespace_id}/keys"),
+  kvNamespaceCreate: defineRoute("POST", "/accounts/{account_id}/storage/kv/namespaces"),
+  kvNamespaceDelete: defineRoute("DELETE", "/accounts/{account_id}/storage/kv/namespaces/{namespace_id}"),
   d1Databases: defineRoute("GET", "/accounts/{account_id}/d1/database"),
   d1Database: defineRoute("GET", "/accounts/{account_id}/d1/database/{database_id}"),
+  d1DatabaseCreate: defineRoute("POST", "/accounts/{account_id}/d1/database"),
+  d1DatabaseDelete: defineRoute("DELETE", "/accounts/{account_id}/d1/database/{database_id}"),
   d1Schema: defineRoute("POST", "/accounts/{account_id}/d1/database/{database_id}/query", { sql: D1_SCHEMA_SQL }),
 } satisfies Record<string, Route>)
 
