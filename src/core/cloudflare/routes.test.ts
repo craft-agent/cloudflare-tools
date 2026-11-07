@@ -32,6 +32,10 @@ describe("routes", () => {
 
   test("the Workers routes are listed and their script parameter takes a Worker name only", () => {
     expect(ROUTES.workersScripts).toEqual({ method: "GET", path: "/accounts/{account_id}/workers/scripts" })
+    expect(ROUTES.workersDeploy).toEqual({
+      method: "POST",
+      path: "/accounts/{account_id}/workers/scripts/{script_name}/deployments",
+    })
     expect(ROUTES.workersVersions.path).toBe("/accounts/{account_id}/workers/scripts/{script_name}/versions")
     expect(ROUTES.workersRoutes).toEqual({ method: "GET", path: "/zones/{zone_id}/workers/routes" })
     expect(ROUTES.workersDomains).toEqual({ method: "GET", path: "/accounts/{account_id}/workers/domains" })

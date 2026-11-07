@@ -129,7 +129,7 @@ type ScriptSettings = {
   bindings: z.infer<typeof bindingSchema>[]
 }
 type WorkersDev = z.infer<typeof workersDevSchema>
-type Deployment = z.infer<typeof deploymentSchema>
+export type Deployment = z.infer<typeof deploymentSchema>
 type Version = z.infer<typeof versionSchema>
 
 /** One Worker as the list shows it; missing or odd fields become null, [] and false. */

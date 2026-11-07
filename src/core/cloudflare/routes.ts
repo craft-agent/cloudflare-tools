@@ -44,6 +44,7 @@ export const ROUTES = Object.freeze({
   workersScriptSettings: defineRoute("GET", "/accounts/{account_id}/workers/scripts/{script_name}/settings"),
   workersScriptSubdomain: defineRoute("GET", "/accounts/{account_id}/workers/scripts/{script_name}/subdomain"),
   workersDeployments: defineRoute("GET", "/accounts/{account_id}/workers/scripts/{script_name}/deployments"),
+  workersDeploy: defineRoute("POST", "/accounts/{account_id}/workers/scripts/{script_name}/deployments"),
   workersVersions: defineRoute("GET", "/accounts/{account_id}/workers/scripts/{script_name}/versions"),
   workersRoutes: defineRoute("GET", "/zones/{zone_id}/workers/routes"),
   workersDomains: defineRoute("GET", "/accounts/{account_id}/workers/domains"),
