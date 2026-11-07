@@ -109,6 +109,10 @@ const output = z.object({
 
 type Handler = (args: Args, ctx: ToolContext, deps?: CloudflareDeps) => Promise<z.input<typeof output>>
 
+function optionalScript(args: Args): string | undefined {
+  return args.script === undefined ? undefined : scriptName(args.script)
+}
+
 function requiredScript(args: Args): string {
   if (args.script === undefined) {
     throw new ToolError("invalid_argument", `Method "${args.method}" requires \`script\`.`)
@@ -120,13 +124,18 @@ function clientFor(args: Args, ctx: ToolContext, deps?: CloudflareDeps): Cloudfl
   return cloudflareClient(args.account, { ...deps, signal: ctx.signal })
 }
 
+function requireArray(value: unknown, response: string): unknown[] {
+  if (!Array.isArray(value)) {
+    throw new ToolError("upstream_error", `Cloudflare returned an unexpected Workers ${response} response.`)
+  }
+  return value
+}
+
 const list: Handler = async (args, ctx, deps) => {
   const client = clientFor(args, ctx, deps)
   const reply = await client.request<unknown>(ROUTES.workersScripts)
-  if (!Array.isArray(reply.result)) {
-    throw new ToolError("upstream_error", "Cloudflare returned an unexpected Workers list response.")
-  }
-  return { label: client.label, scripts: reply.result.map(shapeScript) }
+  const entries = requireArray(reply.result, "list")
+  return { label: client.label, scripts: entries.map(shapeScript) }
 }
 
 const view: Handler = async (args, ctx, deps) => {
@@ -159,10 +168,7 @@ async function readHistory(
   const reply = await requestScript<unknown>(client, route, script, {
     query: { page: args.page, per_page: args.per_page ?? DEFAULT_PER_PAGE },
   })
-  const entries = isPlainObject(reply.result) ? reply.result[key] : undefined
-  if (!Array.isArray(entries)) {
-    throw new ToolError("upstream_error", `Cloudflare returned an unexpected Workers ${key} response.`)
-  }
+  const entries = requireArray(isPlainObject(reply.result) ? reply.result[key] : undefined, key)
   return { label: client.label, script, entries, paging: pagingFields(reply.resultInfo) }
 }
 
@@ -186,14 +192,11 @@ const routes: Handler = async (args, ctx, deps) => {
   if (args.zone === undefined) {
     throw new ToolError("invalid_argument", 'Method "routes" requires `zone`.')
   }
-  const script = args.script === undefined ? undefined : scriptName(args.script)
+  const script = optionalScript(args)
   const client = clientFor(args, ctx, deps)
   const zone = await resolveZone(client, args.zone)
   const reply = await client.request<unknown>(ROUTES.workersRoutes, { path: { zone_id: zone.id } })
-  if (!Array.isArray(reply.result)) {
-    throw new ToolError("upstream_error", "Cloudflare returned an unexpected Workers routes response.")
-  }
-  const entries = reply.result.map(shapeRoute)
+  const entries = requireArray(reply.result, "routes").map(shapeRoute)
   return {
     label: client.label,
     zone: { id: zone.id, name: zone.name },
@@ -202,26 +205,21 @@ const routes: Handler = async (args, ctx, deps) => {
 }
 
 const domains: Handler = async (args, ctx, deps) => {
-  const script = args.script === undefined ? undefined : scriptName(args.script)
+  const script = optionalScript(args)
   const client = clientFor(args, ctx, deps)
   const zone = args.zone === undefined ? undefined : await resolveZone(client, args.zone)
   const reply = await client.request<unknown>(ROUTES.workersDomains, {
     query: { service: script, hostname: args.hostname?.trim().toLowerCase(), zone_id: zone?.id },
   })
-  if (!Array.isArray(reply.result)) {
-    throw new ToolError("upstream_error", "Cloudflare returned an unexpected Workers domains response.")
-  }
-  return { label: client.label, domains: reply.result.map(shapeDomain) }
+  const entries = requireArray(reply.result, "domains")
+  return { label: client.label, domains: entries.map(shapeDomain) }
 }
 
 const schedules: Handler = async (args, ctx, deps) => {
   const script = requiredScript(args)
   const client = clientFor(args, ctx, deps)
   const reply = await requestScript<unknown>(client, ROUTES.workersSchedules, script)
-  const entries = isPlainObject(reply.result) ? reply.result.schedules : undefined
-  if (!Array.isArray(entries)) {
-    throw new ToolError("upstream_error", "Cloudflare returned an unexpected Workers schedules response.")
-  }
+  const entries = requireArray(isPlainObject(reply.result) ? reply.result.schedules : undefined, "schedules")
   return { label: client.label, script, schedules: entries.map(shapeSchedule) }
 }
 
@@ -229,10 +227,8 @@ const secrets: Handler = async (args, ctx, deps) => {
   const script = requiredScript(args)
   const client = clientFor(args, ctx, deps)
   const reply = await requestScript<unknown>(client, ROUTES.workersSecrets, script)
-  if (!Array.isArray(reply.result)) {
-    throw new ToolError("upstream_error", "Cloudflare returned an unexpected Workers secrets response.")
-  }
-  return { label: client.label, script, secrets: reply.result.map(shapeSecret) }
+  const entries = requireArray(reply.result, "secrets")
+  return { label: client.label, script, secrets: entries.map(shapeSecret) }
 }
 
 const HANDLERS: Record<Method, Handler> = { list, view, deployments, versions, routes, domains, schedules, secrets }
