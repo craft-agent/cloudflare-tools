@@ -263,12 +263,40 @@ account it acts on:
 - With `account` left out, a call takes the unlabeled pair, or the only label
   when there is no unlabeled pair; with several labels and no unlabeled pair
   it fails and lists them.
+- A `CLOUDFLARE_API_TOKEN` set without `CLOUDFLARE_ACCOUNT_ID`, as one exported
+  for Wrangler may be, is still the unlabeled pair: a call that leaves
+  `account` out fails, even when a complete labeled pair is set. Pass
+  `account`, or unset the stray token.
 - Use an API token scoped to what the tools should do; a Global API Key is
   refused.
-- The variables reach the tools the way the settings do: in the environment
-  OpenCode, Hermes, Claude Code and Antigravity run in, and in the `env` of an
-  MCP host's server entry. Codex and Grok Build pass no environment to a
-  plugin's server, so add the server to their own MCP configuration instead.
+
+Set the variables where each harness starts the tools:
+
+- **OpenCode V2** runs the plugin in its background service, which keeps the
+  environment it started with: set them where the service starts, and restart
+  it (`opencode service restart`) after setting or changing one. **OpenCode
+  V1** runs the plugin in its own process, so the environment it runs in is
+  enough.
+- **Claude Code, Antigravity and Grok Build** pass the plugin's server the
+  environment the harness runs in.
+- **Hermes** passes the environment it runs in, but a gateway already running
+  keeps the one it started with: restart it (`hermes gateway restart`) after
+  setting or changing one.
+- **Codex** passes no environment to a plugin's server. Add a server of the
+  same name to `~/.codex/config.toml`, which takes the plugin server's place
+  (the plugin's skills stay), and name the variables to forward in `env_vars`.
+  `startup_timeout_sec` gives `npx` time to fetch the package on the first
+  start:
+
+  ```toml
+  [mcp_servers.cloudflare-tools]
+  command = "npx"
+  args = ["-y", "@craftsamo/cloudflare-tools@<version>"]
+  env_vars = ["CLOUDFLARE_API_TOKEN_<LABEL>", "CLOUDFLARE_ACCOUNT_ID_<LABEL>"]
+  startup_timeout_sec = 120
+  ```
+
+- **Any other MCP host** takes them in the `env` of its server entry.
 
 ## Layout
 
