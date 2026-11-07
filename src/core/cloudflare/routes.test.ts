@@ -59,6 +59,10 @@ describe("routes", () => {
     expect(isAllowed({ method: "GET", path: "/accounts/0123/logs/audit" })).toBe(false)
   })
 
+  test("the GraphQL route is a POST without path parameters", () => {
+    expect(ROUTES.graphql).toEqual({ method: "POST", path: "/graphql" })
+  })
+
   test("the Pages routes use a project name and deployment id", () => {
     expect(ROUTES.pagesProjects).toEqual({ method: "GET", path: "/accounts/{account_id}/pages/projects" })
     expect(ROUTES.pagesProject).toEqual({ method: "GET", path: "/accounts/{account_id}/pages/projects/{project_name}" })

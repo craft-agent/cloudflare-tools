@@ -1,6 +1,7 @@
 import { ToolError, isAbortError, isToolError, type ErrorCode } from "../errors"
 import { abortError } from "../exec"
 import { credentialValues, resolveCredential, type Credential, type Env } from "./credentials"
+import { graphqlFailure, scrubTokenIds } from "./graphql"
 import { maskCredentials } from "./mask"
 import { describeErrors, isPlainObject, mapStrings, parseEnvelope, type Received, type ResultInfo } from "./reply"
 import { ROUTES, isAllowed, type Route } from "./routes"
@@ -78,6 +79,30 @@ export class CloudflareClient {
    */
   async requestText(route: Route, options: RequestOptions = {}): Promise<string> {
     return this.#readText(await this.#dispatch(route, options, TEXT_ACCEPT))
+  }
+
+  /**
+   * Runs one GraphQL query (`POST /graphql`) and returns its `data`, every string masked.
+   * A reply with any `errors` is a failure (see `graphqlFailure`), also on HTTP 200; other failures throw as in `request`.
+   */
+  async requestGraphql<T = Record<string, unknown>>(query: string, variables: Record<string, unknown>): Promise<T> {
+    const received = await this.#dispatch(ROUTES.graphql, { body: { query, variables } }, JSON_ACCEPT)
+    const { status } = received
+    this.#refuseRedirect(status)
+    const envelope = parseEnvelope(received.text)
+    if (!envelope) throw this.#notAnEnvelope(status)
+    if (!isSuccessStatus(status)) {
+      return this.#fail(received, scrubTokenIds(describeErrors(envelope, received)), true)
+    }
+    const { errors, data }: Record<string, unknown> = envelope
+    if (Array.isArray(errors) && errors.length > 0) {
+      const failure = graphqlFailure(errors)
+      throw this.#error(failure.code, failure.message)
+    }
+    if (!isPlainObject(data)) {
+      throw this.#error("upstream_error", "Cloudflare answered the analytics query without data")
+    }
+    return mapStrings(data, (text) => this.#mask(text)) as T
   }
 
   /** The token's own status, from the verify endpoint of its kind. */

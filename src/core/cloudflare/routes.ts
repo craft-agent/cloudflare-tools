@@ -84,6 +84,7 @@ export const ROUTES = Object.freeze({
     "DELETE",
     "/accounts/{account_id}/pages/projects/{project_name}/domains/{domain_name}",
   ),
+  graphql: defineRoute("POST", "/graphql"),
 } satisfies Record<string, Route>)
 
 /** Whether a route is one of `ROUTES`, compared by method and path. */
