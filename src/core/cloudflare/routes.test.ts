@@ -138,4 +138,35 @@ describe("routes", () => {
       expect(PATH_PARAMS.deployment_id?.test(id)).toBe(false)
     }
   })
+
+  test("the R2 routes are listed and their bucket parameter takes a bucket name only", () => {
+    expect(ROUTES.r2Buckets).toEqual({ method: "GET", path: "/accounts/{account_id}/r2/buckets" })
+    expect(ROUTES.r2Bucket).toEqual({ method: "GET", path: "/accounts/{account_id}/r2/buckets/{bucket_name}" })
+    expect(ROUTES.r2BucketManagedDomain).toEqual({
+      method: "GET",
+      path: "/accounts/{account_id}/r2/buckets/{bucket_name}/domains/managed",
+    })
+    expect(ROUTES.r2BucketCustomDomains).toEqual({
+      method: "GET",
+      path: "/accounts/{account_id}/r2/buckets/{bucket_name}/domains/custom",
+    })
+    expect(ROUTES.r2BucketCors).toEqual({
+      method: "GET",
+      path: "/accounts/{account_id}/r2/buckets/{bucket_name}/cors",
+    })
+    expect(ROUTES.r2BucketLifecycle).toEqual({
+      method: "GET",
+      path: "/accounts/{account_id}/r2/buckets/{bucket_name}/lifecycle",
+    })
+    expect(ROUTES.r2BucketObjects).toEqual({
+      method: "GET",
+      path: "/accounts/{account_id}/r2/buckets/{bucket_name}/objects",
+    })
+    for (const name of ["my-bucket", "a-b", "012", "a".repeat(63)]) {
+      expect(PATH_PARAMS.bucket_name?.test(name)).toBe(true)
+    }
+    for (const name of ["", "a", "ab", "A-bucket", "-ab", "ab-", "a_b", "a/b", "a b", "a".repeat(64)]) {
+      expect(PATH_PARAMS.bucket_name?.test(name)).toBe(false)
+    }
+  })
 })

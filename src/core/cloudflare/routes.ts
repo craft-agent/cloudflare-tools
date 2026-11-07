@@ -17,6 +17,9 @@ export const DEPLOYMENT_ID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a
 /** A custom domain's name: a lowercase dot-separated hostname up to 253 characters. */
 export const DOMAIN_NAME_PATTERN = /^(?=.{1,253}$)[a-z0-9_-]+(?:\.[a-z0-9_-]+)+$/
 
+/** An R2 bucket's name: 3–63 lowercase letters, digits and `-`, starting and ending with a letter or digit. */
+export const BUCKET_NAME_PATTERN = /^[a-z0-9][a-z0-9-]{1,61}[a-z0-9]$/
+
 /** The patterns a path parameter must match; a template may use only names listed here. `account_id` is always filled from the credential, never from a caller. */
 export const PATH_PARAMS: Readonly<Record<string, RegExp>> = Object.freeze({
   account_id: ID_PATTERN,
@@ -27,6 +30,7 @@ export const PATH_PARAMS: Readonly<Record<string, RegExp>> = Object.freeze({
   project_name: PROJECT_NAME_PATTERN,
   deployment_id: DEPLOYMENT_ID_PATTERN,
   domain_name: DOMAIN_NAME_PATTERN,
+  bucket_name: BUCKET_NAME_PATTERN,
 })
 
 function defineRoute(method: Method, path: string): Route {
@@ -84,6 +88,13 @@ export const ROUTES = Object.freeze({
     "DELETE",
     "/accounts/{account_id}/pages/projects/{project_name}/domains/{domain_name}",
   ),
+  r2Buckets: defineRoute("GET", "/accounts/{account_id}/r2/buckets"),
+  r2Bucket: defineRoute("GET", "/accounts/{account_id}/r2/buckets/{bucket_name}"),
+  r2BucketManagedDomain: defineRoute("GET", "/accounts/{account_id}/r2/buckets/{bucket_name}/domains/managed"),
+  r2BucketCustomDomains: defineRoute("GET", "/accounts/{account_id}/r2/buckets/{bucket_name}/domains/custom"),
+  r2BucketCors: defineRoute("GET", "/accounts/{account_id}/r2/buckets/{bucket_name}/cors"),
+  r2BucketLifecycle: defineRoute("GET", "/accounts/{account_id}/r2/buckets/{bucket_name}/lifecycle"),
+  r2BucketObjects: defineRoute("GET", "/accounts/{account_id}/r2/buckets/{bucket_name}/objects"),
   graphql: defineRoute("POST", "/graphql"),
 } satisfies Record<string, Route>)
 
