@@ -3,16 +3,19 @@ import { toolError, ZONE_ID } from "../cloudflare/client.fixtures"
 import { fail, ok } from "../cloudflare/testing"
 import { annotations, invoke } from "../tool"
 import { cloudflareDnsRecordEdit } from "./edit"
-import { CNAME_RECORD, CTX, pathsOf, PLAIN_A_RECORD, setup, setupWith, SRV_RECORD, ZONE_PATH } from "./edit.fixtures"
+import { CTX, pathsOf, setup, setupWith, ZONE_PATH } from "./edit.fixtures"
 import {
   A_RECORD,
   A_RECORD_ID,
   batchRequests,
   batchRoute,
   CAA_RECORD,
+  CNAME_RECORD,
+  PLAIN_A_RECORD,
   recordPath,
   recordRoute,
   SHAPED_A_RECORD,
+  SRV_RECORD,
   TXT_RECORD,
 } from "./fixtures"
 import { shapeRecord } from "./records"

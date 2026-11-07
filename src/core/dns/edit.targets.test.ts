@@ -3,8 +3,8 @@ import { ACCOUNT_ID, rejection, ZONE_ID } from "../cloudflare/client.fixtures"
 import { fail } from "../cloudflare/testing"
 import { isAbortError } from "../errors"
 import { writeTargets } from "../targets"
-import { CNAME_RECORD, CTX, PLAIN_A_RECORD, setup, ZONE_PATH } from "./edit.fixtures"
-import { A_RECORD, A_RECORD_ID, batchRoute, recordPath, recordRoute } from "./fixtures"
+import { CTX, setup, ZONE_PATH } from "./edit.fixtures"
+import { A_RECORD, A_RECORD_ID, batchRoute, CNAME_RECORD, PLAIN_A_RECORD, recordPath, recordRoute } from "./fixtures"
 
 const BASE = `${ACCOUNT_ID}/zones/${ZONE_ID}/dns_records`
 
