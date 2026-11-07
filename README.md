@@ -175,6 +175,20 @@ The skill is [`cloudflare-dns`](skills/cloudflare-dns/SKILL.md), shown as
 `cloudflare-tools:cloudflare-dns` in Claude Code and
 `cloudflare-tools:dns` in Hermes.
 
+### Workers (`workers`)
+
+Workers: list them, read one's settings and bindings, and its deployments and versions. Building, uploading and deploying code stay with Wrangler.
+
+| Tool                      | What it does                                                            | Class |
+| ------------------------- | ----------------------------------------------------------------------- | ----- |
+| `cloudflare_workers_read` | `list` Workers, `view` one's settings, its `deployments` and `versions` | read  |
+
+The token needs the Workers Scripts Read permission.
+
+The skill is [`cloudflare-workers`](skills/cloudflare-workers/SKILL.md), shown as
+`cloudflare-tools:cloudflare-workers` in Claude Code and
+`cloudflare-tools:workers` in Hermes.
+
 ## Adding a tool
 
 1. Write the spec in `src/core/<domain>/<verb>.ts` with `defineTool`: an ID
