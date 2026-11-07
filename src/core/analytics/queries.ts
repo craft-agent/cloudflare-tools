@@ -25,3 +25,11 @@ export const COUNTRIES_QUERY = topQuery(TOP_DIMENSIONS.countries)
 
 /** The response statuses served. */
 export const STATUSES_QUERY = topQuery(TOP_DIMENSIONS.statuses)
+
+/** What the security features did: the 25 most frequent action and source pairs; no visitor field is selected. */
+export const SECURITY_QUERY =
+  "query($zoneTag: string, $since: Time, $until: Time) { viewer { zones(filter: {zoneTag: $zoneTag}) { firewallEventsAdaptiveGroups(limit: 25, orderBy: [count_DESC], filter: {datetime_geq: $since, datetime_lt: $until}) { count dimensions { action source } } } } }"
+
+/** The 25 latest security events with only time, action, source, country and path; no address, user agent or ray id. */
+export const SECURITY_EVENTS_QUERY =
+  "query($zoneTag: string, $since: Time, $until: Time) { viewer { zones(filter: {zoneTag: $zoneTag}) { firewallEventsAdaptive(limit: 25, orderBy: [datetime_DESC], filter: {datetime_geq: $since, datetime_lt: $until}) { datetime action source clientCountryName clientRequestPath } } } }"
