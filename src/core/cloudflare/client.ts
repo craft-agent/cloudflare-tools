@@ -15,6 +15,12 @@ const HTTP_REDIRECT_MIN = 300
 const HTTP_REDIRECT_MAX = 399
 const SECONDS_PATTERN = /^\d+$/
 const REJECTED_TOKEN_MESSAGE = "Cloudflare does not accept the token"
+const JSON_ACCEPT = "application/json"
+const TEXT_ACCEPT = "text/plain, application/json"
+
+function isSuccessStatus(status: number): boolean {
+  return status >= HTTP_OK_MIN && status < HTTP_REDIRECT_MIN
+}
 
 /** The `fetch` the client calls through; tests pass a fake. */
 export type FetchLike = (url: string, init: RequestInit) => Promise<Response>
@@ -66,6 +72,14 @@ export class CloudflareClient {
     return this.#call<T>(route, options, true)
   }
 
+  /**
+   * Like `request`, for a route whose success reply is plain text rather than the JSON envelope (a zone file).
+   * Returns the masked text; a failure, including a JSON envelope that reports one, throws as in `request`.
+   */
+  async requestText(route: Route, options: RequestOptions = {}): Promise<string> {
+    return this.#readText(await this.#dispatch(route, options, TEXT_ACCEPT))
+  }
+
   /** The token's own status, from the verify endpoint of its kind. */
   async verifyToken(): Promise<TokenStatus> {
     const { kind } = this.#credential
@@ -101,6 +115,11 @@ export class CloudflareClient {
   }
 
   async #call<T>(route: Route, options: RequestOptions, verifyOnAuthFailure: boolean): Promise<Reply<T>> {
+    const received = await this.#dispatch(route, options, JSON_ACCEPT)
+    return this.#read<T>(received, verifyOnAuthFailure)
+  }
+
+  async #dispatch(route: Route, options: RequestOptions, accept: string): Promise<Received> {
     if (!isAllowed(route)) {
       throw this.#error("internal_error", `${route.method} ${route.path} is not an allowed Cloudflare route.`)
     }
@@ -115,7 +134,7 @@ export class CloudflareClient {
 
     const headers: Record<string, string> = {
       Authorization: `Bearer ${this.#credential.token}`,
-      Accept: "application/json",
+      Accept: accept,
     }
     const init: RequestInit = { method: route.method, headers, redirect: "manual" }
     if (options.body !== undefined) {
@@ -123,8 +142,7 @@ export class CloudflareClient {
       init.body = JSON.stringify(options.body)
     }
 
-    const received = await this.#send(url, init)
-    return this.#read<T>(received, verifyOnAuthFailure)
+    return this.#send(url, init)
   }
 
   async #send(url: string, init: RequestInit): Promise<Received> {
@@ -158,20 +176,35 @@ export class CloudflareClient {
 
   async #read<T>(received: Received, verifyOnAuthFailure: boolean): Promise<Reply<T>> {
     const { status } = received
-    if (status >= HTTP_REDIRECT_MIN && status <= HTTP_REDIRECT_MAX) {
-      throw this.#error("upstream_error", "Cloudflare answered with a redirect, which is never followed")
-    }
+    this.#refuseRedirect(status)
     const envelope = parseEnvelope(received.text)
-    if (!envelope) {
-      throw this.#error("upstream_error", `Cloudflare answered HTTP ${status} with a body that is not a JSON object`)
-    }
-    if (status >= HTTP_OK_MIN && status < HTTP_REDIRECT_MIN && envelope.success !== false) {
+    if (!envelope) throw this.#notAnEnvelope(status)
+    if (isSuccessStatus(status) && envelope.success !== false) {
       return {
         result: mapStrings(envelope.result, (text) => this.#mask(text)) as T,
         resultInfo: mapStrings(envelope.result_info, (text) => this.#mask(text)) as ResultInfo | undefined,
       }
     }
     return this.#fail(received, describeErrors(envelope, received), verifyOnAuthFailure)
+  }
+
+  async #readText(received: Received): Promise<string> {
+    const { status } = received
+    this.#refuseRedirect(status)
+    const envelope = parseEnvelope(received.text)
+    if (isSuccessStatus(status) && envelope?.success !== false) return this.#mask(received.text)
+    if (!envelope) throw this.#notAnEnvelope(status)
+    return this.#fail(received, describeErrors(envelope, received), true)
+  }
+
+  #refuseRedirect(status: number): void {
+    if (status >= HTTP_REDIRECT_MIN && status <= HTTP_REDIRECT_MAX) {
+      throw this.#error("upstream_error", "Cloudflare answered with a redirect, which is never followed")
+    }
+  }
+
+  #notAnEnvelope(status: number): ToolError {
+    return this.#error("upstream_error", `Cloudflare answered HTTP ${status} with a body that is not a JSON object`)
   }
 
   async #fail(received: Received, message: string, verifyOnAuthFailure: boolean): Promise<never> {

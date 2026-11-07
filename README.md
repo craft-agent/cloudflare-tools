@@ -160,6 +160,21 @@ The skill is [`cloudflare-zones`](skills/cloudflare-zones/SKILL.md), shown as
 `cloudflare-tools:cloudflare-zones` in Claude Code and
 `cloudflare-tools:zones` in Hermes.
 
+### DNS (`dns`)
+
+DNS records: list, read one in full, export the zone file, add records, change them, and delete them.
+
+| Tool                           | What it does                                                                      | Class          |
+| ------------------------------ | --------------------------------------------------------------------------------- | -------------- |
+| `cloudflare_dns_read`          | `list` records, `view` one in full, or `export` the zone file in BIND form        | read           |
+| `cloudflare_dns_record_add`    | add 1–20 records of eight types in one all-or-nothing batch                       | add            |
+| `cloudflare_dns_record_edit`   | change 1–20 records by id in one all-or-nothing batch; never a record's type      | overwrite      |
+| `cloudflare_dns_record_delete` | delete 1–20 records by id, with replacements in the same batch; always asks first | administrative |
+
+The skill is [`cloudflare-dns`](skills/cloudflare-dns/SKILL.md), shown as
+`cloudflare-tools:cloudflare-dns` in Claude Code and
+`cloudflare-tools:dns` in Hermes.
+
 ## Adding a tool
 
 1. Write the spec in `src/core/<domain>/<verb>.ts` with `defineTool`: an ID
