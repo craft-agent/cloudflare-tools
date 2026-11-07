@@ -9,6 +9,7 @@ const ID_PATTERN = /^[0-9a-f]{32}$/
 export const PATH_PARAMS: Readonly<Record<string, RegExp>> = Object.freeze({
   account_id: ID_PATTERN,
   zone_id: ID_PATTERN,
+  dns_record_id: ID_PATTERN,
   setting_id: /^[a-z0-9_]{1,64}$/,
 })
 
@@ -31,6 +32,9 @@ export const ROUTES = Object.freeze({
   dnssec: defineRoute("GET", "/zones/{zone_id}/dnssec"),
   dnssecEdit: defineRoute("PATCH", "/zones/{zone_id}/dnssec"),
   cachePurge: defineRoute("POST", "/zones/{zone_id}/purge_cache"),
+  dnsRecords: defineRoute("GET", "/zones/{zone_id}/dns_records"),
+  dnsRecord: defineRoute("GET", "/zones/{zone_id}/dns_records/{dns_record_id}"),
+  dnsRecordsExport: defineRoute("GET", "/zones/{zone_id}/dns_records/export"),
 } satisfies Record<string, Route>)
 
 /** Whether a route is one of `ROUTES`, compared by method and path. */
