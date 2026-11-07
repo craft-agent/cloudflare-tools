@@ -177,13 +177,14 @@ The skill is [`cloudflare-dns`](skills/cloudflare-dns/SKILL.md), shown as
 
 ### Workers (`workers`)
 
-Workers: list them, read one's settings and bindings, deployments and versions, a zone's Worker routes, custom domains, cron triggers and secret names and types. Building, uploading and deploying code stay with Wrangler; routes, custom domains and cron triggers are read here and changed in `wrangler.toml`.
+Workers: list them, read one's settings and bindings, deployments and versions, a zone's Worker routes, custom domains, cron triggers and secret names and types, and roll a Worker back to versions that served before. Building, uploading and deploying new code stay with Wrangler; routes, custom domains and cron triggers are read here and changed in `wrangler.toml`.
 
-| Tool                      | What it does                                                                                        | Class |
-| ------------------------- | --------------------------------------------------------------------------------------------------- | ----- |
-| `cloudflare_workers_read` | `list`, `view`, `deployments`, `versions`, `routes`, `domains`, `schedules`, `secrets` (names only) | read  |
+| Tool                          | What it does                                                                                        | Class          |
+| ----------------------------- | --------------------------------------------------------------------------------------------------- | -------------- |
+| `cloudflare_workers_read`     | `list`, `view`, `deployments`, `versions`, `routes`, `domains`, `schedules`, `secrets` (names only) | read           |
+| `cloudflare_workers_rollback` | roll a Worker back to versions that served before; always asks first                                | administrative |
 
-The token needs Workers Scripts Read; `routes` also needs Workers Routes Read; `routes`, and `domains` with `zone`, need Zone Read to look the zone up.
+The token needs Workers Scripts Read; `routes` also needs Workers Routes Read; `routes`, and `domains` with `zone`, need Zone Read to look the zone up. The rollback needs Workers Scripts Write.
 
 The skill is [`cloudflare-workers`](skills/cloudflare-workers/SKILL.md), shown as
 `cloudflare-tools:cloudflare-workers` in Claude Code and

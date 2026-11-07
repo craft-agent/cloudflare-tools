@@ -4,6 +4,7 @@ import { cloudflareDnsRecordDelete } from "./core/dns/delete"
 import { cloudflareDnsRecordEdit } from "./core/dns/edit"
 import { cloudflareDnsRead } from "./core/dns/read"
 import { cloudflareWorkersRead } from "./core/workers/read"
+import { cloudflareWorkersRollback } from "./core/workers/rollback"
 import { cloudflareZoneCachePurge } from "./core/zone/cache-purge"
 import { cloudflareZoneCachePurgeAll } from "./core/zone/cache-purge-all"
 import { cloudflareZoneDnssecDisable, cloudflareZoneDnssecEnable } from "./core/zone/dnssec"
@@ -26,4 +27,5 @@ export const ALL_TOOLS: ToolSpec[] = [
   cloudflareDnsRecordEdit,
   cloudflareDnsRecordDelete,
   cloudflareWorkersRead,
+  cloudflareWorkersRollback,
 ]
