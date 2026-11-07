@@ -1,17 +1,18 @@
 ---
 name: cloudflare-dns
-description: "Use when looking up Cloudflare DNS records of a zone, reading one record in full by its id, exporting a zone's DNS records as a BIND zone file, adding DNS records (A, AAAA, CNAME, MX, TXT, NS, CAA, SRV) to a zone, or changing existing records (their content, name, TTL, proxying or comment)."
+description: "Use when looking up Cloudflare DNS records of a zone, reading one record in full by its id, exporting a zone's DNS records as a BIND zone file, adding DNS records (A, AAAA, CNAME, MX, TXT, NS, CAA, SRV) to a zone, changing existing records (their content, name, TTL, proxying or comment), or deleting records, also to replace them (for instance to change a record's type)."
 ---
 
 # DNS
 
-The read tool inspects the DNS records of a zone in the selected account, the add tool adds records to it, and the edit tool changes existing ones:
+The read tool inspects the DNS records of a zone in the selected account, the add tool adds records to it, the edit tool changes existing ones, and the delete tool removes them:
 
-| Tool                         | Does                                                                          | Writes       |
-| ---------------------------- | ----------------------------------------------------------------------------- | ------------ |
-| `cloudflare_dns_read`        | `list` records, `view` one record in full, or `export` the zone file (BIND)   | no           |
-| `cloudflare_dns_record_add`  | adds 1–20 records of eight types in one all-or-nothing batch                  | yes, adds    |
-| `cloudflare_dns_record_edit` | changes 1–20 records by id in one all-or-nothing batch; never a record's type | yes, changes |
+| Tool                           | Does                                                                                      | Writes                    |
+| ------------------------------ | ----------------------------------------------------------------------------------------- | ------------------------- |
+| `cloudflare_dns_read`          | `list` records, `view` one record in full, or `export` the zone file (BIND)               | no                        |
+| `cloudflare_dns_record_add`    | adds 1–20 records of eight types in one all-or-nothing batch                              | yes, adds                 |
+| `cloudflare_dns_record_edit`   | changes 1–20 records by id in one all-or-nothing batch; never a record's type             | yes, changes              |
+| `cloudflare_dns_record_delete` | deletes 1–20 records by id, with replacement records in the same batch; always asks first | yes, deletes; always asks |
 
 ## Methods
 
@@ -50,7 +51,7 @@ The records are added as one batch: Cloudflare adds all of them or none, and a r
 
 An error that says Cloudflare "may or may not have applied the whole batch" (a server error, a timeout, a dropped connection) does not tell whether the records exist. Read first with `cloudflare_dns_read` `list` (filter by `name` and `type`), and send again only the records that are missing; never resend blindly, since a second batch could add duplicates or be refused for the first one.
 
-An existing record is changed with `cloudflare_dns_record_edit` (below) and removed with `cloudflare_dns_record_delete`.
+An existing record is changed with `cloudflare_dns_record_edit` (below) and removed with `cloudflare_dns_record_delete` ("Deleting and replacing records", below).
 
 ## Changing records
 
@@ -64,6 +65,19 @@ An existing record is changed with `cloudflare_dns_record_edit` (below) and remo
 - **All or nothing.** Every entry is checked, and every record read, before anything is sent; then Cloudflare changes all of them or none, and a refusal leaves the zone as it was ("Nothing was changed."). The result lists each record under `changed`, in the order of `changes`, with `before` (the record as it was) and `after` (as Cloudflare reports it now; `null` if the reply did not include it), so the change can be checked and undone without another read.
 
 An error that says Cloudflare "may or may not have applied the whole batch" does not tell whether the records changed. Read them again with `cloudflare_dns_read` before sending the changes again.
+
+## Deleting and replacing records
+
+`cloudflare_dns_record_delete` takes `zone`, an optional `account`, `ids`, 1 to 20 record ids, and optionally `add`, up to 20 new records in the same form as `cloudflare_dns_record_add`. Get each `id` from `cloudflare_dns_read` `list`.
+
+- **By id, and always asked.** Only the ids named are deleted; nothing is chosen by a filter. The tool asks the person to confirm every time, and the question names the zone, the account, each record (`A www → 192.0.2.1`) and each replacement. The same `id` twice is refused. Records of any type can be deleted, including those the add and edit tools do not write.
+- **Replacements go in `add`.** Cloudflare runs the deletes before the adds in one batch, so a replacement can take a deleted record's name, and either both happen or neither does. The `add` records are checked with the rules of adding (`add[0] (A www)` names a refusal), and two identical ones are refused.
+- **Changing a type.** A record's type cannot change in place: delete the old record and add the new one with the same name in one call, for example `ids: [<the A record's id>]` with `add: [{ type: "CNAME", name: "www", content: "target.example.net" }]`. A swap of two records' values is one call too.
+- **Records of another product.** A record `list` marks `read_only` (a Worker's custom domain, for one) is managed by another Cloudflare product and is refused; delete it there. A missing `id` is `not_found`.
+- **After the delete.** A deleted record stops answering at once, but resolvers may keep its answer until its TTL runs out. The result lists `deleted`, the records as they were before (so they can be added again), and `added`, the records Cloudflare created.
+- **All or nothing.** Every record is read and every new one checked before anything is sent, and a refusal from Cloudflare leaves the zone as it was ("Nothing was changed.").
+
+An error that says Cloudflare "may or may not have applied the whole batch" does not tell whether the records were deleted. Read the zone with `cloudflare_dns_read` before sending the delete again.
 
 ## Record names and the account boundary
 

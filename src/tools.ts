@@ -1,5 +1,6 @@
 import { cloudflareAccountRead } from "./core/account/read"
 import { cloudflareDnsRecordAdd } from "./core/dns/add"
+import { cloudflareDnsRecordDelete } from "./core/dns/delete"
 import { cloudflareDnsRecordEdit } from "./core/dns/edit"
 import { cloudflareDnsRead } from "./core/dns/read"
 import { cloudflareZoneCachePurge } from "./core/zone/cache-purge"
@@ -22,4 +23,5 @@ export const ALL_TOOLS: ToolSpec[] = [
   cloudflareDnsRead,
   cloudflareDnsRecordAdd,
   cloudflareDnsRecordEdit,
+  cloudflareDnsRecordDelete,
 ]
