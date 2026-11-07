@@ -5,12 +5,16 @@ export type Route = { readonly method: Method; readonly path: string }
 
 const ID_PATTERN = /^[0-9a-f]{32}$/
 
+/** A Worker's name: 1–63 lowercase letters, digits, `-` and `_`. */
+export const SCRIPT_NAME_PATTERN = /^[a-z0-9_-]{1,63}$/
+
 /** The patterns a path parameter must match; a template may use only names listed here. `account_id` is always filled from the credential, never from a caller. */
 export const PATH_PARAMS: Readonly<Record<string, RegExp>> = Object.freeze({
   account_id: ID_PATTERN,
   zone_id: ID_PATTERN,
   dns_record_id: ID_PATTERN,
   setting_id: /^[a-z0-9_]{1,64}$/,
+  script_name: SCRIPT_NAME_PATTERN,
 })
 
 function defineRoute(method: Method, path: string): Route {
@@ -36,6 +40,16 @@ export const ROUTES = Object.freeze({
   dnsRecord: defineRoute("GET", "/zones/{zone_id}/dns_records/{dns_record_id}"),
   dnsRecordsExport: defineRoute("GET", "/zones/{zone_id}/dns_records/export"),
   dnsRecordsBatch: defineRoute("POST", "/zones/{zone_id}/dns_records/batch"),
+  workersScripts: defineRoute("GET", "/accounts/{account_id}/workers/scripts"),
+  workersScriptSettings: defineRoute("GET", "/accounts/{account_id}/workers/scripts/{script_name}/settings"),
+  workersScriptSubdomain: defineRoute("GET", "/accounts/{account_id}/workers/scripts/{script_name}/subdomain"),
+  workersDeployments: defineRoute("GET", "/accounts/{account_id}/workers/scripts/{script_name}/deployments"),
+  workersDeploy: defineRoute("POST", "/accounts/{account_id}/workers/scripts/{script_name}/deployments"),
+  workersVersions: defineRoute("GET", "/accounts/{account_id}/workers/scripts/{script_name}/versions"),
+  workersRoutes: defineRoute("GET", "/zones/{zone_id}/workers/routes"),
+  workersDomains: defineRoute("GET", "/accounts/{account_id}/workers/domains"),
+  workersSchedules: defineRoute("GET", "/accounts/{account_id}/workers/scripts/{script_name}/schedules"),
+  workersSecrets: defineRoute("GET", "/accounts/{account_id}/workers/scripts/{script_name}/secrets"),
 } satisfies Record<string, Route>)
 
 /** Whether a route is one of `ROUTES`, compared by method and path. */
