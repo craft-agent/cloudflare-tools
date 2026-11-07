@@ -1,6 +1,6 @@
 import { z } from "zod"
 import { accountArg, assertAcceptedKeys } from "../cloudflare/args"
-import { cloudflareClient, type CloudflareDeps } from "../cloudflare/client"
+import { cloudflareClient, type CloudflareClient, type CloudflareDeps } from "../cloudflare/client"
 import { isPlainObject, pagingFields } from "../cloudflare/reply"
 import { ROUTES } from "../cloudflare/routes"
 import { ToolError } from "../errors"
@@ -132,10 +132,18 @@ function requireProject(value: unknown): Record<string, unknown> {
   return value
 }
 
+function clientFor(args: Args, ctx: ToolContext, deps?: CloudflareDeps): CloudflareClient {
+  return cloudflareClient(args.account, { ...deps, signal: ctx.signal })
+}
+
+function pagingQuery(args: Args): { page?: number; per_page: number } {
+  return { page: args.page, per_page: args.per_page ?? DEFAULT_PER_PAGE }
+}
+
 const list: Handler = async (args, ctx, deps) => {
-  const client = cloudflareClient(args.account, { ...deps, signal: ctx.signal })
+  const client = clientFor(args, ctx, deps)
   const reply = await client.request<unknown>(ROUTES.pagesProjects, {
-    query: { page: args.page, per_page: args.per_page ?? DEFAULT_PER_PAGE },
+    query: pagingQuery(args),
   })
   return {
     label: client.label,
@@ -146,18 +154,18 @@ const list: Handler = async (args, ctx, deps) => {
 
 const view: Handler = async (args, ctx, deps) => {
   const project = requiredProject(args)
-  const client = cloudflareClient(args.account, { ...deps, signal: ctx.signal })
+  const client = clientFor(args, ctx, deps)
   const reply = await requestProject<unknown>(client, ROUTES.pagesProject, project)
   return { label: client.label, project: shapeProjectView(requireProject(reply.result)) }
 }
 
 const deployments: Handler = async (args, ctx, deps) => {
   const project = requiredProject(args)
-  const client = cloudflareClient(args.account, { ...deps, signal: ctx.signal })
+  const client = clientFor(args, ctx, deps)
   const [projectReply, reply] = await Promise.all([
     requestProject<unknown>(client, ROUTES.pagesProject, project),
     requestProject<unknown>(client, ROUTES.pagesDeployments, project, {
-      query: { env: args.environment, page: args.page, per_page: args.per_page ?? DEFAULT_PER_PAGE },
+      query: { env: args.environment, ...pagingQuery(args) },
     }),
   ])
   const live = shapeLiveRef(requireProject(projectReply.result).canonical_deployment)
@@ -176,7 +184,7 @@ const deployments: Handler = async (args, ctx, deps) => {
 const logs: Handler = async (args, ctx, deps) => {
   const project = requiredProject(args)
   const deployment = requiredDeployment(args)
-  const client = cloudflareClient(args.account, { ...deps, signal: ctx.signal })
+  const client = clientFor(args, ctx, deps)
   const reply = await requestProject<unknown>(client, ROUTES.pagesDeploymentLogs, project, {
     path: { deployment_id: deployment },
     notFoundMessage: `No deployment ${deployment} in Pages project ${project} of the account ${client.label}; cloudflare_pages_read deployments lists them.`,
@@ -204,15 +212,14 @@ const logs: Handler = async (args, ctx, deps) => {
 
 const domains: Handler = async (args, ctx, deps) => {
   const project = requiredProject(args)
-  const client = cloudflareClient(args.account, { ...deps, signal: ctx.signal })
+  const client = clientFor(args, ctx, deps)
   const reply = await requestProject<unknown>(client, ROUTES.pagesDomains, project, {
-    query: { page: args.page, per_page: args.per_page ?? DEFAULT_PER_PAGE },
+    query: pagingQuery(args),
   })
-  const entries = requireArray(reply.result, "domains")
   return {
     label: client.label,
     project,
-    domains: entries.map(shapeDomain),
+    domains: requireArray(reply.result, "domains").map(shapeDomain),
     ...pagingFields(reply.resultInfo),
   }
 }
