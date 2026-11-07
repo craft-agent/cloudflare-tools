@@ -58,8 +58,8 @@ test("view selects build fields and names and types only, sorted, with no secret
     "secret-variable-value",
     "f".repeat(32),
     "e".repeat(32),
-    "analytics-token-value",
-    "analytics-tag-value",
+    "analytics-token",
+    "analytics-tag",
     "service-target-value",
     "ignored-value",
   ])
