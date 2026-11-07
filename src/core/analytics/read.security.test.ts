@@ -159,3 +159,24 @@ test("a forbidden query says which permission the token needs", async () => {
     expect(error.message).toEndWith(" The token needs Zone → Analytics → Read.")
   }
 })
+
+const PLAN_LACKS_DATA = `zone '${ZONE_ID}' does not have access to the path. Refer to this page for more details about access controls: https://developers.cloudflare.com/analytics/graphql-api/errors/`
+
+test("a dataset the plan does not offer is not blamed on the token, and security points at security_events", async () => {
+  const { tool } = toolFor(graphqlRoute(graphqlFailure(PLAN_LACKS_DATA, "authz")))
+  const error = errorOf(await rejection(invoke(tool, { method: "security", zone: ZONE_NAME }, CTX)))
+
+  expect(error.code).toBe("forbidden")
+  expect(error.message).toBe(
+    `${PLAN_LACKS_DATA}. Cloudflare does not offer this report's data on this plan; the token's permissions are not the cause. security_events lists the security events themselves, on every plan.`,
+  )
+})
+
+test("another report the plan does not offer says so without pointing elsewhere", async () => {
+  const { tool } = toolFor(graphqlRoute(graphqlFailure(PLAN_LACKS_DATA, "authz")))
+  const error = errorOf(await rejection(invoke(tool, { method: "statuses", zone: ZONE_NAME }, CTX)))
+
+  expect(error.code).toBe("forbidden")
+  expect(error.message).toEndWith("the token's permissions are not the cause.")
+  expect(error.message).not.toContain("The token needs")
+})

@@ -53,6 +53,11 @@ const ACCEPTED_KEYS: Record<Method, readonly string[]> = {
 
 const ZONE_PERMISSION_HINT = "The token needs Zone → Analytics → Read."
 const ACCOUNT_PERMISSION_HINT = "The token needs Account → Account Analytics → Read."
+/** Cloudflare's refusal of a dataset the plan does not offer, as opposed to a permission the token lacks. */
+const PLAN_LACKS_DATA = /does not have access to the path/i
+const PLAN_LACKS_DATA_NOTE =
+  "Cloudflare does not offer this report's data on this plan; the token's permissions are not the cause."
+const SECURITY_INSTEAD = "security_events lists the security events themselves, on every plan."
 
 const input = z.object({
   account: accountArg,
@@ -123,18 +128,29 @@ function clientFor(args: Args, ctx: ToolContext, deps: AnalyticsDeps): Cloudflar
   return cloudflareClient(args.account, { ...cloudflare, signal: ctx.signal })
 }
 
-/** Runs an analytics query; a `forbidden` failure gets `hint`, which says which permission the token lacks. */
+/** What a `forbidden` query adds: the permission the token needs, and what to read instead where the plan lacks the data. */
+type ForbiddenNotes = { permission: string; instead?: string }
+
+const ZONE_NOTES: ForbiddenNotes = { permission: ZONE_PERMISSION_HINT }
+
+/**
+ * Runs an analytics query. A `forbidden` failure says why: a dataset the plan does not offer ("does not have access to
+ * the path") is not the token's fault, so it says so and names `instead`; any other names the permission the token needs.
+ */
 async function queryAnalytics(
   client: CloudflareClient,
   query: string,
   variables: Record<string, unknown>,
-  hint = ZONE_PERMISSION_HINT,
+  notes: ForbiddenNotes = ZONE_NOTES,
 ) {
   try {
     return await client.requestGraphql(query, variables)
   } catch (error) {
     if (isToolError(error) && error.code === "forbidden") {
-      throw new ToolError("forbidden", `${sentence(error.message)} ${hint}`, { cause: error })
+      const note = PLAN_LACKS_DATA.test(error.message)
+        ? [PLAN_LACKS_DATA_NOTE, notes.instead].filter(Boolean).join(" ")
+        : notes.permission
+      throw new ToolError("forbidden", `${sentence(error.message)} ${note}`, { cause: error })
     }
     throw error
   }
@@ -181,13 +197,14 @@ function timeReport(
   query: string,
   dataset: string,
   build: (rows: unknown[]) => Partial<z.input<typeof output>>,
+  notes: ForbiddenNotes = ZONE_NOTES,
 ): Handler {
   return async (args, ctx, deps) => {
     const ref = requiredZone(args)
     const client = clientFor(args, ctx, deps)
     const zone = await resolveZone(client, ref)
     const range = timeRange(args, now(deps))
-    const data = await queryAnalytics(client, query, { zoneTag: zone.id, ...range })
+    const data = await queryAnalytics(client, query, { zoneTag: zone.id, ...range }, notes)
     return { label: client.label, zone: zone.name, ...range, ...build(datasetOf(data, dataset)) }
   }
 }
@@ -205,12 +222,9 @@ const workers: Handler = async (args, ctx, deps) => {
   const client = clientFor(args, ctx, deps)
   const range = timeRange(args, now(deps))
   const variables = { accountTag: client.accountId, ...(script === undefined ? {} : { scriptName: script }), ...range }
-  const data = await queryAnalytics(
-    client,
-    script === undefined ? WORKERS_QUERY : WORKER_QUERY,
-    variables,
-    ACCOUNT_PERMISSION_HINT,
-  )
+  const data = await queryAnalytics(client, script === undefined ? WORKERS_QUERY : WORKER_QUERY, variables, {
+    permission: ACCOUNT_PERMISSION_HINT,
+  })
   const rows = shapeRows(datasetOf(data, "workersInvocationsAdaptive", "accounts"), shapeWorkerRow)
   return { label: client.label, ...range, rows }
 }
@@ -220,9 +234,12 @@ const HANDLERS: Record<Method, Handler> = {
   paths: topReport(PATHS_QUERY, TOP_DIMENSIONS.paths, true),
   countries: topReport(COUNTRIES_QUERY, TOP_DIMENSIONS.countries, false),
   statuses: topReport(STATUSES_QUERY, TOP_DIMENSIONS.statuses, false),
-  security: timeReport(SECURITY_QUERY, "firewallEventsAdaptiveGroups", (rows) => ({
-    groups: shapeRows(rows, shapeSecurityGroup),
-  })),
+  security: timeReport(
+    SECURITY_QUERY,
+    "firewallEventsAdaptiveGroups",
+    (rows) => ({ groups: shapeRows(rows, shapeSecurityGroup) }),
+    { permission: ZONE_PERMISSION_HINT, instead: SECURITY_INSTEAD },
+  ),
   security_events: timeReport(SECURITY_EVENTS_QUERY, "firewallEventsAdaptive", (rows) => ({
     events: shapeRows(rows, shapeSecurityEvent),
   })),
@@ -237,7 +254,7 @@ export function defineAnalyticsRead(deps: AnalyticsDeps = {}): ToolSpec<typeof i
     description: [
       "Read a zone's analytics: 'traffic' returns requests, bytes, cached requests and bytes, threats, page views and unique visitors for each UTC day, with totals over the range;",
       "'paths', 'countries' and 'statuses' return the 25 most frequent request paths, client countries and response statuses with their request counts.",
-      "'security' counts what Cloudflare's security features did over the range, by action (such as block, challenge or log) and the feature that acted (`source`), most first;",
+      "'security' counts what Cloudflare's security features did over the range, by action (such as block, challenge or log) and the feature that acted (`source`), most first, on the plans that offer it (not Free);",
       "'security_events' lists the latest 25 security events with time, action, feature, country and path, never a visitor's address.",
       "'workers' reads the account's Workers, not a zone: invocations, errors, subrequests and CPU time in microseconds (median and 99th percentile) per Worker and status, most invocations first; `script` limits it to one Worker, and it takes no `zone`.",
       "`since` and `until` are UTC dates (2026-11-01) or UTC times (2026-11-01T09:00:00Z);",

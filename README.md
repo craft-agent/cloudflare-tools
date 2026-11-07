@@ -177,7 +177,7 @@ The skill is [`cloudflare-dns`](skills/cloudflare-dns/SKILL.md), shown as
 
 ### Analytics (`analytics`)
 
-Analytics: read a zone's traffic per day (requests, bandwidth, cache hits, threats, page views and unique visitors), the most requested paths, client countries and response statuses, what the security features did and the latest security events, and the account's Workers invocations, errors and CPU time, over a recent time range. This toolset is off by default; turn it on with the `toolsets` setting (see [Settings](#settings)).
+Analytics: read a zone's traffic per day (requests, bandwidth, cache hits, threats, page views and unique visitors), the most requested paths, client countries and response statuses, what the security features did (not on the Free plan) and the latest security events, and the account's Workers invocations, errors and CPU time, over a recent time range. This toolset is off by default; turn it on with the `toolsets` setting (see [Settings](#settings)).
 
 | Tool                        | What it does                                                                                                    | Class |
 | --------------------------- | --------------------------------------------------------------------------------------------------------------- | ----- |
