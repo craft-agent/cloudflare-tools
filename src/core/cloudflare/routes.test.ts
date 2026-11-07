@@ -25,6 +25,7 @@ describe("routes", () => {
   test("the DNS record routes are listed and their id parameter takes 32 hex digits only", () => {
     expect(ROUTES.dnsRecord.path).toBe("/zones/{zone_id}/dns_records/{dns_record_id}")
     expect(ROUTES.dnsRecordsExport.path).toBe("/zones/{zone_id}/dns_records/export")
+    expect(ROUTES.dnsRecordsBatch).toEqual({ method: "POST", path: "/zones/{zone_id}/dns_records/batch" })
     expect(PATH_PARAMS.dns_record_id?.test("a".repeat(32))).toBe(true)
     expect(PATH_PARAMS.dns_record_id?.test("export")).toBe(false)
   })

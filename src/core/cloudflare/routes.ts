@@ -35,6 +35,7 @@ export const ROUTES = Object.freeze({
   dnsRecords: defineRoute("GET", "/zones/{zone_id}/dns_records"),
   dnsRecord: defineRoute("GET", "/zones/{zone_id}/dns_records/{dns_record_id}"),
   dnsRecordsExport: defineRoute("GET", "/zones/{zone_id}/dns_records/export"),
+  dnsRecordsBatch: defineRoute("POST", "/zones/{zone_id}/dns_records/batch"),
 } satisfies Record<string, Route>)
 
 /** Whether a route is one of `ROUTES`, compared by method and path. */
