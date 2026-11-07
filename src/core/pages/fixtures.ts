@@ -77,8 +77,8 @@ export const PROJECT_ENTRY = {
     destination_dir: "dist",
     root_dir: "/",
     build_caching: true,
-    web_analytics_token: "analytics-token-value",
-    web_analytics_tag: "analytics-tag-value",
+    web_analytics_token: "analytics-token",
+    web_analytics_tag: "analytics-tag",
   },
   deployment_configs: {
     production: {
