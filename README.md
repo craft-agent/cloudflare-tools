@@ -160,6 +160,18 @@ The skill is [`cloudflare-zones`](skills/cloudflare-zones/SKILL.md), shown as
 `cloudflare-tools:cloudflare-zones` in Claude Code and
 `cloudflare-tools:zones` in Hermes.
 
+### DNS (`dns`)
+
+DNS records: list, read one in full, and export the zone file.
+
+| Tool                  | What it does                                                               | Class |
+| --------------------- | -------------------------------------------------------------------------- | ----- |
+| `cloudflare_dns_read` | `list` records, `view` one in full, or `export` the zone file in BIND form | read  |
+
+The skill is [`cloudflare-dns`](skills/cloudflare-dns/SKILL.md), shown as
+`cloudflare-tools:cloudflare-dns` in Claude Code and
+`cloudflare-tools:dns` in Hermes.
+
 ## Adding a tool
 
 1. Write the spec in `src/core/<domain>/<verb>.ts` with `defineTool`: an ID
