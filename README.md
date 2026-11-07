@@ -190,6 +190,20 @@ The skill is [`cloudflare-workers`](skills/cloudflare-workers/SKILL.md), shown a
 `cloudflare-tools:cloudflare-workers` in Claude Code and
 `cloudflare-tools:workers` in Hermes.
 
+### Pages (`pages`)
+
+Pages: list projects, read their build settings, environment variable names and bindings, and production and preview deployments, including which one is live. Building and deploying new code stay with Git and Wrangler.
+
+| Tool                    | What it does                                   | Class |
+| ----------------------- | ---------------------------------------------- | ----- |
+| `cloudflare_pages_read` | `list` projects, `view` one, its `deployments` | read  |
+
+The token needs the Pages Read permission.
+
+The skill is [`cloudflare-pages`](skills/cloudflare-pages/SKILL.md), shown as
+`cloudflare-tools:cloudflare-pages` in Claude Code and
+`cloudflare-tools:pages` in Hermes.
+
 ## Adding a tool
 
 1. Write the spec in `src/core/<domain>/<verb>.ts` with `defineTool`: an ID
