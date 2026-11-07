@@ -3,13 +3,21 @@ import { ToolError } from "../errors"
 
 const APEX = "@"
 const WILDCARD = "*"
-const MAX_NAME_LENGTH = 253
-const MAX_LABEL_LENGTH = 63
-const LABEL_PATTERN = /^[a-z0-9_-]+$/
-const NON_ASCII_PATTERN = /[^\x00-\x7f]/
+export const MAX_NAME_LENGTH = 253
+export const MAX_LABEL_LENGTH = 63
+export const LABEL_PATTERN = /^[a-z0-9_-]+$/
+export const NON_ASCII_PATTERN = /[^\x00-\x7f]/
 
 function refuse(input: string, reason: string): never {
   throw new ToolError("invalid_argument", `"${input}" is not a valid record name: ${reason}.`)
+}
+
+function labelProblem(label: string): string | undefined {
+  if (label === "") return "it has an empty label"
+  if (label.length > MAX_LABEL_LENGTH) return `a label is longer than ${MAX_LABEL_LENGTH} characters`
+  if (!LABEL_PATTERN.test(label)) return `label "${label}" may hold only letters, digits, \`-\` and \`_\``
+  if (label.startsWith("-") || label.endsWith("-")) return `label "${label}" starts or ends with \`-\``
+  return undefined
 }
 
 function isUnder(name: string, zone: string): boolean {
@@ -26,19 +34,19 @@ function toAscii(name: string, input: string): string {
 }
 
 function assertValidLabel(label: string, index: number, input: string): void {
-  if (label === "") refuse(input, "it has an empty label")
-  if (label.length > MAX_LABEL_LENGTH) refuse(input, `a label is longer than ${MAX_LABEL_LENGTH} characters`)
   if (label === WILDCARD) {
     if (index !== 0) refuse(input, `\`${WILDCARD}\` is allowed only as the whole leftmost label`)
     return
   }
-  if (!LABEL_PATTERN.test(label)) {
+  const problem = labelProblem(label)
+  if (problem === undefined) return
+  if (!LABEL_PATTERN.test(label) && label !== "" && label.length <= MAX_LABEL_LENGTH) {
     refuse(
       input,
       `label "${label}" may hold only letters, digits, \`-\` and \`_\` (\`${WILDCARD}\` only as the whole leftmost label)`,
     )
   }
-  if (label.startsWith("-") || label.endsWith("-")) refuse(input, `label "${label}" starts or ends with \`-\``)
+  refuse(input, problem)
 }
 
 /**
@@ -72,4 +80,29 @@ export function recordName(input: string, zone: string): string {
 export function relativeName(name: string, zone: string): string {
   if (name === zone) return APEX
   return name.endsWith(`.${zone}`) ? name.slice(0, -(zone.length + 1)) : name
+}
+
+/** `(${type} ${relativeName})` describing a record in its zone. */
+export function recordLabel(type: string, name: string, zone: string): string {
+  return `(${type} ${relativeName(name, zone)})`
+}
+
+/**
+ * The lowercase ASCII form of a target hostname (trimmed, trailing dot removed, IDN as punycode).
+ * Returns the normalized host or what prevents it from being a valid target hostname.
+ */
+export function targetHostname(value: string): { host: string; problem?: never } | { host?: never; problem: string } {
+  const lower = value.trim().toLowerCase()
+  const bare = lower.endsWith(".") ? lower.slice(0, -1) : lower
+  const wasNonAscii = NON_ASCII_PATTERN.test(bare)
+  const host = wasNonAscii ? domainToASCII(bare) : bare
+  if (host === "") return { problem: wasNonAscii ? "it holds a character a DNS name cannot hold" : "it is empty" }
+  if (host.includes("*")) return { problem: "a wildcard `*` is not allowed here" }
+  if (!host.includes(".")) return { problem: "it needs at least one dot, as in mail.example.com" }
+  if (host.length > MAX_NAME_LENGTH) return { problem: `it is longer than ${MAX_NAME_LENGTH} characters` }
+  for (const label of host.split(".")) {
+    const problem = labelProblem(label)
+    if (problem !== undefined) return { problem }
+  }
+  return { host }
 }
