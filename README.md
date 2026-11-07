@@ -192,13 +192,14 @@ The skill is [`cloudflare-workers`](skills/cloudflare-workers/SKILL.md), shown a
 
 ### Pages (`pages`)
 
-Pages: list projects, read their build settings, environment variable names and bindings, production and preview deployments, including which one is live, a build's logs, and custom domains. Building and deploying new code stay with Git and Wrangler.
+Pages: list projects, read their build settings, environment variable names and bindings, production and preview deployments, including which one is live, a build's logs, and custom domains, and switch a project's production back or forward to a deployment that built successfully. Building and deploying new code stay with Git and Wrangler.
 
-| Tool                    | What it does                                                                       | Class |
-| ----------------------- | ---------------------------------------------------------------------------------- | ----- |
-| `cloudflare_pages_read` | `list` projects, `view` one, its `deployments`, a build's `logs`, custom `domains` | read  |
+| Tool                        | What it does                                                                       | Class          |
+| --------------------------- | ---------------------------------------------------------------------------------- | -------------- |
+| `cloudflare_pages_read`     | `list` projects, `view` one, its `deployments`, a build's `logs`, custom `domains` | read           |
+| `cloudflare_pages_rollback` | switch production to a deployment that built successfully; always asks first       | administrative |
 
-The token needs the Pages Read permission.
+The token needs the Pages Read permission. The rollback needs Pages Write.
 
 The skill is [`cloudflare-pages`](skills/cloudflare-pages/SKILL.md), shown as
 `cloudflare-tools:cloudflare-pages` in Claude Code and
