@@ -42,11 +42,6 @@ export const dnsSchema = z
   })
   .nullable()
 
-/** The failed steps of a call that already did its write, keyed by step. */
-export const stepErrorsSchema = z
-  .record(z.string(), z.string())
-  .describe("The steps that failed after the write was done, keyed by step, as `code: message`; absent when none did.")
-
 /** Common leading output fields of a domain write tool result. */
 export const domainOutputBase = {
   label: z.string().describe("The account label."),

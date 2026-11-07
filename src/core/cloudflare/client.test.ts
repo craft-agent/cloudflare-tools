@@ -17,11 +17,29 @@ import {
   verifyRoute,
 } from "./client.fixtures"
 import { MASK } from "./mask"
-import { ROUTES } from "./routes"
+import { D1_SCHEMA_SQL, ROUTES } from "./routes"
 import { fakeCloudflare, ok } from "./testing"
 import { BASE_URL } from "./url"
 
 describe("CloudflareClient.request", () => {
+  test("sends only the schema route's fixed body and refuses caller bodies and look-alikes", async () => {
+    const databaseId = "12345678-1234-abcd-1234-123456789abc"
+    const { client, requests } = clientFor([
+      { method: "POST", path: `/accounts/${ACCOUNT_ID}/d1/database/${databaseId}/query`, reply: ok([]) },
+    ])
+    const options = { path: { database_id: databaseId } }
+    for (const body of [{ sql: "DROP TABLE users" }, { sql: D1_SCHEMA_SQL }, null]) {
+      const error = await toolError(client.request(ROUTES.d1Schema, { ...options, body }))
+      expect(error.code).toBe("internal_error")
+      expect(error.message).toContain("sends only its own fixed body")
+    }
+    const error = await toolError(client.request({ ...ROUTES.d1Schema, body: { sql: "DROP TABLE users" } }, options))
+    expect(error.code).toBe("internal_error")
+    expect(requests).toEqual([])
+    await client.request(ROUTES.d1Schema, options)
+    expect(requests[0]!.body).toEqual({ sql: D1_SCHEMA_SQL })
+    expect(requests[0]!.headers["content-type"]).toBe("application/json")
+  })
   test("sends the method, URL, headers and body, and nothing else", async () => {
     const { client, requests } = clientFor([{ method: "GET", path: AUDIT_PATH, reply: ok([]) }])
     await client.request(ROUTES.auditLogs)

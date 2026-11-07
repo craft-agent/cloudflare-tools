@@ -1,7 +1,41 @@
 import { describe, expect, test } from "bun:test"
-import { PATH_PARAMS, ROUTES, isAllowed } from "./routes"
+import {
+  D1_NAME_PATTERN,
+  DATABASE_ID_PATTERN,
+  D1_SCHEMA_SQL,
+  NAMESPACE_ID_PATTERN,
+  PATH_PARAMS,
+  ROUTES,
+  isAllowed,
+} from "./routes"
 
 describe("routes", () => {
+  test("KV and D1 routes constrain identifiers and the schema query body", () => {
+    expect(ROUTES.kvNamespaces).toEqual({ method: "GET", path: "/accounts/{account_id}/storage/kv/namespaces" })
+    expect(ROUTES.kvNamespaceKeys).toEqual({
+      method: "GET",
+      path: "/accounts/{account_id}/storage/kv/namespaces/{namespace_id}/keys",
+    })
+    expect(ROUTES.d1Databases).toEqual({ method: "GET", path: "/accounts/{account_id}/d1/database" })
+    expect(ROUTES.d1Database).toEqual({ method: "GET", path: "/accounts/{account_id}/d1/database/{database_id}" })
+    expect(ROUTES.d1Schema).toEqual({
+      method: "POST",
+      path: "/accounts/{account_id}/d1/database/{database_id}/query",
+      body: { sql: D1_SCHEMA_SQL },
+    })
+    expect(Object.isFrozen(ROUTES.d1Schema.body)).toBe(true)
+    expect(PATH_PARAMS.namespace_id).toBe(NAMESPACE_ID_PATTERN)
+    expect(PATH_PARAMS.database_id).toBe(DATABASE_ID_PATTERN)
+    expect(NAMESPACE_ID_PATTERN.test("a".repeat(32))).toBe(true)
+    expect(DATABASE_ID_PATTERN.test("12345678-1234-abcd-1234-123456789abc")).toBe(true)
+    for (const value of ["", "A".repeat(32), "a".repeat(31), "a".repeat(33), "../keys"]) {
+      expect(NAMESPACE_ID_PATTERN.test(value)).toBe(false)
+      expect(DATABASE_ID_PATTERN.test(value)).toBe(false)
+    }
+    expect(DATABASE_ID_PATTERN.test("12345678-1234-ABCD-1234-123456789abc")).toBe(false)
+    expect(isAllowed({ ...ROUTES.d1Schema, body: { sql: "DELETE FROM users" } })).toBe(false)
+    expect(isAllowed({ method: ROUTES.d1Schema.method, path: ROUTES.d1Schema.path })).toBe(false)
+  })
   test("every template uses only known path parameters", () => {
     for (const route of Object.values(ROUTES)) {
       const names = [...route.path.matchAll(/\{([^{}]*)\}/g)].map((match) => match[1] ?? "")
@@ -18,7 +52,7 @@ describe("routes", () => {
   test("isAllowed accepts every listed route, also as a hand-made copy", () => {
     for (const route of Object.values(ROUTES)) {
       expect(isAllowed(route)).toBe(true)
-      expect(isAllowed({ method: route.method, path: route.path })).toBe(true)
+      expect(isAllowed({ ...route })).toBe(true)
     }
   })
 
@@ -136,6 +170,66 @@ describe("routes", () => {
       "11111111-1111-4111-8111-AAAAAAAAAAAA",
     ]) {
       expect(PATH_PARAMS.deployment_id?.test(id)).toBe(false)
+    }
+  })
+
+  test("the R2 routes are listed and their bucket parameter takes a bucket name only", () => {
+    expect(ROUTES.r2Buckets).toEqual({ method: "GET", path: "/accounts/{account_id}/r2/buckets" })
+    expect(ROUTES.r2Bucket).toEqual({ method: "GET", path: "/accounts/{account_id}/r2/buckets/{bucket_name}" })
+    expect(ROUTES.r2BucketManagedDomain).toEqual({
+      method: "GET",
+      path: "/accounts/{account_id}/r2/buckets/{bucket_name}/domains/managed",
+    })
+    expect(ROUTES.r2BucketCustomDomains).toEqual({
+      method: "GET",
+      path: "/accounts/{account_id}/r2/buckets/{bucket_name}/domains/custom",
+    })
+    expect(ROUTES.r2BucketCors).toEqual({
+      method: "GET",
+      path: "/accounts/{account_id}/r2/buckets/{bucket_name}/cors",
+    })
+    expect(ROUTES.r2BucketLifecycle).toEqual({
+      method: "GET",
+      path: "/accounts/{account_id}/r2/buckets/{bucket_name}/lifecycle",
+    })
+    expect(ROUTES.r2BucketObjects).toEqual({
+      method: "GET",
+      path: "/accounts/{account_id}/r2/buckets/{bucket_name}/objects",
+    })
+    for (const name of ["my-bucket", "a-b", "012", "a".repeat(63)]) {
+      expect(PATH_PARAMS.bucket_name?.test(name)).toBe(true)
+    }
+    for (const name of ["", "a", "ab", "A-bucket", "-ab", "ab-", "a_b", "a/b", "a b", "a".repeat(64)]) {
+      expect(PATH_PARAMS.bucket_name?.test(name)).toBe(false)
+    }
+  })
+
+  test("the storage write routes are listed, each store with its own method and path", () => {
+    expect(ROUTES.r2BucketCreate).toEqual({ method: "POST", path: "/accounts/{account_id}/r2/buckets" })
+    expect(ROUTES.r2BucketDelete).toEqual({
+      method: "DELETE",
+      path: "/accounts/{account_id}/r2/buckets/{bucket_name}",
+    })
+    expect(ROUTES.kvNamespace).toEqual({
+      method: "GET",
+      path: "/accounts/{account_id}/storage/kv/namespaces/{namespace_id}",
+    })
+    expect(ROUTES.kvNamespaceCreate).toEqual({ method: "POST", path: "/accounts/{account_id}/storage/kv/namespaces" })
+    expect(ROUTES.kvNamespaceDelete).toEqual({
+      method: "DELETE",
+      path: "/accounts/{account_id}/storage/kv/namespaces/{namespace_id}",
+    })
+    expect(ROUTES.d1DatabaseCreate).toEqual({ method: "POST", path: "/accounts/{account_id}/d1/database" })
+    expect(ROUTES.d1DatabaseDelete).toEqual({
+      method: "DELETE",
+      path: "/accounts/{account_id}/d1/database/{database_id}",
+    })
+  })
+
+  test("a D1 database's name is 1–63 lowercase letters, digits, `-` and `_`, starting with a letter or digit", () => {
+    for (const name of ["a", "0", "my-db_2", "a".repeat(63)]) expect(D1_NAME_PATTERN.test(name)).toBe(true)
+    for (const name of ["", "A", "-a", "_a", "a b", "a/b", "a.b", "a".repeat(64), "a\n"]) {
+      expect(D1_NAME_PATTERN.test(name)).toBe(false)
     }
   })
 })

@@ -6,6 +6,8 @@ export type ResultInfo = {
   total_count?: number
   total_pages?: number
   cursor?: string
+  is_truncated?: boolean
+  delimited?: readonly string[]
 }
 
 /** Returns numeric paging fields, or null when Cloudflare did not send a number. */

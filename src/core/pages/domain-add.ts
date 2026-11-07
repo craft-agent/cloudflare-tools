@@ -3,7 +3,7 @@ import { cloudflareClient, type CloudflareClient, type CloudflareDeps } from "..
 import { isPlainObject } from "../cloudflare/reply"
 import { ROUTES } from "../cloudflare/routes"
 import { ToolError } from "../errors"
-import { confirmWrite, defineTool, type ToolSpec } from "../tool"
+import { confirmWrite, defineTool, stepErrorsSchema, type ToolSpec } from "../tool"
 import {
   domainInput,
   domainName,
@@ -12,7 +12,6 @@ import {
   dnsSchema,
   failureOfWrite,
   readDnsStep,
-  stepErrorsSchema,
 } from "./domains"
 import { projectName, requestProject, requireObject } from "./projects"
 import { domainSchema, shapeDomain } from "./shape"

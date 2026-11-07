@@ -148,6 +148,9 @@ export class CloudflareClient {
     if (!isAllowed(route)) {
       throw this.#error("internal_error", `${route.method} ${route.path} is not an allowed Cloudflare route.`)
     }
+    if (route.body !== undefined && options.body !== undefined) {
+      throw this.#error("internal_error", `${route.method} ${route.path} sends only its own fixed body.`)
+    }
     let path: string
     try {
       path = fillPath(route, this.#credential.accountId, options.path)
@@ -162,9 +165,10 @@ export class CloudflareClient {
       Accept: accept,
     }
     const init: RequestInit = { method: route.method, headers, redirect: "manual" }
-    if (options.body !== undefined) {
+    const body = route.body ?? options.body
+    if (body !== undefined) {
       headers["Content-Type"] = "application/json"
-      init.body = JSON.stringify(options.body)
+      init.body = JSON.stringify(body)
     }
 
     return this.#send(url, init)

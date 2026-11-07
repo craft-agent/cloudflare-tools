@@ -221,6 +221,22 @@ The skill is [`cloudflare-pages`](skills/cloudflare-pages/SKILL.md), shown as
 `cloudflare-tools:cloudflare-pages` in Claude Code and
 `cloudflare-tools:pages` in Hermes.
 
+### Storage (`storage`)
+
+Storage: list an account's R2 buckets and a bucket's objects and folders by name, size and date, and read whether a bucket is public (its r2.dev domain and custom domains), its CORS rules and the lifecycle rules that delete its objects; list Workers KV namespaces and their key names; list D1 databases and read one's size and schema; create an empty bucket, namespace or database, and delete one that is proven empty. An object's body, a KV value and a table's rows are never read, the D1 schema comes from one fixed statement, and only the default jurisdiction is listed. Cloudflare deletes a KV namespace or D1 database with its contents, so the delete tool proves the store empty first; emptying a store stays with the user. This toolset is off by default; turn it on with the `toolsets` setting (see [Settings](#settings)).
+
+| Tool                        | What it does                                                                                                            | Class          |
+| --------------------------- | ----------------------------------------------------------------------------------------------------------------------- | -------------- |
+| `cloudflare_storage_read`   | R2 `buckets`, a `bucket`'s details, its `objects`; KV `namespaces`, their `keys`; D1 `databases`, a `database`'s schema | read           |
+| `cloudflare_storage_create` | create an empty R2 bucket, KV namespace or D1 database from a name                                                      | add            |
+| `cloudflare_storage_delete` | delete a bucket, namespace or database only when it is proven empty; always asks first                                  | administrative |
+
+The token needs Account → Workers R2 Storage → Read, Workers KV Storage → Read or D1 → Read, for the store it reads; creating and deleting need the same permission's Edit.
+
+The skill is [`cloudflare-storage`](skills/cloudflare-storage/SKILL.md), shown as
+`cloudflare-tools:cloudflare-storage` in Claude Code and
+`cloudflare-tools:storage` in Hermes.
+
 ## Adding a tool
 
 1. Write the spec in `src/core/<domain>/<verb>.ts` with `defineTool`: an ID
