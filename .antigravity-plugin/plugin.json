@@ -1,6 +1,6 @@
 {
   "name": "cloudflare-tools",
-  "version": "0.7.0",
+  "version": "0.7.1",
   "description": "Cloudflare tools for coding agents: zones, DNS, analytics, Workers, Pages, storage and tunnels.",
   "author": {
     "name": "craftsamo",
