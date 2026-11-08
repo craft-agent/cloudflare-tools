@@ -4,6 +4,7 @@ Hermes scans a plugin when it is installed, and a dangerous verdict blocks the
 install; `--force` does not override it. This script runs the same scanner
 (`tools/plugin_guard.py` from a hermes-agent checkout) on the tree a release
 carries, and exits 1 when Hermes would block it.
+High findings only warn, appearing in annotations and the job summary.
 """
 
 from __future__ import annotations
@@ -17,6 +18,7 @@ from typing import Any
 SCANNER_ENV = "HERMES_AGENT_DIR"
 SCANNER_MODULE = Path("tools") / "plugin_guard.py"
 STRUCTURAL_FILE = "(directory)"
+SUMMARY_FILE_LIMIT = 5
 LISTED_SEVERITIES = (
     ("critical", "error", "Blocking findings:"),
     ("high", "warning", "Findings that make Hermes ask for confirmation:"),
@@ -48,6 +50,29 @@ def annotation(level: str, finding: Any) -> str:
     properties.append(f"title={escape_property(f'Hermes install scan: {finding.pattern_id}')}")
     message = escape_data(f"{finding.description}: {finding.match}")
     return f"::{level} {','.join(properties)}::{message}"
+
+
+def write_summary(result: Any, reason: str) -> None:
+    """Append the verdict and grouped high or critical findings to the job summary."""
+    summary_path = os.environ.get("GITHUB_STEP_SUMMARY")
+    if not summary_path:
+        return
+    lines = ["### Hermes install scan", "", f"**{result.verdict}** — {reason}", ""]
+    for severity, _, _ in LISTED_SEVERITIES:
+        patterns: dict[str, list[Any]] = {}
+        for finding in result.findings:
+            if finding.severity == severity:
+                patterns.setdefault(finding.pattern_id, []).append(finding)
+        for pattern_id, findings in sorted(patterns.items()):
+            files = sorted({finding.file for finding in findings})
+            listed_files = files[:SUMMARY_FILE_LIMIT]
+            if len(files) > SUMMARY_FILE_LIMIT:
+                listed_files.append("…")
+            lines.append(f"- {severity} `{pattern_id}`: {len(findings)} finding(s) in {', '.join(listed_files)}")
+    if result.verdict == "caution":
+        lines.extend(["", "Hermes asks before installing this tree and refuses it without `--force` where it cannot ask."])
+    with open(summary_path, "a", encoding="utf-8") as summary:
+        summary.write("\n".join(lines) + "\n")
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -92,6 +117,7 @@ def main(argv: list[str] | None = None) -> int:
             if annotate:
                 print(annotation(level, finding))
 
+    write_summary(result, reason)
     return 1 if allowed is False else 0
 
 
