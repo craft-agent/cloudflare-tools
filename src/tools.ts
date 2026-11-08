@@ -14,6 +14,7 @@ import { cloudflareStorageRead } from "./core/storage/read"
 import { cloudflareTunnelRead } from "./core/tunnel/read"
 import { cloudflareTunnelRouteAdd } from "./core/tunnel/route-add"
 import { cloudflareTunnelRouteEdit } from "./core/tunnel/route-edit"
+import { cloudflareTunnelRouteRemove } from "./core/tunnel/route-remove"
 import { cloudflareWorkersRead } from "./core/workers/read"
 import { cloudflareWorkersRollback } from "./core/workers/rollback"
 import { cloudflareZoneCachePurge } from "./core/zone/cache-purge"
@@ -50,4 +51,5 @@ export const ALL_TOOLS: ToolSpec[] = [
   cloudflareTunnelRead,
   cloudflareTunnelRouteAdd,
   cloudflareTunnelRouteEdit,
+  cloudflareTunnelRouteRemove,
 ]

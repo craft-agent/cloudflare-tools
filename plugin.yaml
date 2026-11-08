@@ -20,6 +20,7 @@ provides_tools:
   - cloudflare_tunnel_read
   - cloudflare_tunnel_route_add
   - cloudflare_tunnel_route_edit
+  - cloudflare_tunnel_route_remove
   - cloudflare_workers_read
   - cloudflare_workers_rollback
   - cloudflare_zone_cache_purge
