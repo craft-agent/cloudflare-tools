@@ -108,6 +108,12 @@ hermes plugins install craft-agent/cloudflare-tools --ref <sha>
 hermes plugins enable cloudflare-tools
 ```
 
+Hermes scans a plugin when it installs it. From v0.7.0 the verdict is
+`caution`: the tunnel tools name the token permission Account → Cloudflare One
+Connector: cloudflared, and Hermes rates the word as a tunneling service.
+`hermes plugins install` then asks before installing; where it cannot ask (no
+terminal), add `--force`, which overrides a `caution` verdict and no other.
+
 If a Hermes gateway is already running, restart it (`hermes gateway restart`) to
 load the plugin.
 
@@ -239,7 +245,7 @@ The skill is [`cloudflare-storage`](skills/cloudflare-storage/SKILL.md), shown a
 
 ### Tunnels (`tunnels`)
 
-Tunnels: list an account's cloudflared tunnels by name, status and connection times, and read one tunnel's active connectors, edge connections, colos and public-hostname ingress routing rules. A tunnel's run token is never exposed, connectors' internal ids and origin IP addresses are never read, and deleted tunnels are left out. For locally managed tunnels, ingress rules are kept on the host and cannot be read here. A hostname can be published through a dashboard-managed tunnel to a local service: the tool adds the rule and the proxied CNAME it needs, refuses a hostname that has other DNS records, and always asks first. Another tool changes the service a published hostname goes to, and one withdraws a hostname, deleting its CNAME to the tunnel when no other rule uses it and never touching other records; both always ask first. This toolset is off by default; turn it on with the `toolsets` setting (see [Settings](#settings)).
+Tunnels: list an account's Cloudflare Tunnels by name, status and connection times, and read one tunnel's active connectors, edge connections, colos and public-hostname ingress routing rules. A tunnel's run token is never exposed, connectors' internal ids and origin IP addresses are never read, and deleted tunnels are left out. For locally managed tunnels, ingress rules are kept on the host and cannot be read here. A hostname can be published through a dashboard-managed tunnel to a local service: the tool adds the rule and the proxied CNAME it needs, refuses a hostname that has other DNS records, and always asks first. Another tool changes the service a published hostname goes to, and one withdraws a hostname, deleting its CNAME to the tunnel when no other rule uses it and never touching other records; both always ask first. This toolset is off by default; turn it on with the `toolsets` setting (see [Settings](#settings)).
 
 | Tool                             | What it does                                                                                  | Class          |
 | -------------------------------- | --------------------------------------------------------------------------------------------- | -------------- |

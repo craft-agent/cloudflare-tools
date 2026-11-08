@@ -93,7 +93,13 @@ draft.
   cause: the `hardcoded_secret` rule matches a `token`, `secret`, `password` or
   `api_key` key with a quoted value of 20 or more characters. Shorten the value
   or move the fixture under a `tests/` directory, where findings weigh less.
-- **A `caution` finding**, which Hermes installs after asking, only warns.
+- **A high finding** gives a `caution` verdict: Hermes installs only after asking
+  in a terminal and refuses without `--force` where it cannot ask. The run only
+  warns, listing the findings in the job summary and as annotations.
+- **The accepted caution** is the tunnel tools naming the permission
+  "Cloudflare One Connector: cloudflared", Cloudflare's own name. Hermes's
+  `tunnel_service` rule matches `cloudflared`; keep the name exact and keep the
+  word out of other text, so no other high finding hides behind it.
 - **The scanner is pinned** to one Hermes Agent commit, `HERMES_AGENT_COMMIT`
   in `.github/workflows/tests.yml`. Raise it deliberately, to a commit of
   Hermes Agent's default branch, and check that the Tests run still passes.
