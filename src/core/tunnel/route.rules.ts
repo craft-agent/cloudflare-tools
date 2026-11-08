@@ -2,7 +2,7 @@ import { z } from "zod"
 import { isPlainObject } from "../cloudflare/reply"
 import { ToolError, type ErrorDetails } from "../errors"
 
-/** The service of the rule cloudflared answers with when no other rule matches. */
+/** The service of the rule a tunnel answers with when no other rule matches. */
 const CATCH_ALL_SERVICE = "http_status:404"
 
 const WILDCARD_PREFIX = "*."
@@ -102,7 +102,7 @@ export function ingressWithout(ingress: readonly unknown[], index: number): unkn
 /**
  * The hostname of the first rule of `ingress` without a path that takes every request to the rule's hostname, so a
  * rule placed after it would never match: the same hostname (only a rule with a path can follow it) or a wildcard
- * `*.<suffix>` the hostname ends with (cloudflared matches a wildcard by suffix).
+ * `*.<suffix>` the hostname ends with (a tunnel matches a wildcard by suffix).
  */
 export function hidingRuleIn(ingress: readonly unknown[], rule: NewRule): string | undefined {
   for (const other of ingress.map(existing)) {
