@@ -237,6 +237,20 @@ The skill is [`cloudflare-storage`](skills/cloudflare-storage/SKILL.md), shown a
 `cloudflare-tools:cloudflare-storage` in Claude Code and
 `cloudflare-tools:storage` in Hermes.
 
+### Tunnels (`tunnels`)
+
+Tunnels: list an account's cloudflared tunnels by name, status and connection times, and read one tunnel's active connectors, edge connections, colos and public-hostname ingress routing rules. A tunnel's run token is never exposed, connectors' internal ids and origin IP addresses are never read, and deleted tunnels are left out. For locally managed tunnels, ingress rules are kept on the host and cannot be read here. This toolset is off by default; turn it on with the `toolsets` setting (see [Settings](#settings)).
+
+| Tool                     | What it does                                                | Class |
+| ------------------------ | ----------------------------------------------------------- | ----- |
+| `cloudflare_tunnel_read` | `tunnels` of the account; one `tunnel`'s status and ingress | read  |
+
+The token needs Account → Cloudflare Tunnel → Read.
+
+The skill is [`cloudflare-tunnels`](skills/cloudflare-tunnels/SKILL.md), shown as
+`cloudflare-tools:cloudflare-tunnels` in Claude Code and
+`cloudflare-tools:tunnels` in Hermes.
+
 ## Adding a tool
 
 1. Write the spec in `src/core/<domain>/<verb>.ts` with `defineTool`: an ID
