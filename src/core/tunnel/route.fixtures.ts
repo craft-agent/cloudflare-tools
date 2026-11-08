@@ -4,6 +4,8 @@ import { BATCH_PATH, RECORDS_PATH } from "../dns/fixtures"
 import { SAMPLE_ZONE, ZONE_NAME, ZONE_PATH } from "../zone/fixtures"
 import { TUNNEL_CONFIG_PATH, TUNNEL_ID, TUNNEL_PATH } from "./fixtures"
 import { defineTunnelRouteAdd } from "./route-add"
+import { defineTunnelRouteEdit } from "./route-edit"
+import { defineTunnelRouteRemove } from "./route-remove"
 
 export {
   ACCOUNT_ID,
@@ -101,16 +103,32 @@ export function recordsRoute(reply: FakeReply | (() => FakeReply) = ok([])): Fak
   return { method: "GET", path: RECORDS_PATH, reply }
 }
 
-export function batchRoute(reply: FakeReply | (() => FakeReply) = ok({ posts: [OWN_CNAME] })): FakeRoute {
+export function batchRoute(
+  reply: FakeReply | (() => FakeReply) = ok({ posts: [OWN_CNAME], deletes: [OWN_CNAME] }),
+): FakeRoute {
   return { method: "POST", path: BATCH_PATH, reply }
+}
+
+/** The rule the edit and remove tools work on: it has keys of its own, which an edit must keep. */
+export const PUBLISHED_RULE = {
+  hostname: HOSTNAME,
+  service: SERVICE,
+  originRequest: { connectTimeout: 5, noTLSVerify: true },
+  futureKey: "kept",
+}
+export const PUBLISHED_CONFIG = { ...CONFIG, ingress: [API_RULE, PUBLISHED_RULE, CATCH_ALL] }
+
+/** The configuration that publishes `PUBLISHED_RULE` (or the `ingress` given). */
+export function publishedRoute(ingress: unknown[] = PUBLISHED_CONFIG.ingress): FakeRoute {
+  return configRoute(ok({ version: VERSION, config: { ...CONFIG, ingress } }))
 }
 
 export function accessRoute(apps: unknown[] = []): FakeRoute {
   return { method: "GET", path: ACCESS_PATH, reply: ok(apps) }
 }
 
-/** The tool wired to a fake Cloudflare: the `routes` given first, then a tunnel, a zone, a configuration and no records. */
-export function routeFor(...routes: FakeRoute[]) {
+/** A fake Cloudflare: the `routes` given first, then a tunnel, a zone, a configuration, no records, no Access application and the writes. */
+function fakeRoutes(routes: FakeRoute[]) {
   const { fetch, requests } = fakeCloudflare([
     ...routes,
     tunnelRoute(),
@@ -122,7 +140,25 @@ export function routeFor(...routes: FakeRoute[]) {
     putRoute(),
     batchRoute(),
   ])
-  return { tool: defineTunnelRouteAdd({ fetch, env: envFor() }), requests }
+  return { deps: { fetch, env: envFor() }, requests }
+}
+
+/** The add tool wired to a fake Cloudflare (see `fakeRoutes`). */
+export function routeFor(...routes: FakeRoute[]) {
+  const { deps, requests } = fakeRoutes(routes)
+  return { tool: defineTunnelRouteAdd(deps), requests }
+}
+
+/** The edit tool wired to a fake Cloudflare whose tunnel publishes `PUBLISHED_RULE` behind its own CNAME. */
+export function editFor(...routes: FakeRoute[]) {
+  const { deps, requests } = fakeRoutes([...routes, publishedRoute(), recordsRoute(ok([OWN_CNAME]))])
+  return { tool: defineTunnelRouteEdit(deps), requests }
+}
+
+/** The remove tool wired to the same fake Cloudflare as `editFor`. */
+export function removeFor(...routes: FakeRoute[]) {
+  const { deps, requests } = fakeRoutes([...routes, publishedRoute(), recordsRoute(ok([OWN_CNAME]))])
+  return { tool: defineTunnelRouteRemove(deps), requests }
 }
 
 export function sent(requests: FakeRequest[], method: "GET" | "PUT" | "POST"): FakeRequest[] {
