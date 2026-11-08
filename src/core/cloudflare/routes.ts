@@ -135,6 +135,7 @@ export const ROUTES = Object.freeze({
   cfdTunnel: defineRoute("GET", "/accounts/{account_id}/cfd_tunnel/{tunnel_id}"),
   cfdTunnelConnections: defineRoute("GET", "/accounts/{account_id}/cfd_tunnel/{tunnel_id}/connections"),
   cfdTunnelConfiguration: defineRoute("GET", "/accounts/{account_id}/cfd_tunnel/{tunnel_id}/configurations"),
+  cfdTunnelConfigurationEdit: defineRoute("PUT", "/accounts/{account_id}/cfd_tunnel/{tunnel_id}/configurations"),
   accessApps: defineRoute("GET", "/accounts/{account_id}/access/apps"),
 } satisfies Record<string, Route>)
 

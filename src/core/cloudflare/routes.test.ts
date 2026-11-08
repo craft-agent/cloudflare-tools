@@ -246,6 +246,10 @@ describe("routes", () => {
       method: "GET",
       path: "/accounts/{account_id}/cfd_tunnel/{tunnel_id}/configurations",
     })
+    expect(ROUTES.cfdTunnelConfigurationEdit).toEqual({
+      method: "PUT",
+      path: "/accounts/{account_id}/cfd_tunnel/{tunnel_id}/configurations",
+    })
     expect(PATH_PARAMS.tunnel_id).toBe(TUNNEL_ID_PATTERN)
     expect(PATH_PARAMS.tunnel_id?.test("11111111-2222-3333-4444-555555555555")).toBe(true)
     for (const id of [

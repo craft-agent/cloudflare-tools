@@ -28,7 +28,8 @@ const ACCEPTED_KEYS: Record<Method, readonly string[]> = {
   tunnel: ["account", "tunnel"],
 }
 
-const TUNNEL_PERMISSION_HINT = "The token needs Account → Cloudflare Tunnel → Read."
+/** What a forbidden read of a tunnel gains: the permission the read needs. */
+export const TUNNEL_PERMISSION_HINT = "The token needs Account → Cloudflare Tunnel → Read."
 
 const PERMISSION_HINTS: Record<Method, string> = {
   tunnels: TUNNEL_PERMISSION_HINT,
