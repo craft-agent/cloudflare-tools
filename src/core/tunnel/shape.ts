@@ -41,7 +41,7 @@ export const tunnelSchema = z.object({
 })
 
 export const connectorSchema = z.object({
-  version: z.string().nullable().describe("The cloudflared version, or null."),
+  version: z.string().nullable().describe("The connector's software version, or null."),
   arch: z.string().nullable().describe("The connector architecture, or null."),
   run_at: z.string().nullable().describe("When the connector started running (ISO timestamp), or null."),
   connections: z.number().describe("The number of active edge connections for this connector."),

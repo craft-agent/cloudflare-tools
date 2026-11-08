@@ -1,11 +1,11 @@
 ---
 name: cloudflare-tunnels
-description: "Use when listing or inspecting an account's Cloudflare Tunnels (cloudflared): their health status, connector edge connections and colos, and public-hostname ingress routing rules; or when publishing a hostname through a dashboard-managed tunnel to a local service (with the proxied CNAME it needs), changing the service a published hostname goes to, or withdrawing a hostname from a tunnel."
+description: "Use when listing or inspecting an account's Cloudflare Tunnels: their health status, connector edge connections and colos, and public-hostname ingress routing rules; or when publishing a hostname through a dashboard-managed tunnel to a local service (with the proxied CNAME it needs), changing the service a published hostname goes to, or withdrawing a hostname from a tunnel."
 ---
 
 # Tunnels
 
-The tools read, publish through and change the Cloudflare Tunnels (cloudflared) of the selected account:
+The tools read, publish through and change the Cloudflare Tunnels of the selected account:
 
 | Tool                             | Does                                                                         | Writes               |
 | -------------------------------- | ---------------------------------------------------------------------------- | -------------------- |
@@ -27,7 +27,7 @@ Every method of `cloudflare_tunnel_read` takes an optional `account`.
   - `tunnel`: the same metadata as a list entry.
   - `connectors`: each connector running the tunnel, with `version`, `arch`, `run_at`, `connections` (count of active edge connections) and `colos` (sorted distinct non-empty edge data center names).
   - for a Cloudflare-managed tunnel (`managed: "cloudflare"`): `config_version` and `ingress` rules.
-  - for a locally managed tunnel (`managed: "local"` or unknown): `note` stating that the tunnel is managed in a local configuration file on the machine running cloudflared, so its hostnames are not readable here.
+  - for a locally managed tunnel (`managed: "local"` or unknown): `note` stating that the tunnel is managed in a local configuration file on the machine running the connector, so its hostnames are not readable here.
 
 ## Ingress rules
 

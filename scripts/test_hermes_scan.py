@@ -14,8 +14,8 @@ SCANNER_DIR = os.environ.get("HERMES_AGENT_DIR")
 
 
 def run_scan(*args: str, **env: str) -> subprocess.CompletedProcess[str]:
-    """Run the script with GITHUB_ACTIONS unset unless the caller sets it."""
-    environment = {key: value for key, value in os.environ.items() if key != "GITHUB_ACTIONS"}
+    """Run the script with workflow variables unset unless the caller sets them."""
+    environment = {key: value for key, value in os.environ.items() if key not in ("GITHUB_ACTIONS", "GITHUB_STEP_SUMMARY")}
     environment.update(env)
     return subprocess.run([sys.executable, str(SCRIPT), *args], capture_output=True, text=True, env=environment)
 
@@ -41,6 +41,51 @@ class ScannerMissingTest(unittest.TestCase):
             result = run_scan("--scanner", scanner, tree)
         self.assertEqual(result.returncode, 2)
         self.assertIn("could not run", result.stderr)
+
+
+class SummaryTest(unittest.TestCase):
+    def fake_scanner(self, root: str, verdict: str, files: list[str]) -> None:
+        write(root, "tools/__init__.py", "")
+        write(root, "tools/plugin_guard.py", (
+            "from types import SimpleNamespace\n"
+            "PLUGIN_SCANNER_VERSION = 'test'\n"
+            "def scan_plugin(tree):\n"
+            f"    files = {files!r}\n"
+            "    findings = [SimpleNamespace(file=file, line=1, pattern_id='fixture_rule', "
+            "severity='high', description='Fixture finding', match='fixture') for file in files]\n"
+            f"    return SimpleNamespace(verdict={verdict!r}, findings=findings)\n"
+            "def should_allow_plugin_install(result):\n"
+            "    return None, 'Fixture reason'\n"
+        ))
+
+    def test_caution_summary_appends_grouped_findings_and_install_warning(self) -> None:
+        with tempfile.TemporaryDirectory() as scanner, tempfile.TemporaryDirectory() as tree:
+            self.fake_scanner(scanner, "caution", ["f.ts", "b.ts", "a.ts", "a.ts", "e.ts", "d.ts", "c.ts"])
+            summary = Path(tree) / "summary.md"
+            summary.write_text("Existing summary\n", encoding="utf-8")
+            result = run_scan("--scanner", scanner, tree, GITHUB_STEP_SUMMARY=str(summary))
+            text = summary.read_text(encoding="utf-8")
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertTrue(text.startswith("Existing summary\n### Hermes install scan\n"))
+        self.assertIn("**caution** — Fixture reason", text)
+        self.assertIn("- high `fixture_rule`: 7 finding(s) in a.ts, b.ts, c.ts, d.ts, e.ts, …", text)
+        self.assertIn("Hermes asks before installing this tree and refuses it without `--force` where it cannot ask.", text)
+
+    def test_no_summary_is_written_when_the_variable_is_unset(self) -> None:
+        with tempfile.TemporaryDirectory() as scanner, tempfile.TemporaryDirectory() as tree:
+            self.fake_scanner(scanner, "caution", ["fixture.ts"])
+            result = run_scan("--scanner", scanner, tree)
+            self.assertEqual(list(Path(tree).iterdir()), [])
+        self.assertEqual(result.returncode, 0, result.stderr)
+
+    def test_safe_summary_has_no_findings_list(self) -> None:
+        with tempfile.TemporaryDirectory() as scanner, tempfile.TemporaryDirectory() as tree:
+            self.fake_scanner(scanner, "safe", [])
+            summary = Path(tree) / "summary.md"
+            result = run_scan("--scanner", scanner, tree, GITHUB_STEP_SUMMARY=str(summary))
+            text = summary.read_text(encoding="utf-8")
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(text, "### Hermes install scan\n\n**safe** — Fixture reason\n\n")
 
 
 @unittest.skipUnless(SCANNER_DIR, "HERMES_AGENT_DIR does not name a hermes-agent checkout")

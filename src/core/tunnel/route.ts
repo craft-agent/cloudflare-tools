@@ -25,7 +25,7 @@ const MAX_PATH_LENGTH = 200
 /** A path regular expression holds no control characters. */
 const PATH_PATTERN = /^[^\x00-\x1f\x7f]+$/
 
-/** A service cloudflared can reach from a dashboard-managed tunnel; `hello_world` and `bastion` are for locally managed tunnels. */
+/** A service a dashboard-managed tunnel can reach; `hello_world` and `bastion` are for locally managed tunnels. */
 const SERVICE_PATTERN =
   /^(?:(?:https?|tcp|ssh|rdp|smb):\/\/[^\s]{1,200}|unix(?:\+tls)?:[^\s]{1,200}|http_status:[1-5][0-9]{2})$/
 

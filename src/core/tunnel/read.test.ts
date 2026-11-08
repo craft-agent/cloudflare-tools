@@ -15,7 +15,7 @@ test("publishes the tunnels read contract and guidance", () => {
     openWorldHint: true,
   })
   for (const text of [
-    "cloudflared tunnels",
+    "Cloudflare Tunnels",
     "never deleted ones",
     "tunnel's run token",
     "connectors' IP addresses",
