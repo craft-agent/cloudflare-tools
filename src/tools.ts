@@ -11,6 +11,7 @@ import { cloudflarePagesRollback } from "./core/pages/rollback"
 import { cloudflareStorageCreate } from "./core/storage/create"
 import { cloudflareStorageDelete } from "./core/storage/delete"
 import { cloudflareStorageRead } from "./core/storage/read"
+import { cloudflareTunnelRead } from "./core/tunnel/read"
 import { cloudflareWorkersRead } from "./core/workers/read"
 import { cloudflareWorkersRollback } from "./core/workers/rollback"
 import { cloudflareZoneCachePurge } from "./core/zone/cache-purge"
@@ -44,4 +45,5 @@ export const ALL_TOOLS: ToolSpec[] = [
   cloudflareStorageRead,
   cloudflareStorageCreate,
   cloudflareStorageDelete,
+  cloudflareTunnelRead,
 ]

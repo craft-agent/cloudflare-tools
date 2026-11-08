@@ -24,6 +24,9 @@ export const DEPLOYMENT_ID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a
 /** A D1 database's id: a lowercase hexadecimal UUID. */
 export const DATABASE_ID_PATTERN = DEPLOYMENT_ID_PATTERN
 
+/** A Cloudflare Tunnel's id: a lowercase hexadecimal UUID. */
+export const TUNNEL_ID_PATTERN = DEPLOYMENT_ID_PATTERN
+
 /** The only SQL the schema route sends; excludes internal tables and never reads rows. */
 export const D1_SCHEMA_SQL =
   "SELECT type, name, tbl_name, sql FROM sqlite_master WHERE type IN ('table', 'index', 'view', 'trigger') AND substr(name, 1, 7) != 'sqlite_' AND substr(name, 1, 4) != '_cf_' ORDER BY type, name"
@@ -50,6 +53,7 @@ export const PATH_PARAMS: Readonly<Record<string, RegExp>> = Object.freeze({
   bucket_name: BUCKET_NAME_PATTERN,
   namespace_id: NAMESPACE_ID_PATTERN,
   database_id: DATABASE_ID_PATTERN,
+  tunnel_id: TUNNEL_ID_PATTERN,
 })
 
 function defineRoute(method: Method, path: string, body?: Route["body"]): Route {
@@ -127,6 +131,10 @@ export const ROUTES = Object.freeze({
   d1DatabaseCreate: defineRoute("POST", "/accounts/{account_id}/d1/database"),
   d1DatabaseDelete: defineRoute("DELETE", "/accounts/{account_id}/d1/database/{database_id}"),
   d1Schema: defineRoute("POST", "/accounts/{account_id}/d1/database/{database_id}/query", { sql: D1_SCHEMA_SQL }),
+  cfdTunnels: defineRoute("GET", "/accounts/{account_id}/cfd_tunnel"),
+  cfdTunnel: defineRoute("GET", "/accounts/{account_id}/cfd_tunnel/{tunnel_id}"),
+  cfdTunnelConnections: defineRoute("GET", "/accounts/{account_id}/cfd_tunnel/{tunnel_id}/connections"),
+  cfdTunnelConfiguration: defineRoute("GET", "/accounts/{account_id}/cfd_tunnel/{tunnel_id}/configurations"),
 } satisfies Record<string, Route>)
 
 /** Whether a route is one of `ROUTES`, including its fixed body when present. */

@@ -20,6 +20,7 @@ TOOLSET_EMOJI: dict[str, str] = {
     "workers": "⚙️",
     "pages": "📄",
     "storage": "🗄️",
+    "tunnels": "🚇",
 }
 
 __all__ = [
