@@ -17,6 +17,10 @@ provides_tools:
   - cloudflare_storage_create
   - cloudflare_storage_delete
   - cloudflare_storage_read
+  - cloudflare_tunnel_read
+  - cloudflare_tunnel_route_add
+  - cloudflare_tunnel_route_edit
+  - cloudflare_tunnel_route_remove
   - cloudflare_workers_read
   - cloudflare_workers_rollback
   - cloudflare_zone_cache_purge

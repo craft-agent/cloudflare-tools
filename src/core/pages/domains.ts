@@ -27,7 +27,8 @@ export const domainInput = z.object({
 
 export type DomainArgs = z.output<typeof domainInput>
 
-const recordSchema = recordListItemSchema
+/** One DNS record as a result keeps it: its id, type, name, content, whether it is proxied and whether another product manages it. */
+export const recordSchema = recordListItemSchema
   .pick({ id: true, type: true, name: true, content: true, proxied: true, read_only: true })
   .strict()
 

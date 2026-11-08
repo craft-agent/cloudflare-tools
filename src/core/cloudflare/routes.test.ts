@@ -6,6 +6,7 @@ import {
   NAMESPACE_ID_PATTERN,
   PATH_PARAMS,
   ROUTES,
+  TUNNEL_ID_PATTERN,
   isAllowed,
 } from "./routes"
 
@@ -230,6 +231,41 @@ describe("routes", () => {
     for (const name of ["a", "0", "my-db_2", "a".repeat(63)]) expect(D1_NAME_PATTERN.test(name)).toBe(true)
     for (const name of ["", "A", "-a", "_a", "a b", "a/b", "a.b", "a".repeat(64), "a\n"]) {
       expect(D1_NAME_PATTERN.test(name)).toBe(false)
+    }
+  })
+
+  test("the tunnel routes are listed and their tunnel parameter takes a tunnel id UUID only", () => {
+    expect(ROUTES.accessApps).toEqual({ method: "GET", path: "/accounts/{account_id}/access/apps" })
+    expect(ROUTES.cfdTunnels).toEqual({ method: "GET", path: "/accounts/{account_id}/cfd_tunnel" })
+    expect(ROUTES.cfdTunnel).toEqual({ method: "GET", path: "/accounts/{account_id}/cfd_tunnel/{tunnel_id}" })
+    expect(ROUTES.cfdTunnelConnections).toEqual({
+      method: "GET",
+      path: "/accounts/{account_id}/cfd_tunnel/{tunnel_id}/connections",
+    })
+    expect(ROUTES.cfdTunnelConfiguration).toEqual({
+      method: "GET",
+      path: "/accounts/{account_id}/cfd_tunnel/{tunnel_id}/configurations",
+    })
+    expect(ROUTES.cfdTunnelConfigurationEdit).toEqual({
+      method: "PUT",
+      path: "/accounts/{account_id}/cfd_tunnel/{tunnel_id}/configurations",
+    })
+    expect(PATH_PARAMS.tunnel_id).toBe(TUNNEL_ID_PATTERN)
+    expect(PATH_PARAMS.tunnel_id?.test("11111111-2222-3333-4444-555555555555")).toBe(true)
+    for (const id of [
+      "",
+      "11111111",
+      "11111111-2222-3333-4444-55555555555",
+      "11111111-2222-3333-4444-5555555555555",
+      "11111111-2222-3333-4444-AAAAAAAAAAAA",
+    ]) {
+      expect(PATH_PARAMS.tunnel_id?.test(id)).toBe(false)
+    }
+  })
+
+  test("no route exposes a token", () => {
+    for (const route of Object.values(ROUTES)) {
+      expect(route.path.endsWith("/token")).toBe(false)
     }
   })
 })
