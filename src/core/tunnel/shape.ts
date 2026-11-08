@@ -1,5 +1,6 @@
 import { z } from "zod"
 import { isPlainObject } from "../cloudflare/reply"
+import { accessCoverageSchema } from "./access"
 
 /** Maximum characters retained for a tunnel name. */
 export const TUNNEL_NAME_MAX_LENGTH = 120
@@ -48,6 +49,9 @@ export const connectorSchema = z.object({
 })
 
 export const ingressRuleSchema = z.object({
+  access: accessCoverageSchema
+    .nullable()
+    .describe("Access application coverage, or null for a rule without a hostname."),
   hostname: z
     .string()
     .nullable()
@@ -112,6 +116,7 @@ export function shapeConnector(raw: unknown): z.output<typeof connectorSchema> |
 export function shapeIngressRule(raw: unknown): z.output<typeof ingressRuleSchema> | undefined {
   if (!isPlainObject(raw)) return undefined
   return {
+    access: null,
     hostname: typeof raw.hostname === "string" ? raw.hostname : null,
     path: typeof raw.path === "string" ? clip(raw.path, INGRESS_TEXT_MAX_LENGTH) : null,
     service: typeof raw.service === "string" ? clip(raw.service, INGRESS_TEXT_MAX_LENGTH) : "",

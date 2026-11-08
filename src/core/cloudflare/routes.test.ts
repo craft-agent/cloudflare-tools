@@ -235,6 +235,7 @@ describe("routes", () => {
   })
 
   test("the tunnel routes are listed and their tunnel parameter takes a tunnel id UUID only", () => {
+    expect(ROUTES.accessApps).toEqual({ method: "GET", path: "/accounts/{account_id}/access/apps" })
     expect(ROUTES.cfdTunnels).toEqual({ method: "GET", path: "/accounts/{account_id}/cfd_tunnel" })
     expect(ROUTES.cfdTunnel).toEqual({ method: "GET", path: "/accounts/{account_id}/cfd_tunnel/{tunnel_id}" })
     expect(ROUTES.cfdTunnelConnections).toEqual({

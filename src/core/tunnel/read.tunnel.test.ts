@@ -1,5 +1,5 @@
 import { expect, test } from "bun:test"
-import { rejection } from "../cloudflare/client.fixtures"
+import { ACCOUNT_ID, rejection } from "../cloudflare/client.fixtures"
 import { fail, ok } from "../cloudflare/testing"
 import { invoke } from "../tool"
 import {
@@ -20,6 +20,7 @@ const EMPTY_CONNECTIONS_REPLY = ok([])
 
 test("tunnel: reads Cloudflare-managed tunnel, connectors and ingress rules", async () => {
   const { tool, requests } = toolFor(
+    { method: "GET", path: `/accounts/${ACCOUNT_ID}/access/apps`, reply: ok([]) },
     {
       method: "GET",
       path: TUNNEL_PATH,
@@ -107,17 +108,19 @@ test("tunnel: reads Cloudflare-managed tunnel, connectors and ingress rules", as
         path: "/api",
         service: "http://localhost:8080",
         origin_request: { connectTimeout: 30 },
+        access: { status: "none", apps: [] },
       },
       {
         hostname: null,
         path: null,
         service: "http_status:404",
         origin_request: null,
+        access: null,
       },
     ],
   })
 
-  expect(requests).toHaveLength(3)
+  expect(requests).toHaveLength(4)
 
   // Verify sensitive fields are never in serialized result
   const rawJson = JSON.stringify(result)
