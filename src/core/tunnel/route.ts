@@ -30,7 +30,7 @@ const SERVICE_PATTERN =
   /^(?:(?:https?|tcp|ssh|rdp|smb):\/\/[^\s]{1,200}|unix(?:\+tls)?:[^\s]{1,200}|http_status:[1-5][0-9]{2})$/
 
 /** What a forbidden write of a tunnel's configuration gains: the permission the write needs. */
-export const TUNNEL_EDIT_HINT = "The token needs Account → Cloudflare Tunnel → Edit."
+export const TUNNEL_EDIT_HINT = "The token needs Account → Cloudflare One Connector: cloudflared → Edit."
 
 const NOTHING_CHANGED = "Nothing was changed."
 

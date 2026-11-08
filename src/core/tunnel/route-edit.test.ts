@@ -56,7 +56,7 @@ describe("cloudflareTunnelRouteEdit", () => {
       "`missing` or `other` does not reach the tunnel",
       "ask who should reach it first",
       "sent back whole",
-      "Account → Cloudflare Tunnel → Edit, and DNS read access",
+      "Account → Cloudflare One Connector: cloudflared → Edit, and DNS read access",
     ]) {
       expect(cloudflareTunnelRouteEdit.description).toContain(text)
     }

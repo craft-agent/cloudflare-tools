@@ -106,7 +106,7 @@ describe("route edit refusals: the tunnel and the zone", () => {
 
     expect(missing.code).toBe("not_found")
     expect(denied.code).toBe("forbidden")
-    expect(denied.message).toEndWith("The token needs Account → Cloudflare Tunnel → Read.")
+    expect(denied.message).toEndWith("The token needs Account → Cloudflare One Connector: cloudflared → Read.")
   })
 
   test("refuses a hostname in no zone of the account", async () => {

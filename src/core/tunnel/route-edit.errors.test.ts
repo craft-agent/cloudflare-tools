@@ -52,7 +52,7 @@ describe("route edit: the write fails", () => {
 
     expect(error.code).toBe("forbidden")
     expect(error.message).toBe(
-      "10000: Authentication error. The token needs Account → Cloudflare Tunnel → Edit. Nothing was changed.",
+      "10000: Authentication error. The token needs Account → Cloudflare One Connector: cloudflared → Edit. Nothing was changed.",
     )
   })
 

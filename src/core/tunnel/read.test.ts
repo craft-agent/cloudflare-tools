@@ -20,7 +20,7 @@ test("publishes the tunnels read contract and guidance", () => {
     "tunnel's run token",
     "connectors' IP addresses",
     "user's data",
-    "Account → Cloudflare Tunnel → Read",
+    "Account → Cloudflare One Connector: cloudflared → Read",
   ]) {
     expect(cloudflareTunnelRead.description).toContain(text)
   }
@@ -228,5 +228,5 @@ test("forbidden error includes permission hint", async () => {
   const err = errorOf(await rejection(invoke(tool, { method: "tunnels" }, CTX)))
   expect(err.code).toBe("forbidden")
   expect(err.message).toContain("Authentication error.")
-  expect(err.message).toContain("The token needs Account → Cloudflare Tunnel → Read.")
+  expect(err.message).toContain("The token needs Account → Cloudflare One Connector: cloudflared → Read.")
 })

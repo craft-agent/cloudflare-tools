@@ -67,7 +67,9 @@ describe("route add refusals: the tunnel", () => {
     const error = await refusal(ARGS, tunnelRoute(fail(403, [{ code: 10000, message: "Authentication error" }])))
 
     expect(error.code).toBe("forbidden")
-    expect(error.message).toEndWith("Authentication error. The token needs Account → Cloudflare Tunnel → Read.")
+    expect(error.message).toEndWith(
+      "Authentication error. The token needs Account → Cloudflare One Connector: cloudflared → Read.",
+    )
   })
 
   test("refuses a reply that is not a tunnel", async () => {

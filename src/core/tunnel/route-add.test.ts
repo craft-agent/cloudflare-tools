@@ -58,7 +58,7 @@ describe("cloudflareTunnelRouteAdd", () => {
       "sent back whole",
       "nothing is undone",
       "cloudflare_dns_record_add call",
-      "Account → Cloudflare Tunnel → Edit and Zone → DNS → Edit",
+      "Account → Cloudflare One Connector: cloudflared → Edit and Zone → DNS → Edit",
       "Access: Apps and Policies → Read",
     ]) {
       expect(cloudflareTunnelRouteAdd.description).toContain(text)

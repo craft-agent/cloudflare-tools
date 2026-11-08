@@ -248,9 +248,9 @@ Tunnels: list an account's cloudflared tunnels by name, status and connection ti
 | `cloudflare_tunnel_route_edit`   | change the service a published hostname goes to, naming the current one; always asks first    | administrative |
 | `cloudflare_tunnel_route_remove` | withdraw a hostname from a tunnel and delete its CNAME to the tunnel; always asks first       | administrative |
 
-The token needs Account → Cloudflare Tunnel → Read. Publishing or withdrawing a hostname needs
-Account → Cloudflare Tunnel → Edit and Zone → DNS → Edit; changing where one goes needs
-Account → Cloudflare Tunnel → Edit, and Zone → DNS → Read for the record it reports. Each public hostname also says
+The token needs Account → Cloudflare One Connector: cloudflared → Read. Publishing or withdrawing a hostname needs
+Account → Cloudflare One Connector: cloudflared → Edit and Zone → DNS → Edit; changing where one goes needs
+Account → Cloudflare One Connector: cloudflared → Edit, and Zone → DNS → Read for the record it reports. Each public hostname also says
 whether a Zero Trust Access application matches it, which needs Account → Access:
 Apps and Policies → Read; without it the coverage is `unknown`. A match is not a
 promise that every visitor signs in: a Bypass policy can still let them through.

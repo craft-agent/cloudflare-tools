@@ -66,7 +66,7 @@ describe("cloudflareTunnelRouteRemove", () => {
       "sent back whole",
       "nothing is undone",
       "cloudflare_dns_record_delete call",
-      "Account → Cloudflare Tunnel → Edit and Zone → DNS → Edit",
+      "Account → Cloudflare One Connector: cloudflared → Edit and Zone → DNS → Edit",
     ]) {
       expect(cloudflareTunnelRouteRemove.description).toContain(text)
     }

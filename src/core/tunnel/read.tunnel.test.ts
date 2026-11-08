@@ -270,5 +270,5 @@ test("tunnel: non-404 failure on configuration read fails the call", async () =>
 
   const err = errorOf(await rejection(invoke(tool, { method: "tunnel", tunnel: TUNNEL_ID }, CTX)))
   expect(err.code).toBe("forbidden")
-  expect(err.message).toContain("The token needs Account → Cloudflare Tunnel → Read.")
+  expect(err.message).toContain("The token needs Account → Cloudflare One Connector: cloudflared → Read.")
 })
