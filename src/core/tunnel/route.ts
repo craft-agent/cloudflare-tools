@@ -32,11 +32,7 @@ const SERVICE_PATTERN =
 /** What a forbidden write of a tunnel's configuration gains: the permission the write needs. */
 export const TUNNEL_EDIT_HINT = "The token needs Account → Cloudflare Tunnel → Edit."
 
-const CONFIGURATION_NOTES = {
-  nothing: "Nothing was changed.",
-  maybe:
-    "Cloudflare may or may not have changed the tunnel's configuration, and no DNS record was added; read cloudflare_tunnel_read tunnel before sending it again.",
-}
+const NOTHING_CHANGED = "Nothing was changed."
 
 export const tunnelArg = z
   .string()
@@ -57,6 +53,11 @@ export const pathArg = z
   .describe(
     `A regular expression, in Go's syntax as Cloudflare takes it, that the request path must match (1–${MAX_PATH_LENGTH} characters); it is sent unchanged. Left out, the rule takes every path.`,
   )
+
+/** The path of an existing rule, as `cloudflare_tunnel_read tunnel` shows it. */
+export const rulePathArg = pathArg.describe(
+  "The path of the rule, exactly as cloudflare_tunnel_read tunnel shows it. Left out, the rule that has no path.",
+)
 
 export const serviceArg = z
   .string()
@@ -165,11 +166,15 @@ export async function readConfiguration(client: CloudflareClient, tunnelId: stri
   }
 }
 
-/** Replaces the tunnel's configuration with `config`; the failure says whether Cloudflare changed it. */
+/**
+ * Replaces the tunnel's configuration with `config`. A refusal says nothing was changed; a failure that does not
+ * tell says `maybe`, the note of the tool that wrote.
+ */
 export async function writeConfiguration(
   client: CloudflareClient,
   tunnelId: string,
   config: Record<string, unknown>,
+  maybe: string,
 ): Promise<void> {
   try {
     await client.request<unknown>(ROUTES.cfdTunnelConfigurationEdit, {
@@ -177,27 +182,31 @@ export async function writeConfiguration(
       body: { config },
     })
   } catch (error) {
-    throw failureOfWrite(isToolError(error) ? withHint(error, TUNNEL_EDIT_HINT) : error, CONFIGURATION_NOTES)
+    throw failureOfWrite(isToolError(error) ? withHint(error, TUNNEL_EDIT_HINT) : error, {
+      nothing: NOTHING_CHANGED,
+      maybe,
+    })
   }
 }
 
 /**
- * What a call writes to: the hostname under the tunnel and the DNS records at the hostname in its zone, as
- * `<account_id>/cfd_tunnel/<tunnel>/<hostname>` and the DNS target; `*` when the hostname or its zone cannot be told.
+ * What a call writes to: the hostname under the tunnel and, unless `dns` is false, the DNS records at the hostname
+ * in its zone, as `<account_id>/cfd_tunnel/<tunnel>/<hostname>` and the DNS target; `*` when the hostname, or its
+ * zone where it is needed, cannot be told.
  */
 export async function routeTargets(
   args: { account?: string; tunnel: string; hostname: string },
   ctx: ToolContext,
   deps?: CloudflareDeps,
+  { dns = true }: { dns?: boolean } = {},
 ): Promise<string[]> {
   try {
     const hostname = normalizedHostname(args.hostname)
     const client = cloudflareClient(args.account, { ...deps, signal: ctx.signal })
+    const route = `${client.accountId}/cfd_tunnel/${args.tunnel}/${hostname}`
+    if (!dns) return [route]
     const zone = await findZone(client, hostname)
-    return [
-      `${client.accountId}/cfd_tunnel/${args.tunnel}/${hostname}`,
-      dnsRecordTarget(client.accountId, zone.id, hostname),
-    ]
+    return [route, dnsRecordTarget(client.accountId, zone.id, hostname)]
   } catch (error) {
     if (isAbortError(error) || ctx.signal?.aborted) throw error
     return [ANY_TARGET]

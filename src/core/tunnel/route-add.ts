@@ -3,19 +3,11 @@ import { z } from "zod"
 import { accountArg } from "../cloudflare/args"
 import { cloudflareClient, type CloudflareClient, type CloudflareDeps } from "../cloudflare/client"
 import { ToolError } from "../errors"
-import { recordSchema } from "../pages/domains"
 import { confirmWrite, defineTool, type ToolSpec } from "../tool"
 import type { Zone } from "../zone/lookup"
 import { accessCoverageSchema, coverageOf, readAccessApps } from "./access"
-import {
-  addTunnelCname,
-  assertDnsFits,
-  readDnsState,
-  sameDns,
-  tunnelTarget,
-  type FittingDns,
-  type Publication,
-} from "./route.dns"
+import { assertDnsFits, dnsReportSchema, readDnsState, sameDns, tunnelTarget, type FittingDns } from "./route.dns"
+import { addTunnelCname, type RuleChange } from "./route.dns.step"
 import {
   findZone,
   hostnameArg,
@@ -32,6 +24,9 @@ import {
 } from "./route"
 import { hidingRuleIn, ingressWith, ruleLabel, ruleResult, ruleSchema, sameRuleIn, type NewRule } from "./route.rules"
 import { INGRESS_TEXT_MAX_LENGTH, clip } from "./shape"
+
+const MAYBE_WRITTEN =
+  "Cloudflare may or may not have changed the tunnel's configuration, and no DNS record was added; read cloudflare_tunnel_read tunnel before sending it again."
 
 const input = z.object({
   account: accountArg,
@@ -58,12 +53,9 @@ const output = z.object({
       after: ruleSchema.describe("The rule the tunnel's configuration now holds."),
     })
     .describe("The ingress rule the call added."),
-  dns: z
-    .strictObject({
-      created: recordSchema.optional().describe("The proxied CNAME the call added; set when it did not exist."),
-      kept: recordSchema.optional().describe("The proxied CNAME to the tunnel that was already there."),
-    })
-    .describe("The hostname's DNS: exactly one of `created` and `kept` is set."),
+  dns: dnsReportSchema.describe(
+    "The hostname's DNS: exactly one of `created` (the proxied CNAME the call added) and `kept` (the one already there) is set.",
+  ),
   access: accessCoverageSchema.describe(
     "Whether a Zero Trust Access application matches the hostname; none means anyone on the internet can reach it unless something else stops them.",
   ),
@@ -168,12 +160,12 @@ export function defineTunnelRouteAdd(deps?: CloudflareDeps): RouteAddSpec {
       if (ctx.confirm) await assertUnchanged(client, args.tunnel, plan, hostname)
 
       const ingress = ingressWith(plan.configuration.ingress, rule)
-      await writeConfiguration(client, args.tunnel, { ...plan.configuration.config, ingress })
-      const publication: Publication = { account: args.account, tunnel: args.tunnel, rule }
+      await writeConfiguration(client, args.tunnel, { ...plan.configuration.config, ingress }, MAYBE_WRITTEN)
+      const change: RuleChange = { account: args.account, tunnel: args.tunnel, rule }
       const dns =
         plan.dns.action === "keep"
           ? { kept: plan.dns.record }
-          : { created: await addTunnelCname(client, plan.zone, publication) }
+          : { created: await addTunnelCname(client, plan.zone, change) }
 
       return {
         label: client.label,
