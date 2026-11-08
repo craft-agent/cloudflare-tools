@@ -245,7 +245,10 @@ Tunnels: list an account's cloudflared tunnels by name, status and connection ti
 | ------------------------ | ----------------------------------------------------------- | ----- |
 | `cloudflare_tunnel_read` | `tunnels` of the account; one `tunnel`'s status and ingress | read  |
 
-The token needs Account → Cloudflare Tunnel → Read.
+The token needs Account → Cloudflare Tunnel → Read. Each public hostname also says
+whether a Zero Trust Access application matches it, which needs Account → Access:
+Apps and Policies → Read; without it the coverage is `unknown`. A match is not a
+promise that every visitor signs in: a Bypass policy can still let them through.
 
 The skill is [`cloudflare-tunnels`](skills/cloudflare-tunnels/SKILL.md), shown as
 `cloudflare-tools:cloudflare-tunnels` in Claude Code and

@@ -35,6 +35,12 @@ For Cloudflare-managed tunnels, `ingress` lists public-hostname routing rules in
 - `path` is a regular expression matching request URL paths.
 - `origin_request` provides per-rule origin connection settings, or null when defaults apply.
 
+## Access coverage
+
+Each hostname's `access` reports matching account-level Zero Trust Access applications: `covered` means an application matches every path; `partial` means only some paths match; `none` means no application matches; `unknown` means applications could not be read (see `reason`). Catch-all rules have `access: null`. Zone-scoped applications are not read.
+
+`covered` means an application matches, not that every visitor signs in: Bypass policies and destination overrides can still let visitors through. The optional permission Account → Access: Apps and Policies → Read enables this check; without it, coverage is `unknown`. When a hostname shows `none`, ask who should be able to reach it.
+
 ## What it reads
 
 - Active and inactive tunnels only; deleted tunnels are never returned (`is_deleted=false`).
