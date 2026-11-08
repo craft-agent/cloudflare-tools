@@ -239,13 +239,15 @@ The skill is [`cloudflare-storage`](skills/cloudflare-storage/SKILL.md), shown a
 
 ### Tunnels (`tunnels`)
 
-Tunnels: list an account's cloudflared tunnels by name, status and connection times, and read one tunnel's active connectors, edge connections, colos and public-hostname ingress routing rules. A tunnel's run token is never exposed, connectors' internal ids and origin IP addresses are never read, and deleted tunnels are left out. For locally managed tunnels, ingress rules are kept on the host and cannot be read here. This toolset is off by default; turn it on with the `toolsets` setting (see [Settings](#settings)).
+Tunnels: list an account's cloudflared tunnels by name, status and connection times, and read one tunnel's active connectors, edge connections, colos and public-hostname ingress routing rules. A tunnel's run token is never exposed, connectors' internal ids and origin IP addresses are never read, and deleted tunnels are left out. For locally managed tunnels, ingress rules are kept on the host and cannot be read here. A hostname can be published through a dashboard-managed tunnel to a local service: the tool adds the rule and the proxied CNAME it needs, refuses a hostname that has other DNS records, and always asks first. This toolset is off by default; turn it on with the `toolsets` setting (see [Settings](#settings)).
 
-| Tool                     | What it does                                                | Class |
-| ------------------------ | ----------------------------------------------------------- | ----- |
-| `cloudflare_tunnel_read` | `tunnels` of the account; one `tunnel`'s status and ingress | read  |
+| Tool                          | What it does                                                                                  | Class          |
+| ----------------------------- | --------------------------------------------------------------------------------------------- | -------------- |
+| `cloudflare_tunnel_read`      | `tunnels` of the account; one `tunnel`'s status and ingress                                   | read           |
+| `cloudflare_tunnel_route_add` | publish a hostname (and optional path) through a tunnel to a local service; always asks first | administrative |
 
-The token needs Account → Cloudflare Tunnel → Read. Each public hostname also says
+The token needs Account → Cloudflare Tunnel → Read. Publishing a hostname needs
+Account → Cloudflare Tunnel → Edit and Zone → DNS → Edit. Each public hostname also says
 whether a Zero Trust Access application matches it, which needs Account → Access:
 Apps and Policies → Read; without it the coverage is `unknown`. A match is not a
 promise that every visitor signs in: a Bypass policy can still let them through.

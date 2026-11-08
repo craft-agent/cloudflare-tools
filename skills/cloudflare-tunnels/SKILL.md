@@ -1,23 +1,24 @@
 ---
 name: cloudflare-tunnels
-description: "Use when listing or inspecting an account's Cloudflare Tunnels (cloudflared): their health status, connector edge connections and colos, and public-hostname ingress routing rules."
+description: "Use when listing or inspecting an account's Cloudflare Tunnels (cloudflared): their health status, connector edge connections and colos, and public-hostname ingress routing rules; or when publishing a hostname through a dashboard-managed tunnel to a local service, with the proxied CNAME it needs."
 ---
 
 # Tunnels
 
-The tool reads the Cloudflare Tunnels (cloudflared) of the selected account:
+The tools read and publish through the Cloudflare Tunnels (cloudflared) of the selected account:
 
-| Tool                     | Does                                                        | Writes |
-| ------------------------ | ----------------------------------------------------------- | ------ |
-| `cloudflare_tunnel_read` | `tunnels` of the account; one `tunnel`'s status and ingress | no     |
+| Tool                          | Does                                                                         | Writes               |
+| ----------------------------- | ---------------------------------------------------------------------------- | -------------------- |
+| `cloudflare_tunnel_read`      | `tunnels` of the account; one `tunnel`'s status and ingress                  | no                   |
+| `cloudflare_tunnel_route_add` | publishes a hostname (and optional path) through a tunnel to a local service | yes (administrative) |
 
-The token needs Account → Cloudflare Tunnel → Read.
+The token needs Account → Cloudflare Tunnel → Read to read, and Account → Cloudflare Tunnel → Edit and Zone → DNS → Edit to publish a hostname.
 
-The `tunnels` toolset is off by default. Turn it on with the `toolsets` setting, naming the toolsets you want (the setting replaces the default list) or `all`, or add this one tool with `tools: ["cloudflare_tunnel_read"]`. The setting is an option of the plugin, a flag of the command line or the variable `CLOUDFLARE_TOOLS_TOOLSETS`, as the README's Settings section says.
+The `tunnels` toolset is off by default. Turn it on with the `toolsets` setting, naming the toolsets you want (the setting replaces the default list) or `all`, or add single tools with `tools: ["cloudflare_tunnel_read", "cloudflare_tunnel_route_add"]`. The setting is an option of the plugin, a flag of the command line or the variable `CLOUDFLARE_TOOLS_TOOLSETS`, as the README's Settings section says.
 
 ## Methods
 
-Every method takes an optional `account`.
+Every method of `cloudflare_tunnel_read` takes an optional `account`.
 
 - **`tunnels`**: the account's tunnels in `tunnels`, 50 per `page`: `id` (a UUID), `name`, `status` (`healthy`, `degraded`, `down`, `inactive`), `managed` (`cloudflare` or `local`), `created`, `active_at` and `inactive_at`. Optional `status` filters tunnels by that status; `page` sets the page number (int ≥ 1).
 - **`tunnel`**: one tunnel whose id is `tunnel` (a UUID, as `tunnels` lists it):
@@ -40,6 +41,22 @@ For Cloudflare-managed tunnels, `ingress` lists public-hostname routing rules in
 Each hostname's `access` reports matching account-level Zero Trust Access applications: `covered` means an application matches every path; `partial` means only some paths match; `none` means no application matches; `unknown` means applications could not be read (see `reason`). Catch-all rules have `access: null`. Zone-scoped applications are not read.
 
 `covered` means an application matches, not that every visitor signs in: Bypass policies and destination overrides can still let visitors through. The optional permission Account → Access: Apps and Policies → Read enables this check; without it, coverage is `unknown`. When a hostname shows `none`, ask who should be able to reach it.
+
+## Publishing a hostname
+
+`cloudflare_tunnel_route_add` makes a hostname reach a local service through a tunnel. It always asks first, since the hostname is public once published.
+
+- **Arguments**: `tunnel` (the tunnel's id, as `tunnels` lists it), `hostname` (as in `app.example.com`; no wildcard; it must lie in a zone of the same account), optional `path` (a regular expression in Go's syntax as Cloudflare takes it, 1–200 characters, sent unchanged) and `service` (`http://`, `https://`, `tcp://`, `ssh://`, `rdp://` or `smb://` followed by an address, `unix:<path>`, `unix+tls:<path>` or `http_status:<code>`). `hello_world` and `bastion` are for locally managed tunnels and are refused. Optional `account`.
+- **Checks, before anything is written** (a refusal sends no write):
+  - the tunnel exists, is not deleted and is managed in Cloudflare; a locally managed tunnel takes its hostnames from a file on its machine, so change them there;
+  - the hostname lies in a zone of the account (the longest matching zone name is used);
+  - the tunnel has no rule for the same hostname and path yet (`cloudflare_tunnel_route_edit` changes one), and no earlier rule without a path takes every request to the hostname first: the same hostname when the new rule has a path, or a wildcard `*.<suffix>` the hostname ends with;
+  - the hostname has no DNS records, or only a proxied CNAME to the tunnel (`<tunnel id>.cfargotunnel.com`); anything else is refused, so change or delete those records with the DNS tools first.
+- **What it does**: the new rule goes into the tunnel's configuration just before the catch-all (without one, the rule is appended and followed by an `http_status:404` catch-all), and a proxied CNAME from the hostname to the tunnel is added unless it is already there. The result holds the rule before (`null`) and after, the zone, and `dns.created` or `dns.kept`.
+- **Access coverage**: the result's `access` says whether a Zero Trust Access application matches the hostname. `none` does not stop the call, but anyone on the internet can reach the service unless something else stops them, so ask who should reach it before publishing. The check needs Account → Access: Apps and Policies → Read; without it the coverage is `unknown`.
+- **The configuration is written whole**: the tool reads it and sends it back with the rule added, so a change someone else makes to the tunnel's configuration in between is lost. Where the client lets the tool ask, it reads again after the answer and refuses as `stale` when the configuration or the hostname's DNS records changed.
+- **Order and a stop part way**: the configuration is written first, the DNS record second. When the configuration write fails, the error says whether nothing changed or Cloudflare may or may not have changed it (read the tunnel with `cloudflare_tunnel_read` before sending it again). When the DNS step fails after the write, nothing is undone: the tunnel already sends the hostname to the service, but no visitor reaches it until the record exists. The error's `details` hold `done`, the rule written and `remaining`: the `cloudflare_dns_record_add` arguments that add the CNAME, so finish with that call (read the records with `cloudflare_dns_read` first when the error says the record may have been added).
+- **Permissions**: Account → Cloudflare Tunnel → Edit and Zone → DNS → Edit; Account → Access: Apps and Policies → Read is optional, for the coverage.
 
 ## What it reads
 
