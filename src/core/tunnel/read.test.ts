@@ -207,6 +207,19 @@ test("tunnels: sends status and page when given", async () => {
   })
   expect(result.tunnels).toEqual([])
   expect(result.page).toBe(3)
+  expect(result.note).toBeUndefined()
+})
+
+test("tunnels: an empty first page says the token may lack the permission", async () => {
+  const { tool } = toolFor({ method: "GET", path: TUNNELS_PATH, reply: ok([]) })
+
+  for (const args of [{ method: "tunnels" }, { method: "tunnels", status: "healthy", page: 1 }]) {
+    const result = await invoke(tool, args, CTX)
+    expect(result.tunnels).toEqual([])
+    expect(result.note).toBe(
+      "No tunnel is listed. Cloudflare also answers an empty list when the token lacks the permission, so check it if tunnels are expected: The token needs Account → Cloudflare One Connector: cloudflared → Read.",
+    )
+  }
 })
 
 test("tunnels: upstream_error when response is not an array", async () => {

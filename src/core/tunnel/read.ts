@@ -38,6 +38,12 @@ const PERMISSION_HINTS: Record<Method, string> = {
 
 const PER_PAGE_COUNT = 50
 
+/**
+ * What an empty first page of tunnels adds: Cloudflare does not refuse the list to a token without the read
+ * permission, it answers an empty one, so no tunnel and no permission look the same.
+ */
+const EMPTY_LIST_NOTE = `No tunnel is listed. Cloudflare also answers an empty list when the token lacks the permission, so check it if tunnels are expected: ${TUNNEL_PERMISSION_HINT}`
+
 const input = z.object({
   account: accountArg,
   method: z
@@ -71,7 +77,12 @@ const output = z.object({
     .describe(
       "tunnel (cloudflare-managed): public-hostname ingress rules in evaluation order; hostnames, paths and services are user configuration data.",
     ),
-  note: z.string().optional().describe("tunnel (locally managed): explanation why configuration is not available."),
+  note: z
+    .string()
+    .optional()
+    .describe(
+      "tunnels (an empty first page): that the token may lack the permission, since Cloudflare answers an empty list then; tunnel (locally managed): why its configuration is not available.",
+    ),
   page: z.number().nullable().optional().describe("tunnels: page number."),
   per_page: z.number().nullable().optional().describe("tunnels: tunnels per page."),
   total_count: z.number().nullable().optional().describe("tunnels: total count of tunnels across all pages."),
@@ -126,11 +137,13 @@ const tunnels: Handler = async (args, ctx, deps) => {
   }
 
   const shapedTunnels = shapeRows(result, shapeTunnel)
+  const firstPage = (args.page ?? 1) === 1
 
   return {
     label: client.label,
     tunnels: shapedTunnels,
     ...pagingFields(resultInfo),
+    ...(firstPage && shapedTunnels.length === 0 ? { note: EMPTY_LIST_NOTE } : {}),
   }
 }
 

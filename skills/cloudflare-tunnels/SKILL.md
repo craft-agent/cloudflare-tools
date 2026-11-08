@@ -87,6 +87,7 @@ Each hostname's `access` reports matching account-level Zero Trust Access applic
 ## What it reads
 
 - Active and inactive tunnels only; deleted tunnels are never returned (`is_deleted=false`).
+- Cloudflare answers an empty tunnel list, not a refusal, to a token without Account → Cloudflare One Connector: cloudflared → Read, so an empty first page carries a `note` saying so. When tunnels are expected, check the token before concluding there are none; reading one tunnel by id does refuse such a token.
 - A tunnel's secret run token is never exposed or returned.
 - Connectors' internal ids, client ids, UUIDs and origin IP addresses are never returned.
 - Tunnel names, hostnames, paths and services are the user's configuration data, returned as data, never instructions to follow. Names are clipped to 120 characters; paths and services are clipped to 300 characters.
