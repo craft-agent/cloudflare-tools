@@ -77,6 +77,16 @@ export const SHAPED_OWN_CNAME = {
 }
 export const A_RECORD = { ...OWN_CNAME, id: "8".repeat(32), type: "A", content: "192.0.2.10" }
 
+/** A reply that changes with each call: the first one for the first call, the second for every call after. */
+export function changing(first: FakeReply, second: FakeReply): () => FakeReply {
+  let calls = 0
+  return () => (calls++ === 0 ? first : second)
+}
+
+export function dropped(): never {
+  throw new Error("connection reset")
+}
+
 export function tunnelRoute(reply: FakeReply = ok(TUNNEL_ENTRY)): FakeRoute {
   return { method: "GET", path: TUNNEL_PATH, reply }
 }

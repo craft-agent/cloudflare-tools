@@ -18,7 +18,9 @@ import {
   VERSION,
   ZONE_NAME,
   batchRoute,
+  changing,
   configRoute,
+  dropped,
   publishedRoute,
   putRoute,
   recordsRoute,
@@ -33,16 +35,6 @@ const PUBLISHED = [API_RULE, PUBLISHED_RULE, CATCH_ALL]
 const CONFIGURATION_DONE = "The tunnel's configuration was changed: it no longer publishes app.example.com."
 const DNS_NOTE =
   "it still points the hostname at the tunnel, which answers with its catch-all. cloudflare_dns_read shows the records, and cloudflare_dns_record_delete with the record in this error's details deletes it."
-
-/** A reply that changes with each call: the first one for the first call, the second for every call after. */
-function changing(first: FakeReply, second: FakeReply): () => FakeReply {
-  let calls = 0
-  return () => (calls++ === 0 ? first : second)
-}
-
-function dropped(): never {
-  throw new Error("connection reset")
-}
 
 describe("route remove: the configuration write fails", () => {
   test.each([

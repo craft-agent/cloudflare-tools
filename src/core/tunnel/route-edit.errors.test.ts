@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test"
 import { rejection, toolError } from "../cloudflare/client.fixtures"
-import { fail, ok, type FakeReply } from "../cloudflare/testing"
+import { fail, ok } from "../cloudflare/testing"
 import { isAbortError, isToolError } from "../errors"
 import { invoke } from "../tool"
 import {
@@ -15,7 +15,9 @@ import {
   TUNNEL_CONFIG_PATH,
   TUNNEL_ID,
   VERSION,
+  changing,
   configRoute,
+  dropped,
   editFor,
   putRoute,
   recordsRoute,
@@ -27,16 +29,6 @@ const NEW_SERVICE = "http://localhost:9090"
 const ARGS = { tunnel: TUNNEL_ID, hostname: HOSTNAME, service: NEW_SERVICE, replaces: SERVICE }
 const REFUSED = { code: 9005, message: "Content is invalid" }
 const PUBLISHED = [API_RULE, PUBLISHED_RULE, CATCH_ALL]
-
-/** A reply that changes with each call: the first one for the first call, the second for every call after. */
-function changing(first: FakeReply, second: FakeReply): () => FakeReply {
-  let calls = 0
-  return () => (calls++ === 0 ? first : second)
-}
-
-function dropped(): never {
-  throw new Error("connection reset")
-}
 
 describe("route edit: the write fails", () => {
   test.each([
