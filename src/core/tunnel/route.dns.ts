@@ -1,9 +1,11 @@
+import { isDeepStrictEqual } from "node:util"
 import { z } from "zod"
 import type { CloudflareClient } from "../cloudflare/client"
 import type { RecordListItem } from "../dns/records"
 import { ToolError } from "../errors"
 import { recordSchema, recordsAt } from "../pages/domains"
 import type { Zone } from "../zone/lookup"
+import { readConfiguration, readTunnel, type Configuration } from "./route"
 import { clip } from "./shape"
 
 /** The host every tunnel's CNAME target is under. */
@@ -86,6 +88,28 @@ export function dnsReport(state: DnsState): DnsReport {
 export function sameDns(first: DnsState, second: DnsState): boolean {
   if (first.action !== second.action) return false
   return first.action !== "keep" || (second.action === "keep" && first.record.id === second.record.id)
+}
+
+/** Reads again what the approved plan relied on, and refuses when it changed while the person decided. */
+export async function assertRouteUnchanged(
+  client: CloudflareClient,
+  tunnelId: string,
+  plan: { zone: Zone; configuration: Configuration; dns: DnsState },
+  hostname: string,
+): Promise<void> {
+  await readTunnel(client, tunnelId)
+  const configuration = await readConfiguration(client, tunnelId)
+  const dns = await readDnsState(client, plan.zone, hostname, tunnelId)
+  const same =
+    configuration.version === plan.configuration.version &&
+    isDeepStrictEqual(configuration.ingress, plan.configuration.ingress) &&
+    sameDns(dns, plan.dns)
+  if (!same) {
+    throw new ToolError(
+      "stale",
+      `The tunnel's configuration or ${hostname}'s DNS records changed while waiting for the answer. Nothing was changed; read them again before trying again.`,
+    )
+  }
 }
 
 /** Refuses a hostname that has DNS records the tool would not own, listing some of them. */

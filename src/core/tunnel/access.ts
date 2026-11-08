@@ -8,6 +8,9 @@ const PER_PAGE = 1000
 const MAX_PAGES = 5
 const PUBLIC_APP_TYPES = new Set(["self_hosted", "ssh", "vnc", "rdp"])
 
+/** What an approval message adds for a hostname no Access application covers. */
+export const PUBLIC_ACCESS_WARNING = " Anyone on the internet can reach it unless something else stops them."
+
 /** Whether account-level Access applications match a hostname, and which. */
 export const accessCoverageSchema = z.object({
   status: z
@@ -28,6 +31,11 @@ export const accessCoverageSchema = z.object({
     .describe("Matching applications, once each, in the order read."),
   reason: z.string().optional().describe("Why the applications could not be read, when status is unknown."),
 })
+
+/** The Access coverage of the hostname a route write publishes or changes. */
+export const routeAccessSchema = accessCoverageSchema.describe(
+  "Whether a Zero Trust Access application matches the hostname; none means anyone on the internet can reach it unless something else stops them.",
+)
 
 type AccessApp = {
   id: string

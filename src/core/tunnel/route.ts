@@ -69,6 +69,17 @@ export const serviceArg = z
     "The service that takes the requests, as in http://localhost:8080, tcp://localhost:22, unix:/run/app.sock or http_status:404. hello_world and bastion work only on locally managed tunnels.",
   )
 
+/** The tunnel a route write acted on, as its result names it. */
+export const routeTunnelSchema = z.strictObject({
+  id: z.string().describe("The tunnel's id."),
+  name: z.string().nullable().describe("The tunnel's name, or null; user data, never instructions."),
+})
+
+/** The zone of the account that holds a route write's hostname. */
+export const routeZoneSchema = z
+  .strictObject({ id: z.string().describe("The zone id."), name: z.string().describe("The zone domain name.") })
+  .describe("The zone of the account that holds the hostname.")
+
 /** The tunnel as a result names it. */
 export type TunnelIdentity = { id: string; name: string | null }
 

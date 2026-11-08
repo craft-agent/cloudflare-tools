@@ -7,6 +7,9 @@ const CATCH_ALL_SERVICE = "http_status:404"
 
 const WILDCARD_PREFIX = "*."
 
+/** How a message shows a rule that has no service. */
+export const MISSING_SERVICE_LABEL = "no service"
+
 /** One ingress rule to publish: a hostname, an optional path regular expression and the service that takes the requests. */
 export type NewRule = { hostname: string; path?: string; service: string }
 
