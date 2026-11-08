@@ -1,18 +1,20 @@
 ---
 name: cloudflare-tunnels
-description: "Use when listing or inspecting an account's Cloudflare Tunnels (cloudflared): their health status, connector edge connections and colos, and public-hostname ingress routing rules; or when publishing a hostname through a dashboard-managed tunnel to a local service, with the proxied CNAME it needs."
+description: "Use when listing or inspecting an account's Cloudflare Tunnels (cloudflared): their health status, connector edge connections and colos, and public-hostname ingress routing rules; or when publishing a hostname through a dashboard-managed tunnel to a local service (with the proxied CNAME it needs), changing the service a published hostname goes to, or withdrawing a hostname from a tunnel."
 ---
 
 # Tunnels
 
-The tools read and publish through the Cloudflare Tunnels (cloudflared) of the selected account:
+The tools read, publish through and change the Cloudflare Tunnels (cloudflared) of the selected account:
 
-| Tool                          | Does                                                                         | Writes               |
-| ----------------------------- | ---------------------------------------------------------------------------- | -------------------- |
-| `cloudflare_tunnel_read`      | `tunnels` of the account; one `tunnel`'s status and ingress                  | no                   |
-| `cloudflare_tunnel_route_add` | publishes a hostname (and optional path) through a tunnel to a local service | yes (administrative) |
+| Tool                             | Does                                                                         | Writes               |
+| -------------------------------- | ---------------------------------------------------------------------------- | -------------------- |
+| `cloudflare_tunnel_read`         | `tunnels` of the account; one `tunnel`'s status and ingress                  | no                   |
+| `cloudflare_tunnel_route_add`    | publishes a hostname (and optional path) through a tunnel to a local service | yes (administrative) |
+| `cloudflare_tunnel_route_edit`   | changes the service a published hostname goes to                             | yes (administrative) |
+| `cloudflare_tunnel_route_remove` | withdraws a hostname from a tunnel, and deletes its CNAME to the tunnel      | yes (administrative) |
 
-The token needs Account → Cloudflare Tunnel → Read to read, and Account → Cloudflare Tunnel → Edit and Zone → DNS → Edit to publish a hostname.
+The token needs Account → Cloudflare Tunnel → Read to read; Account → Cloudflare Tunnel → Edit and Zone → DNS → Edit to publish or withdraw a hostname; Account → Cloudflare Tunnel → Edit (and Zone → DNS → Read, to report the record) to change where one goes.
 
 The `tunnels` toolset is off by default. Turn it on with the `toolsets` setting, naming the toolsets you want (the setting replaces the default list) or `all`, or add single tools with `tools: ["cloudflare_tunnel_read", "cloudflare_tunnel_route_add"]`. The setting is an option of the plugin, a flag of the command line or the variable `CLOUDFLARE_TOOLS_TOOLSETS`, as the README's Settings section says.
 
@@ -57,6 +59,30 @@ Each hostname's `access` reports matching account-level Zero Trust Access applic
 - **The configuration is written whole**: the tool reads it and sends it back with the rule added, so a change someone else makes to the tunnel's configuration in between is lost. Where the client lets the tool ask, it reads again after the answer and refuses as `stale` when the configuration or the hostname's DNS records changed.
 - **Order and a stop part way**: the configuration is written first, the DNS record second. When the configuration write fails, the error says whether nothing changed or Cloudflare may or may not have changed it (read the tunnel with `cloudflare_tunnel_read` before sending it again). When the DNS step fails after the write, nothing is undone: the tunnel already sends the hostname to the service, but no visitor reaches it until the record exists. The error's `details` hold `done`, the rule written and `remaining`: the `cloudflare_dns_record_add` arguments that add the CNAME, so finish with that call (read the records with `cloudflare_dns_read` first when the error says the record may have been added).
 - **Permissions**: Account → Cloudflare Tunnel → Edit and Zone → DNS → Edit; Account → Access: Apps and Policies → Read is optional, for the coverage.
+
+## Changing where a hostname goes
+
+`cloudflare_tunnel_route_edit` changes the service that a published hostname goes to. It always asks first, since visitors get the new service at once.
+
+- **Arguments**: `tunnel`, `hostname` and optional `path` name the rule (a missing `path` means the rule without one; the hostname is compared in any case, the path exactly); `service` is the new service, in the forms `cloudflare_tunnel_route_add` takes; `replaces` is the service the rule goes to now, exactly as `cloudflare_tunnel_read tunnel` shows it (1–300 characters). Optional `account`.
+- **Checks, before anything is written** (a refusal sends no write): the tunnel exists, is not deleted and is managed in Cloudflare; the hostname lies in a zone of the account; the tunnel publishes the rule (else `not_found`); the rule goes to `replaces` (else `stale`: someone changed it since it was read, so read the tunnel again); the new service differs from the current one (else `invalid_argument`).
+- **What it writes**: the configuration, with only that rule's `service` replaced. Every other key of the rule (`originRequest`, for one), every other rule and every other setting stay as they are. It reads again after the answer where the client lets the tool ask, and refuses as `stale` when the configuration changed. The configuration is written whole, so a change someone else makes to it in between is lost.
+- **DNS is reported, never written**: `dns` is `kept` (the proxied CNAME to the tunnel is there), `missing` (no record) or `other` (up to 5 other records). A hostname whose `dns` is `missing` or `other` does not reach the tunnel, whatever the rule says: publish it with `cloudflare_tunnel_route_add` or fix the records with the DNS tools. The edit never refuses on DNS.
+- **Access coverage**: the result's `access` is as for publishing; when it is `none`, ask who should reach the service.
+- **Failure**: a refused write says nothing was changed; one that does not tell says Cloudflare may or may not have changed the configuration, so read the tunnel with `cloudflare_tunnel_read` before sending it again.
+- **Permissions**: Account → Cloudflare Tunnel → Edit; Zone → DNS → Read for the `dns` report; Account → Access: Apps and Policies → Read is optional, for the coverage.
+
+## Withdrawing a hostname
+
+`cloudflare_tunnel_route_remove` stops a tunnel publishing a hostname. It always asks first, since visitors stop reaching the service at once.
+
+- **Arguments**: `tunnel`, `hostname` and optional `path` name the rule, as for editing. Optional `account`. There is nothing else to give.
+- **Checks, before anything is written**: the tunnel exists, is not deleted and is managed in Cloudflare; the hostname lies in a zone of the account; the tunnel publishes the rule (else `not_found`).
+- **What it writes**: first the configuration without that rule, which withdraws the service at once; what remains always ends with a catch-all (an `http_status:404` one is added when the last remaining rule has a hostname or path, and an empty list becomes just that rule). Second, the DNS record: the proxied CNAME from the hostname to this tunnel is deleted when no other rule of the tunnel (another path, for one) still uses the hostname and that CNAME is the only record there.
+- **DNS the tool leaves alone**: `dns` is `deleted` (the CNAME it deleted), `kept` (another rule still uses the hostname), `missing` (no record) or `other` (up to 5 records that are not the proxied CNAME to this tunnel, an unproxied CNAME to it among them). It never changes such records; use the DNS tools. Access is not read, since the hostname is withdrawn.
+- **Stale**: where the client lets the tool ask, it reads the tunnel, the configuration and the records again after the answer and refuses as `stale` when the configuration or the DNS decision changed. The configuration is written whole, so a change someone else makes to it in between is lost.
+- **Order and a stop part way**: when the configuration write fails, the error says whether nothing changed or Cloudflare may or may not have changed it (read the tunnel before sending it again), and no record is deleted. When the DNS delete fails after the write, nothing is undone: the tunnel no longer publishes the hostname, but the CNAME still points it at the tunnel, which answers with its catch-all. The error's `details` hold `done`, the rule removed and `remaining`: the `cloudflare_dns_record_delete` arguments for that record, so finish with that call (read the records with `cloudflare_dns_read` first when the error says the record may have been deleted).
+- **Permissions**: Account → Cloudflare Tunnel → Edit and Zone → DNS → Edit.
 
 ## What it reads
 
