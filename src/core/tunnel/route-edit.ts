@@ -3,9 +3,10 @@ import { z } from "zod"
 import { accountArg } from "../cloudflare/args"
 import { cloudflareClient, type CloudflareClient, type CloudflareDeps } from "../cloudflare/client"
 import { ToolError } from "../errors"
-import { confirmWrite, defineTool, type ToolSpec } from "../tool"
+import { confirmWrite, defineTool, type CallDescription, type CallFact, type ToolContext, type ToolSpec } from "../tool"
 import type { Zone } from "../zone/lookup"
 import { accessCoverageSchema, coverageOf, PUBLIC_ACCESS_WARNING, readAccessApps, routeAccessSchema } from "./access"
+import { accessFact, configurationPins, pathFacts, routeHeadline } from "./describe"
 import { dnsReport, dnsReportSchema, readDnsState, type DnsState } from "./route.dns"
 import {
   findZone,
@@ -33,6 +34,7 @@ import {
   type RuleKey,
 } from "./route.rules"
 import { INGRESS_TEXT_MAX_LENGTH, clip } from "./shape"
+import { TUNNEL_WORDS } from "./words"
 
 const MAYBE_WRITTEN =
   "Cloudflare may or may not have changed the tunnel's configuration; read cloudflare_tunnel_read tunnel before sending it again."
@@ -70,6 +72,7 @@ const output = z.object({
   access: routeAccessSchema,
 })
 
+type Args = z.output<typeof input>
 type RouteEditSpec = ToolSpec<typeof input, typeof output>
 
 /** What the call found before it writes: the tunnel, the zone, the configuration, where the rule is and the hostname's DNS. */
@@ -126,11 +129,39 @@ function confirmation(
   return `Send ${ruleLabel(key)} through tunnel ${plan.tunnel.name ?? plan.tunnel.id} to ${args.service} instead of ${args.replaces}. Access coverage: ${access.status}.${exposed}`
 }
 
+/** What a call will do: the rule's key, the client, what the plan found and the hostname's Access coverage; refuses what the tool refuses before it asks. */
+async function planCall(args: Args, ctx: ToolContext, deps?: CloudflareDeps) {
+  const hostname = normalizedHostname(args.hostname)
+  const key: RuleKey = { hostname, ...(args.path === undefined ? {} : { path: args.path }) }
+  const client = cloudflareClient(args.account, { ...deps, signal: ctx.signal })
+
+  const plan = await planFor(client, args.tunnel, key, args.replaces, args.service)
+  const access = coverageOf(hostname, await readAccessApps(client))
+  return { hostname, key, client, plan, access }
+}
+
+/** The description of the call: the hostname and the tunnel, whether Access covers it, the path, the DNS when the hostname does not reach the tunnel and the service change; the configuration is pinned, since it is sent back whole. */
+async function describeCall(args: Args, ctx: ToolContext, deps?: CloudflareDeps): Promise<CallDescription> {
+  const { hostname, key, plan, access } = await planCall(args, ctx, deps)
+  const facts: CallFact[] = [
+    accessFact(access),
+    ...pathFacts(key.path),
+    ...(plan.dns.action === "keep" ? [] : [{ label: TUNNEL_WORDS.dns, value: { text: TUNNEL_WORDS.dnsMissing } }]),
+  ]
+  return {
+    headline: routeHeadline(TUNNEL_WORDS.change, plan.tunnel, hostname),
+    facts,
+    text: { label: TUNNEL_WORDS.changes, body: `service: ${args.replaces} → ${args.service}` },
+    pins: configurationPins(plan.configuration),
+  }
+}
+
 /** Defines the `cloudflare_tunnel_route_edit` tool spec with injected dependencies. */
 export function defineTunnelRouteEdit(deps?: CloudflareDeps): RouteEditSpec {
   const spec: RouteEditSpec = defineTool({
     id: "cloudflare_tunnel_route_edit",
     title: "Change where a tunnel sends a hostname",
+    intent: "About to change where a tunnel sends a hostname",
     description: [
       "Change the service that a dashboard-managed Cloudflare Tunnel sends a hostname (and path) to; the tool always asks first, since the hostname's visitors get the new service at once.",
       "Name the rule by `hostname` and `path` (left out, the rule without a path) and give the service it goes to now as `replaces`, exactly as cloudflare_tunnel_read tunnel shows it: when the rule goes elsewhere by then the call is refused as stale, and a rule the tunnel does not publish is not_found.",
@@ -148,13 +179,9 @@ export function defineTunnelRouteEdit(deps?: CloudflareDeps): RouteEditSpec {
     input,
     output,
     targets: (args, ctx) => routeTargets(args, ctx, deps, { dns: false }),
+    describe: (args, ctx) => describeCall(args, ctx, deps),
     async execute(args, ctx) {
-      const hostname = normalizedHostname(args.hostname)
-      const key: RuleKey = { hostname, ...(args.path === undefined ? {} : { path: args.path }) }
-      const client = cloudflareClient(args.account, { ...deps, signal: ctx.signal })
-
-      const plan = await planFor(client, args.tunnel, key, args.replaces, args.service)
-      const access = coverageOf(hostname, await readAccessApps(client))
+      const { key, client, plan, access } = await planCall(args, ctx, deps)
       await confirmWrite(spec, ctx, confirmation(plan, key, args, access))
       // An answer can take minutes; read again so the write acts on what was approved.
       if (ctx.confirm) await assertUnchanged(client, args.tunnel, plan)
