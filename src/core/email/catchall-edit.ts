@@ -6,7 +6,7 @@ import { failureOfWrite, type WriteFailureNotes } from "../cloudflare/refusal"
 import { ROUTES } from "../cloudflare/routes"
 import { isAbortError, isToolError, ToolError } from "../errors"
 import { ANY_TARGET } from "../targets"
-import { confirmWrite, defineTool, type ToolSpec } from "../tool"
+import { confirmWrite, defineTool, type CallDescription, type ToolContext, type ToolSpec } from "../tool"
 import { resolveZone, zoneArg, type Zone } from "../zone/lookup"
 import {
   describeState,
@@ -17,6 +17,7 @@ import {
   type CatchAll,
   type CatchAllState,
 } from "./catchall.current"
+import { routingOffFacts, stateValue } from "./describe"
 import {
   actionArg,
   actionBody,
@@ -30,6 +31,7 @@ import {
 } from "./rule"
 import { assertVerifiedDestination, readRoutingEnabled, RULES_EDIT_HINT, shapedRule, withHint } from "./rule.checks"
 import { accountLabelSchema, ruleSchema, type Rule } from "./shape"
+import { EMAIL_WORDS } from "./words"
 
 const WRITE_NOTES: WriteFailureNotes = {
   nothing: NOTHING_CHANGED,
@@ -171,11 +173,43 @@ async function replaceCatchAll(client: CloudflareClient, zoneId: string, body: R
   }
 }
 
+/** What a call will do: the client, the zone, the catch-all as it is, its state now and after, and whether Email Routing is on; refuses what the tool refuses before it asks. */
+async function planCatchAllEdit(args: Args, ctx: ToolContext, deps?: CloudflareDeps) {
+  assertNamed(args)
+  const client = cloudflareClient(args.account, { ...deps, signal: ctx.signal })
+  const zone = await resolveZone(client, args.zone)
+  const catchAll = await readCatchAll(client, zone)
+  const current = stateOf(catchAll)
+  assertNotStale(current, args.replaces, zone.name)
+
+  const change = changeOf(args, catchAll, zone.name)
+  await assertChangeFits(client, catchAll, change)
+  const routingEnabled = await readRoutingEnabled(client, zone.id)
+
+  const next: CatchAllState = change.enabled ? change.action : "disabled"
+  return { client, zone, catchAll, current, change, routingEnabled, next }
+}
+
+/** The description of the call: the zone and the catch-all's state now and after; the catch-all as read is pinned, since it is sent back whole, name included. */
+async function describeCatchAllEdit(args: Args, ctx: ToolContext, deps?: CloudflareDeps): Promise<CallDescription> {
+  const { zone, catchAll, current, next, routingEnabled } = await planCatchAllEdit(args, ctx, deps)
+  return {
+    headline: { text: EMAIL_WORDS.catchAllEdit, values: { zone: zone.name } },
+    facts: [
+      ...routingOffFacts(routingEnabled),
+      { label: EMAIL_WORDS.now, value: stateValue(current) },
+      { label: EMAIL_WORDS.after, value: stateValue(next) },
+    ],
+    pins: { catch_all: JSON.stringify(catchAll) },
+  }
+}
+
 /** Defines the `cloudflare_email_catchall_edit` tool spec with injected dependencies. */
 export function defineEmailCatchAllEdit(deps?: CloudflareDeps): CatchAllEditSpec {
   const spec: CatchAllEditSpec = defineTool({
     id: "cloudflare_email_catchall_edit",
     title: "Change an Email Routing catch-all",
+    intent: "About to change a catch-all",
     description: [
       "Changes a zone's catch-all, which takes mail to every address no rule matches: it forwards it to one destination address the account has verified, drops it, hands it to a Worker, or is turned off, so that such mail is rejected.",
       "`replaces` names the catch-all's current state, its action or `disabled`, as cloudflare_email_read routing shows it; a catch-all changed since it was read is refused as stale.",
@@ -200,19 +234,10 @@ export function defineEmailCatchAllEdit(deps?: CloudflareDeps): CatchAllEditSpec
         return [ANY_TARGET]
       }
     },
+    describe: (args, ctx) => describeCatchAllEdit(args, ctx, deps),
     async execute(args, ctx) {
-      assertNamed(args)
-      const client = cloudflareClient(args.account, { ...deps, signal: ctx.signal })
-      const zone = await resolveZone(client, args.zone)
-      const catchAll = await readCatchAll(client, zone)
-      const current = stateOf(catchAll)
-      assertNotStale(current, args.replaces, zone.name)
+      const { client, zone, catchAll, current, change, routingEnabled, next } = await planCatchAllEdit(args, ctx, deps)
 
-      const change = changeOf(args, catchAll, zone.name)
-      await assertChangeFits(client, catchAll, change)
-      const routingEnabled = await readRoutingEnabled(client, zone.id)
-
-      const next = change.enabled ? change.action : "disabled"
       await confirmWrite(spec, ctx, confirmation(zone.name, current, next, routingEnabled))
       if (ctx.confirm) await assertUnchanged(client, zone, catchAll)
 
