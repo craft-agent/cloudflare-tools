@@ -5,8 +5,9 @@ import { cloudflareClient, type CloudflareDeps } from "../cloudflare/client"
 import { isPlainObject } from "../cloudflare/reply"
 import { ROUTES } from "../cloudflare/routes"
 import { ToolError } from "../errors"
-import { defineTool, type ToolContext, type ToolSpec } from "../tool"
+import { defineTool, type CallDescription, type ToolContext, type ToolSpec } from "../tool"
 import { resolveZone, zoneArg, zoneTargets } from "./lookup"
+import { ZONE_WORDS } from "./words"
 
 export const CACHE_PURGE_ID = "cloudflare_zone_cache_purge"
 
@@ -185,11 +186,42 @@ function validateAndNormalizeItems(kind: PurgeKind, items: string[], zoneName: s
 /** What a cache purge call writes to: `<account_id>/zones/<zone_id>`; `*` when that cannot be told. */
 export const cachePurgeTargets = zoneTargets
 
+const KIND_WORDS: Record<PurgeKind, { headline: string; label: string }> = {
+  urls: { headline: ZONE_WORDS.purgeUrls, label: ZONE_WORDS.urls },
+  hosts: { headline: ZONE_WORDS.purgeHosts, label: ZONE_WORDS.hosts },
+  prefixes: { headline: ZONE_WORDS.purgePrefixes, label: ZONE_WORDS.prefixes },
+  tags: { headline: ZONE_WORDS.purgeTags, label: ZONE_WORDS.tags },
+}
+
+/** What a call will send: the kind of entry, the client, the zone it resolved and the checked, normalized items. */
+async function planPurge(args: z.output<typeof input>, ctx: ToolContext, deps?: CloudflareDeps) {
+  const { kind, items } = selectKind(args)
+  const client = cloudflareClient(args.account, { ...deps, signal: ctx.signal })
+  const zone = await resolveZone(client, args.zone)
+  const normalizedItems = validateAndNormalizeItems(kind, items, zone.name)
+  return { kind, client, zone, normalizedItems }
+}
+
+async function describePurge(
+  args: z.output<typeof input>,
+  ctx: ToolContext,
+  deps?: CloudflareDeps,
+): Promise<CallDescription> {
+  const { kind, zone, normalizedItems } = await planPurge(args, ctx, deps)
+  const words = KIND_WORDS[kind]
+  return {
+    headline: { text: words.headline, values: { zone: zone.name } },
+    facts: [{ label: ZONE_WORDS.count, value: String(normalizedItems.length) }],
+    text: { label: words.label, body: normalizedItems.join("\n") },
+  }
+}
+
 /** Defines the `cloudflare_zone_cache_purge` tool spec with injected dependencies. */
 export function defineZoneCachePurge(deps?: CloudflareDeps): ZoneCachePurgeSpec {
   return defineTool({
     id: CACHE_PURGE_ID,
     title: "Purge Cloudflare zone cache",
+    intent: "About to purge cached content",
     description:
       "Purge cached copies of the given URLs, hosts, prefixes or tags in one zone, up to 100 at a time; nothing stored is deleted, the next requests fetch from the origin; for the whole cache use cloudflare_zone_cache_purge_all.",
     toolset: "zones",
@@ -197,11 +229,9 @@ export function defineZoneCachePurge(deps?: CloudflareDeps): ZoneCachePurgeSpec 
     input,
     output,
     targets: (args, ctx) => zoneTargets(args, ctx, deps),
+    describe: (args, ctx) => describePurge(args, ctx, deps),
     async execute(args, ctx) {
-      const { kind, items } = selectKind(args)
-      const client = cloudflareClient(args.account, { ...deps, signal: ctx.signal })
-      const zone = await resolveZone(client, args.zone)
-      const normalizedItems = validateAndNormalizeItems(kind, items, zone.name)
+      const { kind, client, zone, normalizedItems } = await planPurge(args, ctx, deps)
 
       const body =
         kind === "urls"

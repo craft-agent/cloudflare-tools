@@ -3,8 +3,9 @@ import { accountArg } from "../cloudflare/args"
 import { cloudflareClient, type CloudflareDeps } from "../cloudflare/client"
 import { isPlainObject } from "../cloudflare/reply"
 import { ROUTES } from "../cloudflare/routes"
-import { confirmWrite, defineTool, type ToolSpec } from "../tool"
+import { confirmWrite, defineTool, type CallDescription, type ToolContext, type ToolSpec } from "../tool"
 import { resolveZone, zoneArg, zoneTargets } from "./lookup"
+import { ZONE_WORDS } from "./words"
 
 export const CACHE_PURGE_ALL_ID = "cloudflare_zone_cache_purge_all"
 
@@ -25,11 +26,31 @@ const output = z.object({
 
 export type ZoneCachePurgeAllSpec = ToolSpec<typeof input, typeof output>
 
+/** What a call will send: the client and the zone it resolved. */
+async function planPurgeAll(args: z.output<typeof input>, ctx: ToolContext, deps?: CloudflareDeps) {
+  const client = cloudflareClient(args.account, { ...deps, signal: ctx.signal })
+  const zone = await resolveZone(client, args.zone)
+  return { client, zone }
+}
+
+async function describePurgeAll(
+  args: z.output<typeof input>,
+  ctx: ToolContext,
+  deps?: CloudflareDeps,
+): Promise<CallDescription> {
+  const { zone } = await planPurgeAll(args, ctx, deps)
+  return {
+    headline: { text: ZONE_WORDS.purgeAll, values: { zone: zone.name } },
+    facts: [{ label: ZONE_WORDS.effect, value: { text: ZONE_WORDS.effectOrigin } }],
+  }
+}
+
 /** Defines the `cloudflare_zone_cache_purge_all` tool spec with injected dependencies. */
 export function defineZoneCachePurgeAll(deps?: CloudflareDeps): ZoneCachePurgeAllSpec {
   const spec: ZoneCachePurgeAllSpec = defineTool({
     id: CACHE_PURGE_ALL_ID,
     title: "Purge entire Cloudflare zone cache",
+    intent: "About to purge a zone's whole cache",
     description:
       "Purge the whole cache of a Cloudflare zone. Every next request goes to the origin at once, so the origin should be able to take it.",
     toolset: "zones",
@@ -37,9 +58,9 @@ export function defineZoneCachePurgeAll(deps?: CloudflareDeps): ZoneCachePurgeAl
     input,
     output,
     targets: (args, ctx) => zoneTargets(args, ctx, deps),
+    describe: (args, ctx) => describePurgeAll(args, ctx, deps),
     async execute(args, ctx) {
-      const client = cloudflareClient(args.account, { ...deps, signal: ctx.signal })
-      const zone = await resolveZone(client, args.zone)
+      const { client, zone } = await planPurgeAll(args, ctx, deps)
 
       await confirmWrite(
         spec,

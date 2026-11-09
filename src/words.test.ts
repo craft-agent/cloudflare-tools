@@ -2,8 +2,11 @@ import { describe, expect, test } from "bun:test"
 import { templatePlaceholders } from "./core/describe"
 import { DNS_TRANSLATIONS } from "./core/dns/words"
 import { FACT_TRANSLATIONS } from "./core/facts"
+import { ZONE_TRANSLATIONS } from "./core/zone/words"
 import { ALL_TOOLS } from "./tools"
 import { ALL_TRANSLATIONS, TOOL_WORDS } from "./words"
+
+const TABLES = [FACT_TRANSLATIONS, DNS_TRANSLATIONS, ZONE_TRANSLATIONS]
 
 const WRITE_TOOLS = ALL_TOOLS.filter((spec) => spec.class !== "read")
 const TOOL_PHRASES = ALL_TOOLS.flatMap((spec) => [spec.title, ...(spec.intent !== undefined ? [spec.intent] : [])])
@@ -20,12 +23,25 @@ function placeholdersOf(word: string): string[] {
 
 describe("ALL_TRANSLATIONS", () => {
   test("holds every table it gathers", () => {
-    for (const table of [FACT_TRANSLATIONS, DNS_TRANSLATIONS]) {
+    for (const table of TABLES) {
       for (const [language, words] of Object.entries(table)) {
         expect(ALL_TRANSLATIONS[language]).toMatchObject(words)
       }
     }
     expect(ALL_TRANSLATIONS.ja!.Size).toBe("サイズ")
+  })
+
+  test("translates an English word given by two tables the same way in both", () => {
+    for (const [index, first] of TABLES.entries()) {
+      for (const second of TABLES.slice(index + 1)) {
+        for (const [language, words] of Object.entries(first)) {
+          for (const [english, translation] of Object.entries(words)) {
+            const other = second[language]?.[english]
+            if (other !== undefined) expect([language, english, other]).toEqual([language, english, translation])
+          }
+        }
+      }
+    }
   })
 
   test("translates only words a tool uses", () => {
