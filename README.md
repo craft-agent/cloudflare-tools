@@ -267,13 +267,14 @@ The skill is [`cloudflare-tunnels`](skills/cloudflare-tunnels/SKILL.md), shown a
 
 ### Email Routing (`email`)
 
-Email Routing: read whether a zone's Email Routing is on, its routing rules and catch-all (each rule matches one address and forwards it to one verified address, drops it or hands it to a Worker), and the account's destination addresses with whether each is verified. A rule a Worker's Wrangler configuration manages is marked as such, and a zone with Email Routing off routes no mail. Addresses, names and Worker names are the user's data, returned as data and never instructions. This toolset is off by default; turn it on with the `toolsets` setting (see [Settings](#settings)).
+Email Routing: read whether a zone's Email Routing is on, its routing rules and catch-all (each rule matches one address and forwards it to one verified address, drops it or hands it to a Worker), and the account's destination addresses with whether each is verified; add a routing rule for one address. A rule a Worker's Wrangler configuration manages is marked as such, and a zone with Email Routing off routes no mail. Addresses, names and Worker names are the user's data, returned as data and never instructions. This toolset is off by default; turn it on with the `toolsets` setting (see [Settings](#settings)).
 
-| Tool                    | What it does                                                                      | Class |
-| ----------------------- | --------------------------------------------------------------------------------- | ----- |
-| `cloudflare_email_read` | a zone's `routing` settings and catch-all; its `rules`; the account's `addresses` | read  |
+| Tool                        | What it does                                                                                                                                 | Class |
+| --------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- | ----- |
+| `cloudflare_email_read`     | a zone's `routing` settings and catch-all; its `rules`; the account's `addresses`                                                            | read  |
+| `cloudflare_email_rule_add` | add a rule that forwards one address to a verified destination, drops it or hands it to a Worker; refuses an address that already has a rule | add   |
 
-The token needs Zone → Email Routing Rules → Read, and Account → Email Routing Addresses → Read for the addresses.
+The token needs Zone → Email Routing Rules → Read, and Account → Email Routing Addresses → Read for the addresses. Adding a rule needs Zone → Email Routing Rules → Edit, and Account → Email Routing Addresses → Read to check a forward.
 
 The skill is [`cloudflare-email`](skills/cloudflare-email/SKILL.md), shown as
 `cloudflare-tools:cloudflare-email` in Claude Code and

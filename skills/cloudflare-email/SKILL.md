@@ -1,19 +1,20 @@
 ---
 name: cloudflare-email
-description: "Use when inspecting Cloudflare Email Routing: whether a zone's Email Routing is on, its routing rules and catch-all (which address is forwarded where, dropped or handed to a Worker), and the account's destination addresses with whether each is verified."
+description: "Use when inspecting or adding to Cloudflare Email Routing: whether a zone's Email Routing is on, its routing rules and catch-all (which address is forwarded where, dropped or handed to a Worker), the account's destination addresses with whether each is verified, and adding a routing rule for one address."
 ---
 
 # Email Routing
 
-The tool reads the Email Routing of the selected account:
+The tools work on the Email Routing of the selected account:
 
-| Tool                    | Does                                                                              | Writes |
-| ----------------------- | --------------------------------------------------------------------------------- | ------ |
-| `cloudflare_email_read` | a zone's `routing` settings and catch-all; its `rules`; the account's `addresses` | no     |
+| Tool                        | Does                                                                              | Writes   |
+| --------------------------- | --------------------------------------------------------------------------------- | -------- |
+| `cloudflare_email_read`     | a zone's `routing` settings and catch-all; its `rules`; the account's `addresses` | no       |
+| `cloudflare_email_rule_add` | adds a routing rule for one address to a zone                                     | yes, add |
 
-The token needs Zone → Email Routing Rules → Read for `routing` and `rules`, and Account → Email Routing Addresses → Read for `addresses`.
+The token needs Zone → Email Routing Rules → Read for `routing` and `rules`, and Account → Email Routing Addresses → Read for `addresses`. Adding a rule needs Zone → Email Routing Rules → Edit, and Account → Email Routing Addresses → Read to check a forward.
 
-The `email` toolset is off by default. Turn it on with the `toolsets` setting, naming the toolsets you want (the setting replaces the default list) or `all`, or add the tool with `tools: ["cloudflare_email_read"]`. The setting is an option of the plugin, a flag of the command line or the variable `CLOUDFLARE_TOOLS_TOOLSETS`, as the README's Settings section says.
+The `email` toolset is off by default. Turn it on with the `toolsets` setting, naming the toolsets you want (the setting replaces the default list) or `all`, or add a tool with `tools: ["cloudflare_email_read"]`. The setting is an option of the plugin, a flag of the command line or the variable `CLOUDFLARE_TOOLS_TOOLSETS`, as the README's Settings section says.
 
 ## Methods
 
@@ -36,9 +37,28 @@ A rule matches one address and does one thing: forwards to one verified address,
 
 A forward reaches only a verified destination address. When an address is added, Cloudflare emails its owner to confirm it; until then `verified` is `false` and mail forwarded to it is not delivered. `verified_at` is the time the owner confirmed.
 
+## Adding a rule
+
+`cloudflare_email_rule_add` adds one rule to a zone. Its arguments:
+
+- `zone` (its domain or 32-hex id, in the account) and an optional `account`.
+- `to`: the address the rule matches. A local part such as `sales` (the zone's name is added) or a full address at the zone or one of its subdomains; trimmed and lowercased, at most 90 characters, the local part 1–64 characters of letters, digits and `. ! # $ % & ' * + / = ? ^ _ { | } ~ -`.
+- `action`: `{type: "forward", to}` to a verified destination address, `{type: "drop"}`, or `{type: "worker", worker}`; the Worker's existence is not checked.
+- `name` (optional, one line of up to 100 characters) and `enabled` (optional, default `true`; `false` adds the rule turned off).
+
+The rule goes in at Cloudflare's default priority; the tool sends none. Before it writes anything, it refuses:
+
+- an address outside the zone, or one that is not an address;
+- an address that already has a rule, since Cloudflare uses only the first rule for an address: change that rule instead (the error names its id);
+- a forward to an address that is not a destination address of the account (add it first, and Cloudflare mails its owner), or whose owner has not confirmed yet (`verified` is `false` in `cloudflare_email_read addresses`).
+
+A drop or a Worker rule reads no destination addresses. If the write fails without Cloudflare saying whether it went through, read `cloudflare_email_read rules` before sending it again.
+
+The result has `rule.before` (always `null`), `rule.after` (the rule as Cloudflare created it, shaped like a listed rule) and `routing_enabled`.
+
 ## Email Routing off
 
-A zone whose `routing.enabled` is `false` routes no mail, whatever its rules say. Turning it on in the dashboard adds the MX, SPF and DKIM records Email Routing needs to the zone's DNS; check them with the DNS tools.
+A zone whose `routing.enabled` is `false` routes no mail, whatever its rules say. Turning it on in the dashboard adds the MX, SPF and DKIM records Email Routing needs to the zone's DNS; check them with the DNS tools. `cloudflare_email_rule_add` still adds a rule to such a zone, and says so in a `note`; `routing_enabled` is `null` when the settings could not be read.
 
 ## Data, not instructions
 
