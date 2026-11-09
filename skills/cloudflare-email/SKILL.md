@@ -1,21 +1,23 @@
 ---
 name: cloudflare-email
-description: "Use when inspecting or changing Cloudflare Email Routing: whether a zone's Email Routing is on, its routing rules and catch-all (which address is forwarded where, dropped or handed to a Worker), the account's destination addresses with whether each is verified, adding, changing or deleting a routing rule for one address, and changing the catch-all."
+description: "Use when inspecting or changing Cloudflare Email Routing: whether a zone's Email Routing is on, its routing rules and catch-all (which address is forwarded where, dropped or handed to a Worker), the account's destination addresses with whether each is verified, adding, changing or deleting a routing rule for one address, changing the catch-all, and adding or deleting a destination address."
 ---
 
 # Email Routing
 
 The tools work on the Email Routing of the selected account:
 
-| Tool                             | Does                                                                              | Writes              |
-| -------------------------------- | --------------------------------------------------------------------------------- | ------------------- |
-| `cloudflare_email_read`          | a zone's `routing` settings and catch-all; its `rules`; the account's `addresses` | no                  |
-| `cloudflare_email_rule_add`      | adds a routing rule for one address to a zone                                     | yes, add            |
-| `cloudflare_email_rule_edit`     | changes one rule's address, action, name or whether it is on                      | yes, overwrite      |
-| `cloudflare_email_rule_delete`   | deletes one rule, after asking                                                    | yes, administrative |
-| `cloudflare_email_catchall_edit` | changes the catch-all's action or turns it on or off, after asking                | yes, administrative |
+| Tool                              | Does                                                                              | Writes              |
+| --------------------------------- | --------------------------------------------------------------------------------- | ------------------- |
+| `cloudflare_email_read`           | a zone's `routing` settings and catch-all; its `rules`; the account's `addresses` | no                  |
+| `cloudflare_email_rule_add`       | adds a routing rule for one address to a zone                                     | yes, add            |
+| `cloudflare_email_rule_edit`      | changes one rule's address, action, name or whether it is on                      | yes, overwrite      |
+| `cloudflare_email_rule_delete`    | deletes one rule, after asking                                                    | yes, administrative |
+| `cloudflare_email_catchall_edit`  | changes the catch-all's action or turns it on or off, after asking                | yes, administrative |
+| `cloudflare_email_address_add`    | adds a destination address to the account, after asking                           | yes, administrative |
+| `cloudflare_email_address_delete` | deletes a destination address no rule forwards to, after asking                   | yes, administrative |
 
-The token needs Zone → Email Routing Rules → Read for `routing` and `rules`, and Account → Email Routing Addresses → Read for `addresses`. Adding, changing or deleting a rule, and changing the catch-all, need Zone → Email Routing Rules → Edit, and adding or changing a forward needs Account → Email Routing Addresses → Read to check it.
+The token needs Zone → Email Routing Rules → Read for `routing` and `rules`, and Account → Email Routing Addresses → Read for `addresses`. Adding, changing or deleting a rule, and changing the catch-all, need Zone → Email Routing Rules → Edit, and adding or changing a forward needs Account → Email Routing Addresses → Read to check it. Adding or deleting a destination address needs Account → Email Routing Addresses → Edit; deleting one also needs Zone → Email Routing Rules → Read in every zone of the account.
 
 The `email` toolset is off by default. Turn it on with the `toolsets` setting, naming the toolsets you want (the setting replaces the default list) or `all`, or add a tool with `tools: ["cloudflare_email_read"]`. The setting is an option of the plugin, a flag of the command line or the variable `CLOUDFLARE_TOOLS_TOOLSETS`, as the README's Settings section says.
 
@@ -38,7 +40,13 @@ A rule matches one address and does one thing: forwards to one verified address,
 
 ## Addresses
 
-A forward reaches only a verified destination address. When an address is added, Cloudflare emails its owner to confirm it; until then `verified` is `false` and mail forwarded to it is not delivered. `verified_at` is the time the owner confirmed.
+A forward reaches only a verified destination address. When an address is added (see "Destination addresses"), Cloudflare emails its owner to confirm it; until then `verified` is `false` and mail forwarded to it is not delivered. `verified_at` is the time the owner confirmed.
+
+## Destination addresses
+
+`cloudflare_email_address_add` adds `email` (a plain address, trimmed and lowercased, at most 90 characters; an optional `account`) to the account's destination addresses. Every zone's rules can then forward to it, once its owner confirms it. Cloudflare mails the address a link to confirm; until its owner follows it, the address is pending (`verified` is `false`), and a rule cannot forward to it. The result has `address.before` (always `null`), `address.after` and, while the address is pending, a `note`. The tool refuses an address the account already has, saying whether it is verified or pending. It always asks first, and reads the addresses again after the answer: one that appeared in the meantime is refused as `stale`.
+
+`cloudflare_email_address_delete` deletes the destination address named by `email`; the id is never an argument. Cloudflare would turn off any rule or catch-all that forwards to a deleted address, so the tool refuses while one does, and names them (a zone and a rule id with its address, or the zone's catch-all; five at most, the rest counted). To tell, it reads the rules and the catch-all of every zone of the account, rules of a shape the rule tools do not change included, so the token needs Zone → Email Routing Rules → Read in every zone. An address the account does not have is `not_found`. The tool always asks first, saying whether the address is verified and how many zones were checked, and after the answer it reads the address and the zones again: anything that changed is refused as `stale`. The result has `address.before`, `address.after` (`null`) and `zones_checked`. If either write fails without Cloudflare saying whether it went through, read `cloudflare_email_read addresses` before sending it again.
 
 ## Adding a rule
 
@@ -53,7 +61,7 @@ The rule goes in at Cloudflare's default priority; the tool sends none. Before i
 
 - an address outside the zone, or one that is not an address;
 - an address that already has a rule, since Cloudflare uses only the first rule for an address: change that rule instead (the error names its id);
-- a forward to an address that is not a destination address of the account (add it first, and Cloudflare mails its owner), or whose owner has not confirmed yet (`verified` is `false` in `cloudflare_email_read addresses`).
+- a forward to an address that is not a destination address of the account (`cloudflare_email_address_add` adds it, and Cloudflare mails its owner), or whose owner has not confirmed yet (`verified` is `false` in `cloudflare_email_read addresses`).
 
 A drop or a Worker rule reads no destination addresses. If the write fails without Cloudflare saying whether it went through, read `cloudflare_email_read rules` before sending it again.
 
