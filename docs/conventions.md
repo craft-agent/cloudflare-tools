@@ -487,10 +487,18 @@ package adds to it.
   | `Parameters`        | the action's parameters as compact JSON, as the call sends them                                                                                                                                      | adding a rule to a phase, when given                              |
   | `Position`          | `before rule {rule}`, `after rule {rule}`, `position {index}`; a rule is named by its description, else its id                                                                                       | adding a rule to a phase, when given                              |
   | `Description`       | the rule's description                                                                                                                                                                               | adding a rule to a phase, when given                              |
+  | `Action`            | `old → new`, as Cloudflare names them                                                                                                                                                                | changing a rule of a phase, when it changes                       |
+  | `Parameters`        | `old → new`, as compact JSON; `{}` for none                                                                                                                                                          | changing a rule of a phase, when they change                      |
+  | `Description`       | `old → new`, with `(none)` for a missing description                                                                                                                                                 | changing a rule of a phase, when it changes                       |
+  | `State`             | `off → on`, `on → off`                                                                                                                                                                               | changing a rule of a phase, when it changes                       |
+  | `Position`          | `position {from} → {to}`, the places the rule leaves and takes                                                                                                                                       | changing a rule of a phase, when it moves                         |
 
   A value in code font is the tool's words, translated; any other is the
   call's data. A rule added to a phase carries its filter expression as its
-  text, under `Expression`, in full. A deployment is its short id, its date
+  text, under `Expression`, in full; a rule changed in a phase shows its
+  current expression there, or the old one, a line `→` and the new one when the
+  expression changes, and pins the rule as it was read, since the rule is sent
+  back whole. A deployment is its short id, its date
   and its branch, as Cloudflare reports them; a Worker's versions are each id with its share
   (`<version_id> 100%`). A Worker rollback's note is its text, under
   `Message`. A warning that decides the answer (the registrar's DS record,
