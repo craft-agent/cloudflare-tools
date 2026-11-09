@@ -170,6 +170,7 @@ export const ROUTES = Object.freeze({
   rulesetCreate: defineRoute("POST", "/zones/{zone_id}/rulesets"),
   rulesetRuleCreate: defineRoute("POST", "/zones/{zone_id}/rulesets/{ruleset_id}/rules"),
   rulesetRuleEdit: defineRoute("PATCH", "/zones/{zone_id}/rulesets/{ruleset_id}/rules/{ruleset_rule_id}"),
+  rulesetRuleDelete: defineRoute("DELETE", "/zones/{zone_id}/rulesets/{ruleset_id}/rules/{ruleset_rule_id}"),
 } satisfies Record<string, Route>)
 
 /** Whether a route is one of `ROUTES`, including its fixed body when present. */

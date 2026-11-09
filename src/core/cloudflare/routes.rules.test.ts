@@ -65,15 +65,23 @@ describe("the ruleset write routes", () => {
     }
   })
 
-  test("changing a rule is a PATCH of one rule, and only that method is allowed on its path", () => {
+  test("changing a rule is a PATCH of one rule, and no other read or change is allowed on its path", () => {
     expect(ROUTES.rulesetRuleEdit).toEqual({
       method: "PATCH",
       path: "/zones/{zone_id}/rulesets/{ruleset_id}/rules/{ruleset_rule_id}",
     })
     expect(isAllowed(ROUTES.rulesetRuleEdit)).toBe(true)
     expect(PATH_PARAMS.ruleset_rule_id).toBe(RULESET_ID_PATTERN)
-    for (const method of ["GET", "POST", "PUT", "DELETE"] as const) {
+    for (const method of ["GET", "POST", "PUT"] as const) {
       expect(isAllowed({ method, path: ROUTES.rulesetRuleEdit.path })).toBe(false)
+    }
+  })
+
+  test("deleting a rule is a DELETE of one rule, on the path the change uses", () => {
+    expect(ROUTES.rulesetRuleDelete).toEqual({ method: "DELETE", path: ROUTES.rulesetRuleEdit.path })
+    expect(isAllowed(ROUTES.rulesetRuleDelete)).toBe(true)
+    for (const method of ["GET", "POST", "PUT"] as const) {
+      expect(isAllowed({ method, path: ROUTES.rulesetRuleDelete.path })).toBe(false)
     }
   })
 
