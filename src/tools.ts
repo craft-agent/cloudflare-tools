@@ -5,6 +5,7 @@ import { cloudflareDnsRecordDelete } from "./core/dns/delete"
 import { cloudflareDnsRecordEdit } from "./core/dns/edit"
 import { cloudflareDnsRead } from "./core/dns/read"
 import { cloudflareEmailAddressAdd } from "./core/email/address-add"
+import { cloudflareEmailAddressDelete } from "./core/email/address-delete"
 import { cloudflareEmailCatchAllEdit } from "./core/email/catchall-edit"
 import { cloudflareEmailRead } from "./core/email/read"
 import { cloudflareEmailRuleAdd } from "./core/email/rule-add"
@@ -64,4 +65,5 @@ export const ALL_TOOLS: ToolSpec[] = [
   cloudflareEmailRuleDelete,
   cloudflareEmailCatchAllEdit,
   cloudflareEmailAddressAdd,
+  cloudflareEmailAddressDelete,
 ]

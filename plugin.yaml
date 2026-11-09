@@ -11,6 +11,7 @@ provides_tools:
   - cloudflare_dns_record_delete
   - cloudflare_dns_record_edit
   - cloudflare_email_address_add
+  - cloudflare_email_address_delete
   - cloudflare_email_catchall_edit
   - cloudflare_email_read
   - cloudflare_email_rule_add
