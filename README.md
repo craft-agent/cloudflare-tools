@@ -52,6 +52,10 @@ OpenCode allows any action no rule names, so the plugin's request is granted
 silently unless a rule says `ask`. Read tools never ask, so the `cloudflare_*` glob
 is safe.
 
+The options are the [settings](#settings). A toolset that is off by default is
+turned on by listing it in `toolsets` with the ones to keep, for example
+`"options": { "toolsets": ["account", "zones", "dns", "workers", "pages", "email"] }`.
+
 V1 registers no skills. Unpack the package and copy its `skills/*` folders into
 `~/.config/opencode/skills/`:
 
