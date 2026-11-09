@@ -1,10 +1,8 @@
 import { z } from "zod"
-import { RULESET_ID_PATTERN } from "../cloudflare/routes"
 import { ToolError } from "../errors"
 import { NOTHING_CHANGED } from "./errors"
+import { ruleIdArg } from "./rule.args"
 import type { Entrypoint } from "./shape"
-
-const ruleIdArg = z.string().regex(RULESET_ID_PATTERN, "must be a rule id: 32 lowercase hex digits")
 
 /** Where a new rule goes among a phase's rules: before or after a rule, or at a place counted from 1. */
 export const positionArg = z

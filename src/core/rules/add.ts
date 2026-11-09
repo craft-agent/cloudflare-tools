@@ -1,18 +1,18 @@
 import { z } from "zod"
 import { accountArg } from "../cloudflare/args"
-import { cloudflareClient, type CloudflareClient, type CloudflareDeps } from "../cloudflare/client"
-import { failureOfWrite, type WriteFailureNotes } from "../cloudflare/refusal"
-import { ROUTES, type Route } from "../cloudflare/routes"
-import { isToolError, ToolError } from "../errors"
+import type { CloudflareClient, CloudflareDeps } from "../cloudflare/client"
+import type { WriteFailureNotes } from "../cloudflare/refusal"
+import { ROUTES } from "../cloudflare/routes"
 import { defineTool, type ToolContext, type ToolSpec } from "../tool"
-import { resolveZone, zoneArg } from "../zone/lookup"
+import { zoneArg } from "../zone/lookup"
 import { assertActionFits, assertNotDuplicate } from "./add.checks"
 import { describeRuleAdd } from "./add.describe"
-import { NOTHING_CHANGED, withHint } from "./errors"
-import { WRITABLE_PHASE_NAMES, editHint, phaseInfo, type WritablePhase } from "./phases"
+import { NOTHING_CHANGED } from "./errors"
+import { WRITABLE_PHASE_NAMES, phaseInfo } from "./phases"
 import { assertPositionFits, positionArg, positionBody } from "./position"
-import { readEntrypoint } from "./read"
-import { accountLabelSchema, ruleSchema, rulesetSchema, shapeEntrypoint, zoneSchema, type Entrypoint } from "./shape"
+import { DESCRIPTION_MAX_LENGTH, EXPRESSION_MAX_LENGTH } from "./rule.args"
+import { openEntrypoint, writeRuleset } from "./ruleset"
+import { accountLabelSchema, ruleSchema, rulesetSchema, zoneSchema, type Entrypoint } from "./shape"
 import { phaseTargets } from "./target"
 
 const WRITE_NOTES: WriteFailureNotes = {
@@ -22,9 +22,6 @@ const WRITE_NOTES: WriteFailureNotes = {
 
 const NOT_IDENTIFIED_NOTE =
   "Cloudflare's reply did not show which rule was added; read cloudflare_rules_read rules to see the phase."
-
-const EXPRESSION_MAX_LENGTH = 4096
-const DESCRIPTION_MAX_LENGTH = 500
 
 /** The name Cloudflare shows for an entry point ruleset this tool creates. */
 const ENTRYPOINT_NAME = "default"
@@ -86,12 +83,7 @@ type RuleAddSpec = ToolSpec<typeof input, typeof output>
 /** What a call will do: the client, the zone, the phase's entry point (null when it has none); refuses what the tool refuses before it writes. */
 async function planRuleAdd(args: Args, ctx: ToolContext, deps?: CloudflareDeps) {
   assertActionFits(args.phase, args.action)
-  const client = cloudflareClient(args.account, { ...deps, signal: ctx.signal })
-  const zone = await resolveZone(client, args.zone)
-  const entrypoint = await readEntrypoint(client, zone.id, args.phase)
-  if (entrypoint?.ruleset.id === "") {
-    throw new ToolError("upstream_error", "Cloudflare returned an unexpected ruleset response.")
-  }
+  const { client, zone, entrypoint } = await openEntrypoint(args, ctx, deps)
 
   assertNotDuplicate(entrypoint?.rules ?? [], args)
   assertPositionFits(args.position, entrypoint, phaseInfo(args.phase).product, zone.name)
@@ -108,22 +100,6 @@ function ruleBody(args: Args): Record<string, unknown> {
   }
 }
 
-/** Sends one write and shapes the ruleset it returns. A refusal says nothing was changed; a failure that does not tell says the rule may or may not be there. */
-async function write(
-  client: CloudflareClient,
-  route: Route,
-  path: Record<string, string>,
-  body: Record<string, unknown>,
-  phase: WritablePhase,
-): Promise<Entrypoint> {
-  try {
-    const { result } = await client.request<unknown>(route, { path, body })
-    return shapeEntrypoint(result)
-  } catch (error) {
-    throw failureOfWrite(isToolError(error) ? withHint(error, editHint(phase)) : error, WRITE_NOTES)
-  }
-}
-
 /** Adds the rule to the phase: it creates the entry point holding the rule when the phase has none, else adds the rule at `position` or last. */
 function writeRule(
   client: CloudflareClient,
@@ -134,15 +110,16 @@ function writeRule(
   const rule = ruleBody(args)
   if (entrypoint === null) {
     const body = { name: ENTRYPOINT_NAME, kind: "zone", phase: args.phase, rules: [rule] }
-    return write(client, ROUTES.rulesetCreate, { zone_id: zoneId }, body, args.phase)
+    return writeRuleset(client, ROUTES.rulesetCreate, { zone_id: zoneId }, body, args.phase, WRITE_NOTES)
   }
   const body = args.position === undefined ? rule : { ...rule, position: positionBody(args.position) }
-  return write(
+  return writeRuleset(
     client,
     ROUTES.rulesetRuleCreate,
     { zone_id: zoneId, ruleset_id: entrypoint.ruleset.id },
     body,
     args.phase,
+    WRITE_NOTES,
   )
 }
 
