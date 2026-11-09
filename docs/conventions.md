@@ -440,11 +440,21 @@ package adds to it.
   shows pins nothing, since a change to another field is left as it is.
 - **The facts of this package**, beside the shared `Size`:
 
-  | Label       | Value                               | Used by                                                          |
-  | ----------- | ----------------------------------- | ---------------------------------------------------------------- |
-  | `Records`   | `{count} record`, `{count} records` | a DNS add or edit of several, a delete of several that adds none |
-  | `Deletions` | `{count} record`, `{count} records` | a DNS delete that also adds                                      |
-  | `Additions` | `{count} record`, `{count} records` | a DNS delete that also adds                                      |
+  | Label       | Value                                                   | Used by                                                          |
+  | ----------- | ------------------------------------------------------- | ---------------------------------------------------------------- |
+  | `Records`   | `{count} record`, `{count} records`                     | a DNS add or edit of several, a delete of several that adds none |
+  | `Deletions` | `{count} record`, `{count} records`                     | a DNS delete that also adds                                      |
+  | `Additions` | `{count} record`, `{count} records`                     | a DNS delete that also adds                                      |
+  | `Count`     | the number of items                                     | a cache purge                                                    |
+  | `Effect`    | `every next request goes to the origin`                 | a purge of the whole cache                                       |
+  | `Status`    | DNSSEC's status, as Cloudflare reports it               | a DNSSEC change                                                  |
+  | `Next step` | `add the DS record at the domain's registrar`           | turning DNSSEC on, when it changes                               |
+  | `Registrar` | `remove the DS record there first and wait for its TTL` | turning DNSSEC off, when it changes                              |
+  | `Lowered`   | the settings that lower protection                      | a weakening of several settings                                  |
+
+  A value in code font is the tool's words, translated; any other is the
+  call's data. A warning that decides the answer (the registrar's DS record,
+  the origin's load) is a fact, so it shows before the text and is never cut.
 
   Each domain keeps its words, and their translations, in its `words.ts`;
   `src/words.ts` gathers them, and `src/words.test.ts` checks that every
