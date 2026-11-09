@@ -27,12 +27,12 @@ export async function openEntrypoint(
   return { client, zone, entrypoint }
 }
 
-/** Sends one write and shapes the ruleset it returns. A refusal says nothing was changed; a failure that does not tell says the write may or may not have happened. */
+/** Sends one write (with no body when `body` is undefined) and shapes the ruleset it returns. A refusal says nothing was changed; a failure that does not tell says the write may or may not have happened. */
 export async function writeRuleset(
   client: CloudflareClient,
   route: Route,
   path: Record<string, string>,
-  body: Record<string, unknown>,
+  body: Record<string, unknown> | undefined,
   phase: WritablePhase,
   notes: WriteFailureNotes,
 ): Promise<Entrypoint> {

@@ -4,6 +4,7 @@ import type { Translations } from "../words"
 export const RULES_WORDS = {
   ruleAdd: "About to add a rule to {product} of {zone}",
   ruleEdit: "About to change the rule {rule} of {product} of {zone}",
+  ruleDelete: "About to delete the rule {rule} of {product} of {zone}",
   action: "Action",
   parameters: "Parameters",
   position: "Position",
@@ -24,10 +25,13 @@ export const RULES_TRANSLATIONS: Translations = {
   ja: {
     "Add a Cloudflare rule": "Cloudflare のルールを追加する",
     "Change a Cloudflare rule": "Cloudflare のルールを変更する",
+    "Delete a Cloudflare rule": "Cloudflare のルールを削除する",
     "About to add a rule": "ルールを追加しようとしています",
     "About to change a rule": "ルールを変更しようとしています",
+    "About to delete a rule": "ルールを削除しようとしています",
     [RULES_WORDS.ruleAdd]: "{zone} の {product} にルールを追加しようとしています",
     [RULES_WORDS.ruleEdit]: "{zone} の {product} のルール {rule} を変更しようとしています",
+    [RULES_WORDS.ruleDelete]: "{zone} の {product} のルール {rule} を削除しようとしています",
     [RULES_WORDS.action]: "アクション",
     [RULES_WORDS.parameters]: "パラメーター",
     [RULES_WORDS.position]: "位置",

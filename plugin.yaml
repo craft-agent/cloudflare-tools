@@ -22,6 +22,7 @@ provides_tools:
   - cloudflare_pages_read
   - cloudflare_pages_rollback
   - cloudflare_rules_add
+  - cloudflare_rules_delete
   - cloudflare_rules_edit
   - cloudflare_rules_read
   - cloudflare_storage_create
