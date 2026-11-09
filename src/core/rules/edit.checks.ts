@@ -2,7 +2,7 @@ import { isDeepStrictEqual } from "node:util"
 import { ToolError } from "../errors"
 import { NOTHING_CHANGED } from "./errors"
 import type { Position } from "./position"
-import type { Entrypoint, Rule } from "./shape"
+import type { Rule } from "./shape"
 
 /** What a call may change about a rule: each part left out stays as it is. */
 export type EditArgs = {
@@ -38,21 +38,6 @@ export function assertNamed(args: EditArgs): void {
     "invalid_argument",
     `Name at least one of expression, action, action_parameters, description, enabled or position. ${NOTHING_CHANGED}`,
   )
-}
-
-/** The phase's entry point; `not_found` when the phase has none, and so no rules. */
-export function requireEntrypoint(entrypoint: Entrypoint | null, product: string, zoneName: string): Entrypoint {
-  if (entrypoint !== null) return entrypoint
-  throw new ToolError("not_found", `${product} of ${zoneName} has no rules. ${NOTHING_CHANGED}`)
-}
-
-/** The rule `id` among the phase's rules; `not_found` when there is none. */
-export function findRule(rules: readonly Rule[], id: string, product: string, zoneName: string): Rule {
-  const found = rules.find((rule) => rule.id === id)
-  if (found === undefined) {
-    throw new ToolError("not_found", `No rule ${id} in ${product} of ${zoneName}. ${NOTHING_CHANGED}`)
-  }
-  return found
 }
 
 /** Refuses the call when the rule is at another version than `replaces` says, so a rule changed since it was read is not overwritten. */

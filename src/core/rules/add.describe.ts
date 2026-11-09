@@ -1,15 +1,13 @@
 import type { CallDescription, CallFact } from "../tool"
+import type { NewRule } from "./add.checks"
 import { phaseInfo, type WritablePhase } from "./phases"
 import type { Position } from "./position"
 import type { Rule } from "./shape"
 import { RULES_WORDS } from "./words"
 
 /** What the description of an add shows of the call. */
-type Described = {
+type Described = NewRule & {
   phase: WritablePhase
-  expression: string
-  action: string
-  action_parameters?: Record<string, unknown>
   description?: string
   enabled?: boolean
   position?: Position
