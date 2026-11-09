@@ -4,11 +4,12 @@ import { cloudflareClient, type CloudflareClient, type CloudflareDeps } from "..
 import { failureOfWrite, type WriteFailureNotes } from "../cloudflare/refusal"
 import { ROUTES } from "../cloudflare/routes"
 import { isToolError, ToolError } from "../errors"
-import { confirmWrite, defineTool, type ToolSpec } from "../tool"
+import { confirmWrite, defineTool, type CallDescription, type ToolContext, type ToolSpec } from "../tool"
 import { ADDRESS_EDIT_HINT, addressTargets, emailArg, findAddress, standing, type Address } from "./address"
 import { NOTHING_CHANGED } from "./rule"
 import { withHint } from "./rule.checks"
 import { accountLabelSchema, addressSchema, shapeAddress } from "./shape"
+import { EMAIL_WORDS } from "./words"
 
 const WRITE_NOTES: WriteFailureNotes = {
   nothing: NOTHING_CHANGED,
@@ -35,6 +36,7 @@ const output = z.object({
     .describe("Present while the address is pending: Cloudflare has mailed its owner a link to confirm."),
 })
 
+type Args = z.output<typeof input>
 type AddressAddSpec = ToolSpec<typeof input, typeof output>
 
 /** Refuses an address the account already has, saying where it stands. */
@@ -61,11 +63,28 @@ async function createAddress(client: CloudflareClient, email: string): Promise<A
   }
 }
 
+/** What a call will do: the client, once the account is known not to have the address yet; refuses what the tool refuses before it asks. */
+async function planAddressAdd(args: Args, ctx: ToolContext, deps?: CloudflareDeps) {
+  const client = cloudflareClient(args.account, { ...deps, signal: ctx.signal })
+  assertNew(args.email, await findAddress(client, args.email))
+  return { client }
+}
+
+/** The description of the call: the address and that its owner has a link to follow. */
+async function describeAddressAdd(args: Args, ctx: ToolContext, deps?: CloudflareDeps): Promise<CallDescription> {
+  await planAddressAdd(args, ctx, deps)
+  return {
+    headline: { text: EMAIL_WORDS.addressAdd, values: { email: args.email } },
+    facts: [{ label: EMAIL_WORDS.nextStep, value: { text: EMAIL_WORDS.nextStepConfirm } }],
+  }
+}
+
 /** Defines the `cloudflare_email_address_add` tool spec with injected dependencies. */
 export function defineEmailAddressAdd(deps?: CloudflareDeps): AddressAddSpec {
   const spec: AddressAddSpec = defineTool({
     id: "cloudflare_email_address_add",
     title: "Add an Email Routing destination address",
+    intent: "About to add a destination address",
     description: [
       "Adds a destination address to the account, which the rules of every zone can then forward to.",
       "Cloudflare mails the address a confirmation link; the address is pending, and no rule can forward to it, until its owner follows the link.",
@@ -79,9 +98,9 @@ export function defineEmailAddressAdd(deps?: CloudflareDeps): AddressAddSpec {
     input,
     output,
     targets: (args, ctx) => addressTargets(args, ctx, deps),
+    describe: (args, ctx) => describeAddressAdd(args, ctx, deps),
     async execute(args, ctx) {
-      const client = cloudflareClient(args.account, { ...deps, signal: ctx.signal })
-      assertNew(args.email, await findAddress(client, args.email))
+      const { client } = await planAddressAdd(args, ctx, deps)
 
       await confirmWrite(
         spec,
