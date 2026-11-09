@@ -397,9 +397,97 @@ Every entry point takes the same settings:
   when Cloudflare's differs; which operations do is settled per domain.
 - **There is no preview step and no plan digest.** The harness's approval of
   the arguments, with `targets` naming the account and the object, is the
-  confirmation. A consumer that shows its own approval card builds it from the
-  read tools, outside this package; a preview through a write tool would also
-  cost an approval of its own in an MCP client.
+  confirmation; a native plugin's prompt adds the call's description (below).
+  A consumer that shows its own approval card builds it from the read tools,
+  outside this package; a preview through a write tool would also cost an
+  approval of its own in an MCP client.
+
+## Approval prompts
+
+A native plugin's prompt follows "Write classes"; these are the rules this
+package adds to it.
+
+- **Every write tool states its intent, and describes every call it can
+  tell before it runs.** Targets name ids (`<account_id>/zones/<zone_id>/…`),
+  which say where a call writes but not what is there: the person needs the
+  zone's name, the record and its value, the deployment it goes back to.
+- **`describe` reads what `execute` reads, with the same code.** The
+  description is planned by the function the call runs on, so it cannot
+  promise a write the call would not make. Where `execute` would refuse,
+  `describe` throws, and the prompt shows the intent and the targets; the
+  call then fails with its own message.
+- **Values are what Cloudflare reports**: the zone's name, a record's name
+  relative to its zone (`@` for the apex), the value it holds now. An
+  argument stands in only for what does not exist yet, and then as the call
+  will send it (a record's full name, not the name the model typed).
+- **A count is a fact, never a headline value.** A headline value is quoted,
+  and a quoted number reads as a name; a headline names one object, or the
+  zone or project when the call writes several, and a fact gives how many.
+- **A record is one line**, in the order of a zone file:
+  `www A 192.0.2.1  TTL auto  proxied  # comment`. The TTL is `auto` for an
+  automatic one, `proxied` shows only on a proxied record and the comment
+  only when there is one. The records a call writes are its text, under
+  `Records`; a delete marks the records it deletes `- ` and those it adds in
+  the same batch `+ `. A change, under `Changes`, is the record's name and
+  type, then one indented line per changed field,
+  `content: 192.0.2.1 → 192.0.2.2`, with `(none)` for a missing comment.
+  These lines are the call's data, in the notation of DNS, so they stay as
+  they are in every language: `TTL`, `auto`, `proxied` and the field names
+  are never translated.
+- **An Email Routing action is written as the API names it**:
+  `forward sales@example.net`, `drop`, `worker inbox`. It is the call's
+  data, never translated; a rule's change lists `to`, `action`, `name` and
+  `enabled` (`on` or `off`) the way a record's change lists its fields.
+- **Pins only where a call writes what the prompt does not show.** A write
+  that sends the whole object (a tunnel's configuration, a rule) pins the
+  state it was built from; a write that sends only the fields the prompt
+  shows pins nothing, since a change to another field is left as it is. An
+  Email Routing rule and catch-all are sent back whole, priority and name
+  included, so their edits pin the rule as it was read; a tunnel's
+  configuration is sent back whole too, so every route write pins it.
+- **The facts of this package**, beside the shared `Size`:
+
+  | Label               | Value                                                                                                                                                                                                | Used by                                                           |
+  | ------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------- |
+  | `Records`           | `{count} record`, `{count} records`                                                                                                                                                                  | a DNS add or edit of several, a delete of several that adds none  |
+  | `Deletions`         | `{count} record`, `{count} records`                                                                                                                                                                  | a DNS delete that also adds                                       |
+  | `Additions`         | `{count} record`, `{count} records`                                                                                                                                                                  | a DNS delete that also adds                                       |
+  | `Count`             | the number of items                                                                                                                                                                                  | a cache purge                                                     |
+  | `Effect`            | `every next request goes to the origin`                                                                                                                                                              | a purge of the whole cache                                        |
+  | `Status`            | DNSSEC's status, as Cloudflare reports it                                                                                                                                                            | a DNSSEC change                                                   |
+  | `Next step`         | `add the DS record at the domain's registrar`                                                                                                                                                        | turning DNSSEC on, when it changes                                |
+  | `Registrar`         | `remove the DS record there first and wait for its TTL`                                                                                                                                              | turning DNSSEC off, when it changes                               |
+  | `Lowered`           | the settings that lower protection                                                                                                                                                                   | a weakening of several settings                                   |
+  | `Email Routing`     | `off: no mail is routed until it is turned on in the dashboard`                                                                                                                                      | a rule or catch-all write on a zone with Email Routing off, first |
+  | `Action`            | the rule's action                                                                                                                                                                                    | adding or deleting a rule                                         |
+  | `Name`              | the rule's name                                                                                                                                                                                      | adding or deleting a named rule                                   |
+  | `State`             | `off`; `verified`, `pending`                                                                                                                                                                         | a rule that is off; a destination address being deleted           |
+  | `Afterwards`        | where the mail of a deleted rule goes: `the catch-all takes the mail`, with its action when it is on, or `the mail is rejected: the catch-all is off`; none when the catch-all cannot be read        | deleting a rule                                                   |
+  | `Now`, `After`      | the catch-all's action, or `off`                                                                                                                                                                     | changing the catch-all                                            |
+  | `Next step`         | `its owner follows the link Cloudflare mails to it`                                                                                                                                                  | adding a destination address                                      |
+  | `Uses`              | `none in {count} zone`, `none in {count} zones`                                                                                                                                                      | deleting a destination address                                    |
+  | `Serving now`       | the deployment or versions serving now, as Cloudflare reports them                                                                                                                                   | a Pages or Worker rollback                                        |
+  | `Serve instead`     | the deployment or versions the call serves                                                                                                                                                           | a Pages or Worker rollback                                        |
+  | `Effect`            | `visitors get it at once; rolling back again undoes it`, `visitors get that code at once; the Worker's secrets stay as they are now`, `visitors stop getting the site at once; its DNS records stay` | a Pages rollback, a Worker rollback, removing a Pages domain      |
+  | `DNS record needed` | the CNAME record the domain waits for, as a record line                                                                                                                                              | adding a Pages domain                                             |
+  | `Status`            | the domain's status, as Cloudflare reports it                                                                                                                                                        | removing a Pages domain                                           |
+  | `Contents`          | `empty, as checked just now`                                                                                                                                                                         | deleting a store                                                  |
+  | `Effect`            | `deleting it is for good`, `visitors stop reaching the service at once`                                                                                                                              | deleting a store, withdrawing a tunnel's hostname                 |
+  | `Access`            | `covered: …`, `partial: …`, `none: anyone on the internet can reach it unless something else stops them`, `unknown: …`                                                                               | publishing or changing a tunnel's hostname, first                 |
+  | `Service`, `Path`   | the rule's service and path                                                                                                                                                                          | a tunnel route write                                              |
+  | `DNS`               | what the call does with the hostname's CNAME to the tunnel, or that the hostname does not reach the tunnel                                                                                           | a tunnel route write                                              |
+
+  A value in code font is the tool's words, translated; any other is the
+  call's data. A deployment is its short id, its date and its branch, as
+  Cloudflare reports them; a Worker's versions are each id with its share
+  (`<version_id> 100%`). A Worker rollback's note is its text, under
+  `Message`. A warning that decides the answer (the registrar's DS record,
+  the origin's load) is a fact, so it shows before the text and is never cut.
+
+  Each domain keeps its words, and their translations, in its `words.ts`;
+  `src/words.ts` gathers them, and `src/words.test.ts` checks that every
+  translated word is one a tool uses and every template keeps its
+  placeholders.
 
 ## Toolsets
 

@@ -9,11 +9,12 @@ import {
   type Route,
 } from "../cloudflare/routes"
 import { ToolError } from "../errors"
-import { confirmWrite, defineTool, type ToolSpec } from "../tool"
+import { confirmWrite, defineTool, type CallDescription, type CallFact, type ToolContext, type ToolSpec } from "../tool"
 import { assertEmpty, describeStore, type Store } from "./emptiness"
 import { shapeBucket } from "./shape"
 import { shapeDatabase } from "./shape.d1"
 import { shapeNamespace } from "./shape.kv"
+import { STORAGE_WORDS } from "./words"
 import {
   clientFor,
   failureOfStoreWrite,
@@ -122,11 +123,39 @@ function confirmation(store: Store, accountLabel: string): string {
   return `Delete ${named} in the Cloudflare account ${accountLabel}. It was found empty, and deleting it is for good.`
 }
 
+/** The headline template of each kind's delete. */
+const HEADLINES: Record<Kind, string> = {
+  r2: STORAGE_WORDS.deleteR2,
+  kv: STORAGE_WORDS.deleteKv,
+  d1: STORAGE_WORDS.deleteD1,
+}
+
+/** What a call will do: the key, the client and the store as it is, proven empty; refuses what the tool refuses before it asks. */
+async function planDelete(args: Args, ctx: ToolContext, deps?: CloudflareDeps) {
+  const key = storeKey(args)
+  const client = clientFor(args.account, ctx, deps)
+
+  const store = await readStore(client, args.kind, key)
+  await assertEmpty(client, store)
+  return { key, client, store }
+}
+
+/** The description of the call: the store's kind and name, that it was found empty, and that deleting it is for good; a namespace's id is its target already. */
+async function describeDelete(args: Args, ctx: ToolContext, deps?: CloudflareDeps): Promise<CallDescription> {
+  const { store } = await planDelete(args, ctx, deps)
+  const facts: CallFact[] = [
+    { label: STORAGE_WORDS.contents, value: { text: STORAGE_WORDS.contentsEmpty } },
+    { label: STORAGE_WORDS.effect, value: { text: STORAGE_WORDS.effectDelete } },
+  ]
+  return { headline: { text: HEADLINES[store.kind], values: { name: store.name ?? store.id } }, facts }
+}
+
 /** Defines the `cloudflare_storage_delete` tool spec with injected dependencies. */
 export function defineStorageDelete(deps?: CloudflareDeps): DeleteSpec {
   const spec: DeleteSpec = defineTool({
     id: "cloudflare_storage_delete",
     title: "Delete an empty Cloudflare R2 bucket, KV namespace or D1 database",
+    intent: "About to delete an empty store",
     description: [
       "Delete an R2 bucket, Workers KV namespace or D1 database, only when it is proven empty; the tool always asks first, since deleting is for good.",
       "Name the store by the id the lists give: `bucket` for r2, `namespace` for kv, `database` for d1; the other two are refused.",
@@ -142,12 +171,10 @@ export function defineStorageDelete(deps?: CloudflareDeps): DeleteSpec {
     input,
     output,
     targets: (args, ctx) => storeTargets(args.account, args.kind, () => storeKey(args), ctx, deps),
+    describe: (args, ctx) => describeDelete(args, ctx, deps),
     async execute(args, ctx) {
-      const key = storeKey(args)
-      const client = clientFor(args.account, ctx, deps)
+      const { key, client, store } = await planDelete(args, ctx, deps)
 
-      const store = await readStore(client, args.kind, key)
-      await assertEmpty(client, store)
       await confirmWrite(spec, ctx, confirmation(store, client.label))
       // An answer can take minutes; prove it again so the delete acts on what was approved.
       if (ctx.confirm) await assertEmpty(client, store)

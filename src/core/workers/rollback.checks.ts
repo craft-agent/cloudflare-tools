@@ -75,7 +75,8 @@ export function toPercentage(share: number): number {
   return share / STEPS_PER_PERCENT
 }
 
-function sharesOf(deployment: Deployment): Map<string, number> {
+/** The versions a deployment serves, by lowercase id, each with its share in hundredths of a percent; a share that rounds to none is left out. */
+export function sharesOf(deployment: Deployment): Map<string, number> {
   const shares = new Map<string, number>()
   for (const entry of deployment.versions) {
     const share = Math.round(entry.percentage * STEPS_PER_PERCENT)

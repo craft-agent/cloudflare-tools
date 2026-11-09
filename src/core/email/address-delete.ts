@@ -4,12 +4,13 @@ import { cloudflareClient, type CloudflareClient, type CloudflareDeps } from "..
 import { failureOfWrite, type WriteFailureNotes } from "../cloudflare/refusal"
 import { ROUTES } from "../cloudflare/routes"
 import { isToolError, ToolError } from "../errors"
-import { confirmWrite, defineTool, type ToolSpec } from "../tool"
+import { confirmWrite, defineTool, type CallDescription, type ToolContext, type ToolSpec } from "../tool"
 import { ADDRESS_EDIT_HINT, addressTargets, emailArg, findAddress, standing, type Address } from "./address"
 import { CATCH_ALL_USE, forwardsTo, type ForwardUse } from "./address.usage"
 import { NOTHING_CHANGED } from "./rule"
 import { withHint } from "./rule.checks"
 import { accountLabelSchema, addressSchema } from "./shape"
+import { EMAIL_WORDS } from "./words"
 
 /** The most uses a refusal names; the rest are counted. */
 const MAX_LISTED_USES = 5
@@ -38,6 +39,7 @@ const output = z.object({
   zones_checked: z.number().describe("The number of zones of the account whose rules and catch-all were read."),
 })
 
+type Args = z.output<typeof input>
 type AddressDeleteSpec = ToolSpec<typeof input, typeof output>
 
 function describeUse(use: ForwardUse): string {
@@ -79,11 +81,42 @@ async function deleteAddress(client: CloudflareClient, id: string): Promise<void
   }
 }
 
+/** What a call will do: the client, the address as the account has it and the number of zones read to find nothing forwarding to it; refuses what the tool refuses before it asks. */
+async function planAddressDelete(args: Args, ctx: ToolContext, deps?: CloudflareDeps) {
+  const client = cloudflareClient(args.account, { ...deps, signal: ctx.signal })
+  const address = await findAddress(client, args.email)
+  if (address === undefined) {
+    throw new ToolError(
+      "not_found",
+      `${args.email} is not a destination address of this account; cloudflare_email_read addresses lists them. ${NOTHING_CHANGED}`,
+    )
+  }
+  const { zones, uses } = await forwardsTo(client, args.email)
+  assertUnused(args.email, uses)
+  return { client, address, zones }
+}
+
+/** The description of the call: the address as Cloudflare reports it, whether it is verified and how many zones were checked for uses. */
+async function describeAddressDelete(args: Args, ctx: ToolContext, deps?: CloudflareDeps): Promise<CallDescription> {
+  const { address, zones } = await planAddressDelete(args, ctx, deps)
+  return {
+    headline: { text: EMAIL_WORDS.addressDelete, values: { email: address.email } },
+    facts: [
+      { label: EMAIL_WORDS.state, value: { text: EMAIL_WORDS[standing(address)] } },
+      {
+        label: EMAIL_WORDS.uses,
+        value: { text: zones === 1 ? EMAIL_WORDS.unusedOne : EMAIL_WORDS.unusedMany, values: { count: zones } },
+      },
+    ],
+  }
+}
+
 /** Defines the `cloudflare_email_address_delete` tool spec with injected dependencies. */
 export function defineEmailAddressDelete(deps?: CloudflareDeps): AddressDeleteSpec {
   const spec: AddressDeleteSpec = defineTool({
     id: "cloudflare_email_address_delete",
     title: "Delete an Email Routing destination address",
+    intent: "About to delete a destination address",
     description: [
       "Deletes a destination address of the account, found by its email.",
       "The tool refuses while any rule or catch-all in a zone of the account forwards to it, since Cloudflare would turn those off, and names them; that check reads every zone's rules and catch-all, which needs Zone → Email Routing Rules → Read in every zone.",
@@ -97,17 +130,9 @@ export function defineEmailAddressDelete(deps?: CloudflareDeps): AddressDeleteSp
     input,
     output,
     targets: (args, ctx) => addressTargets(args, ctx, deps),
+    describe: (args, ctx) => describeAddressDelete(args, ctx, deps),
     async execute(args, ctx) {
-      const client = cloudflareClient(args.account, { ...deps, signal: ctx.signal })
-      const address = await findAddress(client, args.email)
-      if (address === undefined) {
-        throw new ToolError(
-          "not_found",
-          `${args.email} is not a destination address of this account; cloudflare_email_read addresses lists them. ${NOTHING_CHANGED}`,
-        )
-      }
-      const { zones, uses } = await forwardsTo(client, args.email)
-      assertUnused(args.email, uses)
+      const { client, address, zones } = await planAddressDelete(args, ctx, deps)
 
       await confirmWrite(
         spec,

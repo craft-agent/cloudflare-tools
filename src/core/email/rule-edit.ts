@@ -4,8 +4,9 @@ import { cloudflareClient, type CloudflareClient, type CloudflareDeps } from "..
 import { failureOfWrite, type WriteFailureNotes } from "../cloudflare/refusal"
 import { ROUTES } from "../cloudflare/routes"
 import { isToolError, ToolError } from "../errors"
-import { defineTool, type ToolSpec } from "../tool"
+import { defineTool, type CallDescription, type ToolContext, type ToolSpec } from "../tool"
 import { resolveZone, zoneArg } from "../zone/lookup"
+import { actionText, routingOffFacts } from "./describe"
 import {
   actionArg,
   actionBody,
@@ -34,6 +35,7 @@ import {
 } from "./rule.checks"
 import { readRule, ruleTargetsOf, type ChangeableRule } from "./rule.current"
 import { accountLabelSchema, ruleSchema, type Rule } from "./shape"
+import { EMAIL_WORDS } from "./words"
 
 const WRITE_NOTES: WriteFailureNotes = {
   nothing: NOTHING_CHANGED,
@@ -41,6 +43,9 @@ const WRITE_NOTES: WriteFailureNotes = {
 }
 
 const NOTHING_NAMED = "Name what changes: to, action, name or enabled."
+
+/** What a change line shows for a rule without a name. */
+const NO_NAME = "(none)"
 
 const input = z.object({
   account: accountArg,
@@ -166,11 +171,53 @@ async function replaceRule(
   }
 }
 
+/** What a call will do: the client, the zone, the rule as it is, what it is to be and whether Email Routing is on; refuses what the tool refuses before it writes. */
+async function planRuleEdit(args: Args, ctx: ToolContext, deps?: CloudflareDeps) {
+  assertNamed(args)
+  const client = cloudflareClient(args.account, { ...deps, signal: ctx.signal })
+  const zone = await resolveZone(client, args.zone)
+  const current = await readRule(client, zone, args.id)
+  assertNotStale(current, args.replaces, args.id)
+
+  const change = changeOf(args, current, zone.name)
+  await assertChangeFits(client, zone.id, current, change)
+  const routingEnabled = await readRoutingEnabled(client, zone.id)
+  return { client, zone, current, change, routingEnabled }
+}
+
+function onOff(enabled: boolean): string {
+  return enabled ? "on" : "off"
+}
+
+/** One line per part of the rule that the change alters, in the order to, action, name, enabled: `to: a → b`. */
+function changeLines(current: ChangeableRule, change: Change): string {
+  const lines: string[] = []
+  if (change.to !== current.to) lines.push(`to: ${current.to} → ${change.to}`)
+  if (!sameAction(change.action, current.action)) {
+    lines.push(`action: ${actionText(current.action)} → ${actionText(change.action)}`)
+  }
+  if (change.name !== current.name) lines.push(`name: ${current.name ?? NO_NAME} → ${change.name ?? NO_NAME}`)
+  if (change.enabled !== current.enabled) lines.push(`enabled: ${onOff(current.enabled)} → ${onOff(change.enabled)}`)
+  return lines.join("\n")
+}
+
+/** The description of the call: the rule's address and what changes in it; the rule as read is pinned, since it is sent back whole, priority included. */
+async function describeRuleEdit(args: Args, ctx: ToolContext, deps?: CloudflareDeps): Promise<CallDescription> {
+  const { current, change, routingEnabled } = await planRuleEdit(args, ctx, deps)
+  return {
+    headline: { text: EMAIL_WORDS.ruleEdit, values: { address: current.to } },
+    facts: routingOffFacts(routingEnabled),
+    text: { label: EMAIL_WORDS.changes, body: changeLines(current, change) },
+    pins: { rule: JSON.stringify(current) },
+  }
+}
+
 /** Defines the `cloudflare_email_rule_edit` tool spec with injected dependencies. */
 export function defineEmailRuleEdit(deps?: CloudflareDeps): RuleEditSpec {
   return defineTool({
     id: "cloudflare_email_rule_edit",
     title: "Change an Email Routing rule",
+    intent: "About to change a routing rule",
     description: [
       "Changes one routing rule of a zone: its address (`to`), its action, its name or whether it is on (`enabled`), keeping its priority.",
       "`id` names the rule and `replaces` its current action, as cloudflare_email_read rules shows it; a rule changed since it was read is refused as stale.",
@@ -194,16 +241,9 @@ export function defineEmailRuleEdit(deps?: CloudflareDeps): RuleEditSpec {
         ]
       })
     },
+    describe: (args, ctx) => describeRuleEdit(args, ctx, deps),
     async execute(args, ctx) {
-      assertNamed(args)
-      const client = cloudflareClient(args.account, { ...deps, signal: ctx.signal })
-      const zone = await resolveZone(client, args.zone)
-      const current = await readRule(client, zone, args.id)
-      assertNotStale(current, args.replaces, args.id)
-
-      const change = changeOf(args, current, zone.name)
-      await assertChangeFits(client, zone.id, current, change)
-      const routingEnabled = await readRoutingEnabled(client, zone.id)
+      const { client, zone, current, change, routingEnabled } = await planRuleEdit(args, ctx, deps)
 
       const rule = await replaceRule(client, zone.id, args.id, ruleBody(change, current))
       return {

@@ -3,7 +3,14 @@ import { cloudflareClient, type CloudflareClient, type CloudflareDeps } from "..
 import { isPlainObject } from "../cloudflare/reply"
 import { ROUTES } from "../cloudflare/routes"
 import { ToolError } from "../errors"
-import { confirmWrite, defineTool, stepErrorsSchema, type ToolSpec } from "../tool"
+import {
+  confirmWrite,
+  defineTool,
+  stepErrorsSchema,
+  type CallDescription,
+  type ToolContext,
+  type ToolSpec,
+} from "../tool"
 import {
   domainInput,
   domainName,
@@ -15,6 +22,7 @@ import {
 } from "./domains"
 import { projectName, requestProject, requireObject } from "./projects"
 import { domainSchema, shapeDomain } from "./shape"
+import { PAGES_WORDS } from "./words"
 
 const output = z.object({
   ...domainOutputBase,
@@ -56,11 +64,35 @@ async function sendAdd(client: CloudflareClient, project: string, name: string):
   }
 }
 
+/** What a call will do: the project, the hostname, the client and the project's pages.dev address. */
+async function planDomainAdd(args: z.output<typeof domainInput>, ctx: ToolContext, deps?: CloudflareDeps) {
+  const project = projectName(args.project)
+  const name = domainName(args.name)
+  const client = cloudflareClient(args.account, { ...deps, signal: ctx.signal })
+
+  const subdomain = await pagesAddress(client, project)
+  return { project, name, client, subdomain }
+}
+
+/** The description of the call: the CNAME record the domain waits for. */
+async function describeDomainAdd(
+  args: z.output<typeof domainInput>,
+  ctx: ToolContext,
+  deps?: CloudflareDeps,
+): Promise<CallDescription> {
+  const { project, name, subdomain } = await planDomainAdd(args, ctx, deps)
+  return {
+    headline: { text: PAGES_WORDS.domainAdd, values: { name, project } },
+    facts: [{ label: PAGES_WORDS.dnsRecordNeeded, value: `${name} CNAME ${subdomain}  proxied` }],
+  }
+}
+
 /** Defines the `cloudflare_pages_domain_add` tool spec with injected dependencies. */
 export function definePagesDomainAdd(deps?: CloudflareDeps): DomainAddSpec {
   const spec: DomainAddSpec = defineTool({
     id: "cloudflare_pages_domain_add",
     title: "Add a custom domain to a Cloudflare Pages project",
+    intent: "About to add a custom domain",
     description: [
       "Add a custom domain, a hostname, to a Cloudflare Pages project; the tool always asks first, since visitors to the hostname get the project's site once it is live.",
       "The hostname must be in a zone Cloudflare lets the account use; one it reserves or the account cannot use is refused.",
@@ -75,12 +107,9 @@ export function definePagesDomainAdd(deps?: CloudflareDeps): DomainAddSpec {
     input: domainInput,
     output,
     targets: (args, ctx) => domainTargets(args, ctx, deps),
+    describe: (args, ctx) => describeDomainAdd(args, ctx, deps),
     async execute(args, ctx) {
-      const project = projectName(args.project)
-      const name = domainName(args.name)
-      const client = cloudflareClient(args.account, { ...deps, signal: ctx.signal })
-
-      const subdomain = await pagesAddress(client, project)
+      const { project, name, client, subdomain } = await planDomainAdd(args, ctx, deps)
       await confirmWrite(
         spec,
         ctx,

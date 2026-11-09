@@ -13,7 +13,7 @@ import {
 /** The fields of a record an edit can change, in the order a patch lists them. */
 export const EDITABLE_FIELDS = ["name", "content", "data", "priority", "ttl", "proxied", "comment"] as const
 
-type EditableField = (typeof EDITABLE_FIELDS)[number]
+export type EditableField = (typeof EDITABLE_FIELDS)[number]
 
 /** The fields of an edit that were given; the others keep the record's value. */
 export type RecordChange = Partial<Pick<NewRecord, EditableField>>

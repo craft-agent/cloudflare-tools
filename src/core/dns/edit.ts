@@ -2,10 +2,11 @@ import { z } from "zod"
 import { accountArg } from "../cloudflare/args"
 import type { CloudflareClient, CloudflareDeps } from "../cloudflare/client"
 import { ToolError } from "../errors"
-import { defineTool, type ToolContext, type ToolSpec } from "../tool"
+import { defineTool, type CallDescription, type ToolContext, type ToolSpec } from "../tool"
 import { zoneArg, type Zone } from "../zone/lookup"
 import { sendBatch } from "./batch"
 import { EDITABLE_FIELDS, changedFields, currentForm, withChange } from "./current"
+import { changeBlock, recordCountFact } from "./describe"
 import { recordLabel, recordName } from "./names"
 import {
   RECORD_TYPES,
@@ -25,7 +26,9 @@ import {
   dataSchema,
   isOneOf,
   recordBody,
+  type NewRecord,
 } from "./values"
+import { DNS_WORDS } from "./words"
 
 const MAX_CHANGES = 20
 
@@ -134,8 +137,11 @@ function assertWorkable(changes: Change[]): void {
   }
 }
 
+/** One change ready to send: the batch patch and the form of the record it was laid over. */
+type PlannedChange = { patch: Record<string, unknown>; before: NewRecord }
+
 /** The batch patch for one change: `{ id, type }` and the fields that differ; refused when the change is not allowed or changes nothing. */
-function patchFor(change: Change, index: number, current: FetchedRecord, zoneName: string): Record<string, unknown> {
+function patchFor(change: Change, index: number, current: FetchedRecord, zoneName: string): PlannedChange {
   const { record } = current
   const where = `changes[${index}]`
   const label = `${where} ${recordLabel(record.type, record.name, zoneName)}`
@@ -153,10 +159,11 @@ function patchFor(change: Change, index: number, current: FetchedRecord, zoneNam
   const body = recordBody(withChange(before, change), zoneName, where)
   const fields = changedFields(before, body)
   if (Object.keys(fields).length === 0) refuse(`${label}: changes nothing: the record already has these values.`)
-  return { id: change.id.toLowerCase(), type: record.type, ...fields }
+  return { patch: { id: change.id.toLowerCase(), type: record.type, ...fields }, before }
 }
 
-async function editRecords(args: Args, ctx: ToolContext, deps?: CloudflareDeps) {
+/** What a call will send: the zone it resolved, the records as they are now and the checked change of each, in argument order. */
+async function planEdit(args: Args, ctx: ToolContext, deps?: CloudflareDeps) {
   assertWorkable(args.changes)
   const { client, zone } = await resolveDnsZone(args, ctx, deps)
   const currents = await readRecords(
@@ -165,9 +172,14 @@ async function editRecords(args: Args, ctx: ToolContext, deps?: CloudflareDeps) 
     args.changes.map((change) => change.id),
     "changes",
   )
-  const patches = args.changes.map((change, index) => patchFor(change, index, currents[index]!, zone.name))
+  const planned = args.changes.map((change, index) => patchFor(change, index, currents[index]!, zone.name))
+  return { client, zone, currents, planned }
+}
 
-  const result = await sendBatch(client, zone.id, { patches })
+async function editRecords(args: Args, ctx: ToolContext, deps?: CloudflareDeps) {
+  const { client, zone, currents, planned } = await planEdit(args, ctx, deps)
+
+  const result = await sendBatch(client, zone.id, { patches: planned.map(({ patch }) => patch) })
   return {
     label: client.label,
     zone: { id: zone.id, name: zone.name },
@@ -176,6 +188,22 @@ async function editRecords(args: Args, ctx: ToolContext, deps?: CloudflareDeps) 
       before: record,
       after: result.patches.find((patched) => patched.id.toLowerCase() === record.id.toLowerCase()) ?? null,
     })),
+  }
+}
+
+async function describeEdit(args: Args, ctx: ToolContext, deps?: CloudflareDeps): Promise<CallDescription> {
+  const { zone, currents, planned } = await planEdit(args, ctx, deps)
+  const blocks = planned.map(({ patch, before }, index) =>
+    changeBlock(currents[index]!.record, before, patch, zone.name),
+  )
+  const text = { label: DNS_WORDS.changes, body: blocks.join("\n") }
+  if (currents.length === 1) {
+    return { headline: { text: DNS_WORDS.changeOne, values: { name: currents[0]!.record.name } }, facts: [], text }
+  }
+  return {
+    headline: { text: DNS_WORDS.changeMany, values: { zone: zone.name } },
+    facts: [recordCountFact(DNS_WORDS.records, currents.length)],
+    text,
   }
 }
 
@@ -205,6 +233,7 @@ export function defineDnsRecordEdit(deps?: CloudflareDeps): ToolSpec<typeof inpu
   return defineTool({
     id: "cloudflare_dns_record_edit",
     title: "Change Cloudflare DNS records",
+    intent: "About to change DNS records",
     description: [
       `Change 1 to ${MAX_CHANGES} existing DNS records of a Cloudflare zone in one batch: all are changed or none is, and each change is checked against the record's current values before anything is sent.`,
       "Each change names a record by id (cloudflare_dns_read list shows it) and gives only the fields to change; fields left out keep their value, and an empty comment removes the comment.",
@@ -220,6 +249,7 @@ export function defineDnsRecordEdit(deps?: CloudflareDeps): ToolSpec<typeof inpu
     input,
     output,
     targets: (args, ctx) => editTargets(args, ctx, deps),
+    describe: (args, ctx) => describeEdit(args, ctx, deps),
     execute: (args, ctx) => editRecords(args, ctx, deps),
   })
 }

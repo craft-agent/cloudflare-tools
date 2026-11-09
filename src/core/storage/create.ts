@@ -4,7 +4,15 @@ import type { CloudflareClient, CloudflareDeps } from "../cloudflare/client"
 import { isPlainObject } from "../cloudflare/reply"
 import { BUCKET_NAME_PATTERN, D1_NAME_PATTERN, ROUTES, type Route } from "../cloudflare/routes"
 import { ToolError } from "../errors"
-import { defineTool, StepErrors, stepErrorsSchema, type ToolSpec } from "../tool"
+import {
+  defineTool,
+  StepErrors,
+  stepErrorsSchema,
+  type CallDescription,
+  type ToolContext,
+  type ToolSpec,
+} from "../tool"
+import { STORAGE_WORDS } from "./words"
 import { clientFor, failureOfStoreWrite, KIND_INFO, kindSchema, storeTargets, type Kind } from "./write"
 
 const KV_TITLE_MAX_LENGTH = 512
@@ -102,11 +110,32 @@ function createdId(kind: Kind, name: string, result: unknown): string {
   return id
 }
 
+/** The headline template of each kind's create. */
+const HEADLINES: Record<Kind, string> = {
+  r2: STORAGE_WORDS.createR2,
+  kv: STORAGE_WORDS.createKv,
+  d1: STORAGE_WORDS.createD1,
+}
+
+/** What a call will do: the store's name as its kind takes it and the client of the account; refuses what the tool refuses before it writes. */
+function planCreate(args: Args, ctx: ToolContext, deps?: CloudflareDeps) {
+  const name = storeName(args)
+  const client = clientFor(args.account, ctx, deps)
+  return { name, client }
+}
+
+/** The description of the call: the kind and the name of the store it creates. */
+async function describeCreate(args: Args, ctx: ToolContext, deps?: CloudflareDeps): Promise<CallDescription> {
+  const { name } = planCreate(args, ctx, deps)
+  return { headline: { text: HEADLINES[args.kind], values: { name } }, facts: [] }
+}
+
 /** Defines the `cloudflare_storage_create` tool spec with injected dependencies. */
 export function defineStorageCreate(deps?: CloudflareDeps): CreateSpec {
   return defineTool({
     id: "cloudflare_storage_create",
     title: "Create a Cloudflare R2 bucket, KV namespace or D1 database",
+    intent: "About to create a store",
     description: [
       "Create an empty R2 bucket, Workers KV namespace or D1 database from a name alone.",
       "Cloudflare chooses the location; no location hint, storage class or jurisdiction is sent, so the store is in the default jurisdiction only.",
@@ -121,9 +150,9 @@ export function defineStorageCreate(deps?: CloudflareDeps): CreateSpec {
     input,
     output,
     targets: (args, ctx) => storeTargets(args.account, args.kind, () => storeName(args), ctx, deps),
+    describe: (args, ctx) => describeCreate(args, ctx, deps),
     async execute(args, ctx) {
-      const name = storeName(args)
-      const client = clientFor(args.account, ctx, deps)
+      const { name, client } = planCreate(args, ctx, deps)
 
       const result = await sendCreate(client, args.kind, name)
       const steps = new StepErrors()
