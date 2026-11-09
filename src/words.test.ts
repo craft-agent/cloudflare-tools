@@ -4,6 +4,7 @@ import { DNS_TRANSLATIONS } from "./core/dns/words"
 import { EMAIL_TRANSLATIONS } from "./core/email/words"
 import { FACT_TRANSLATIONS } from "./core/facts"
 import { PAGES_TRANSLATIONS } from "./core/pages/words"
+import { STORAGE_TRANSLATIONS } from "./core/storage/words"
 import { WORKERS_TRANSLATIONS } from "./core/workers/words"
 import { ZONE_TRANSLATIONS } from "./core/zone/words"
 import { ALL_TOOLS } from "./tools"
@@ -16,6 +17,7 @@ const TABLES = [
   EMAIL_TRANSLATIONS,
   PAGES_TRANSLATIONS,
   WORKERS_TRANSLATIONS,
+  STORAGE_TRANSLATIONS,
 ]
 
 const WRITE_TOOLS = ALL_TOOLS.filter((spec) => spec.class !== "read")
