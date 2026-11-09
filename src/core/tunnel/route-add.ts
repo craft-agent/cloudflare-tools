@@ -2,9 +2,10 @@ import { z } from "zod"
 import { accountArg } from "../cloudflare/args"
 import { cloudflareClient, type CloudflareClient, type CloudflareDeps } from "../cloudflare/client"
 import { ToolError } from "../errors"
-import { confirmWrite, defineTool, type ToolSpec } from "../tool"
+import { confirmWrite, defineTool, type CallDescription, type CallFact, type ToolContext, type ToolSpec } from "../tool"
 import type { Zone } from "../zone/lookup"
 import { accessCoverageSchema, coverageOf, PUBLIC_ACCESS_WARNING, readAccessApps, routeAccessSchema } from "./access"
+import { accessFact, configurationPins, pathFacts, routeHeadline } from "./describe"
 import {
   assertDnsFits,
   assertRouteUnchanged,
@@ -41,6 +42,7 @@ import {
   type NewRule,
 } from "./route.rules"
 import { INGRESS_TEXT_MAX_LENGTH, clip } from "./shape"
+import { TUNNEL_WORDS } from "./words"
 
 const MAYBE_WRITTEN =
   "Cloudflare may or may not have changed the tunnel's configuration, and no DNS record was added; read cloudflare_tunnel_read tunnel before sending it again."
@@ -69,6 +71,7 @@ const output = z.object({
   access: routeAccessSchema,
 })
 
+type Args = z.output<typeof input>
 type RouteAddSpec = ToolSpec<typeof input, typeof output>
 
 /** What the call found before it writes: the tunnel, the zone of the hostname, the configuration and the DNS decision. */
@@ -112,11 +115,40 @@ function confirmation(plan: Plan, rule: NewRule, access: z.output<typeof accessC
   return `Publish ${ruleLabel(rule)} through tunnel ${plan.tunnel.name ?? plan.tunnel.id} to ${rule.service}${cname}. Access coverage: ${access.status}.${exposed}`
 }
 
+/** What a call will do: the hostname, the rule, the client, what the plan found and the hostname's Access coverage; refuses what the tool refuses before it asks. */
+async function planCall(args: Args, ctx: ToolContext, deps?: CloudflareDeps) {
+  const hostname = normalizedHostname(args.hostname)
+  const rule: NewRule = { hostname, ...(args.path === undefined ? {} : { path: args.path }), service: args.service }
+  const client = cloudflareClient(args.account, { ...deps, signal: ctx.signal })
+
+  const plan = await planFor(client, args.tunnel, rule)
+  const access = coverageOf(hostname, await readAccessApps(client))
+  return { hostname, rule, client, plan, access }
+}
+
+/** The description of the call: the hostname and the tunnel, whether Access covers it, the service and path, and the CNAME; the configuration is pinned, since it is sent back whole. */
+async function describeCall(args: Args, ctx: ToolContext, deps?: CloudflareDeps): Promise<CallDescription> {
+  const { hostname, rule, plan, access } = await planCall(args, ctx, deps)
+  const dns = plan.dns.action === "create" ? TUNNEL_WORDS.dnsCreate : TUNNEL_WORDS.dnsKeep
+  const facts: CallFact[] = [
+    accessFact(access),
+    { label: TUNNEL_WORDS.service, value: rule.service },
+    ...pathFacts(rule.path),
+    { label: TUNNEL_WORDS.dns, value: { text: dns } },
+  ]
+  return {
+    headline: routeHeadline(TUNNEL_WORDS.publish, plan.tunnel, hostname),
+    facts,
+    pins: configurationPins(plan.configuration),
+  }
+}
+
 /** Defines the `cloudflare_tunnel_route_add` tool spec with injected dependencies. */
 export function defineTunnelRouteAdd(deps?: CloudflareDeps): RouteAddSpec {
   const spec: RouteAddSpec = defineTool({
     id: "cloudflare_tunnel_route_add",
     title: "Publish a hostname through a Cloudflare Tunnel",
+    intent: "About to publish a hostname through a tunnel",
     description: [
       "Publish a hostname, and optionally a path, through a dashboard-managed Cloudflare Tunnel to a local service: the rule goes into the tunnel's configuration just before its catch-all, and a proxied CNAME from the hostname to the tunnel is added unless it is already there; the tool always asks first, since the hostname is public once published.",
       "`service` is a URL such as http://localhost:8080, or unix:<path> or http_status:<code>; hello_world works only on locally managed tunnels.",
@@ -133,13 +165,9 @@ export function defineTunnelRouteAdd(deps?: CloudflareDeps): RouteAddSpec {
     input,
     output,
     targets: (args, ctx) => routeTargets(args, ctx, deps),
+    describe: (args, ctx) => describeCall(args, ctx, deps),
     async execute(args, ctx) {
-      const hostname = normalizedHostname(args.hostname)
-      const rule: NewRule = { hostname, ...(args.path === undefined ? {} : { path: args.path }), service: args.service }
-      const client = cloudflareClient(args.account, { ...deps, signal: ctx.signal })
-
-      const plan = await planFor(client, args.tunnel, rule)
-      const access = coverageOf(hostname, await readAccessApps(client))
+      const { hostname, rule, client, plan, access } = await planCall(args, ctx, deps)
       await confirmWrite(spec, ctx, confirmation(plan, rule, access))
       // An answer can take minutes; read again so the write acts on what was approved.
       if (ctx.confirm) await assertRouteUnchanged(client, args.tunnel, plan, hostname)
