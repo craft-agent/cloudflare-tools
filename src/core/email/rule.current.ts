@@ -14,7 +14,8 @@ export type ChangeableRule = Rule & { to: string; action: Action }
 /** What a `targets` resolver knows once it has found the rule: the account, the zone and the rule. */
 export type Found = { accountId: string; zone: Zone; rule: ChangeableRule }
 
-function refusal(message: string): ToolError {
+/** An `invalid_argument` that says nothing was changed. */
+export function refusal(message: string): ToolError {
   return new ToolError("invalid_argument", `${message} ${NOTHING_CHANGED}`)
 }
 

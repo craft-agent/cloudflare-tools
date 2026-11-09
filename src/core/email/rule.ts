@@ -185,6 +185,11 @@ export function ruleTarget(accountId: string, zoneId: string, to: string): strin
   return `${accountId}/zones/${zoneId}/email/rules/${to}`
 }
 
+/** What a write to the zone's catch-all names, as the permission rules of an entry point do. */
+export function catchAllTarget(accountId: string, zoneId: string): string {
+  return `${accountId}/zones/${zoneId}/email/catch_all`
+}
+
 /**
  * What a call about the rule for `args.to` writes to: `<account_id>/zones/<zone_id>/email/rules/<to>`, after finding
  * the zone and nothing else; `*` when the zone or the address cannot be told. A cancellation is passed on.
