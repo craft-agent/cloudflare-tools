@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test"
-import { PATH_PARAMS, ROUTES, RULE_ID_PATTERN } from "./routes"
+import { ADDRESS_ID_PATTERN, PATH_PARAMS, ROUTES, RULE_ID_PATTERN } from "./routes"
 
 describe("the Email Routing routes", () => {
   test("are listed and their zone parameter is a zone id", () => {
@@ -26,6 +26,21 @@ describe("the Email Routing routes", () => {
     for (const id of ["", "catch_all", "a_b", "a".repeat(65), "../x", "a/b", "a b", "a\n"]) {
       expect(RULE_ID_PATTERN.test(id)).toBe(false)
     }
+  })
+
+  test("the destination address routes are a POST and a DELETE by address id", () => {
+    expect(ROUTES.emailRoutingAddressCreate).toEqual({
+      method: "POST",
+      path: "/accounts/{account_id}/email/routing/addresses",
+    })
+    expect(ROUTES.emailRoutingAddressDelete).toEqual({
+      method: "DELETE",
+      path: "/accounts/{account_id}/email/routing/addresses/{address_id}",
+    })
+    expect(PATH_PARAMS.address_id).toBe(ADDRESS_ID_PATTERN)
+    expect(ADDRESS_ID_PATTERN.test("e5".repeat(16))).toBe(true)
+    for (const id of ["", "a_b", "a".repeat(65), "../x", "a/b", "a@b.c"])
+      expect(ADDRESS_ID_PATTERN.test(id)).toBe(false)
   })
 
   test("the catch-all edit route is a PUT to the fixed catch_all path, with no rule id", () => {

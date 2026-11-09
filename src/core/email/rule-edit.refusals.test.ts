@@ -218,7 +218,7 @@ describe("cloudflareEmailRuleEdit: the change", () => {
     )
 
     expect(message).toBe(
-      `${OTHER_DESTINATION} is not a destination address of this account. Add it as one; Cloudflare then mails its owner, and a rule can forward to it once they confirm.${NOTHING_CHANGED}`,
+      `${OTHER_DESTINATION} is not a destination address of this account. cloudflare_email_address_add adds it; Cloudflare then mails its owner, and a rule can forward to it once they confirm.${NOTHING_CHANGED}`,
     )
     expect(sent(requests, "PUT")).toHaveLength(0)
   })

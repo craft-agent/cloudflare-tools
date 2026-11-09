@@ -30,9 +30,12 @@ export function withHint(error: ToolError, hint: string): ToolError {
   return new ToolError("forbidden", `${sentence(error.message)} ${hint}`, { cause: error })
 }
 
-type Listing<T> = {
+/** A paged Cloudflare listing the checks read: its route, what it holds and how a row is shaped. */
+export type Listing<T> = {
   route: Route
   path?: Record<string, string>
+  /** Query parameters sent with every page, besides the paging ones. */
+  query?: Record<string, string>
   hint: string
   /** What the listing holds, for the messages: "routing rules". */
   what: string
@@ -45,33 +48,49 @@ async function readPage<T>(client: CloudflareClient, listing: Listing<T>, page: 
   try {
     return await client.request<unknown>(listing.route, {
       ...(listing.path ? { path: listing.path } : {}),
-      query: { page, per_page: PER_PAGE_COUNT },
+      query: { ...listing.query, page, per_page: PER_PAGE_COUNT },
     })
   } catch (error) {
     throw isToolError(error) ? withHint(error, listing.hint) : error
   }
 }
 
-/** The first row of a listing that `matches`, reading at most {@link MAX_PAGES} pages; `undefined` when the listing ends without one. */
-async function findInListing<T>(
+/**
+ * Hands the shaped rows of each page of a listing to `visit`, at most {@link MAX_PAGES} pages, until `visit` returns
+ * true or the listing ends. A listing longer than that is `upstream_error`, since what is left would go unread.
+ */
+export async function scanListing<T>(
   client: CloudflareClient,
   listing: Listing<T>,
-  matches: (row: T) => boolean,
-): Promise<T | undefined> {
+  visit: (rows: T[]) => boolean,
+): Promise<void> {
   for (let page = 1; ; page += 1) {
     const reply = await readPage(client, listing, page)
     if (!Array.isArray(reply.result)) {
       throw new ToolError("upstream_error", `Cloudflare returned an unexpected ${listing.what} response.`)
     }
-    const found = shapeRows(reply.result, listing.shape).find(matches)
-    if (found !== undefined) return found
+    if (visit(shapeRows(reply.result, listing.shape))) return
 
     const totalPages = reply.resultInfo?.total_pages
-    if (typeof totalPages !== "number" || page >= totalPages) return undefined
+    if (typeof totalPages !== "number" || page >= totalPages) return
     if (page >= MAX_PAGES) {
       throw new ToolError("upstream_error", `${listing.owner} has more ${listing.what} than this tool reads.`)
     }
   }
+}
+
+/** The first row of a listing that `matches`, reading at most {@link MAX_PAGES} pages; `undefined` when the listing ends without one. */
+export async function findInListing<T>(
+  client: CloudflareClient,
+  listing: Listing<T>,
+  matches: (row: T) => boolean,
+): Promise<T | undefined> {
+  let found: T | undefined
+  await scanListing(client, listing, (rows) => {
+    found = rows.find(matches)
+    return found !== undefined
+  })
+  return found
 }
 
 /** The rule of the zone that matches the address `to` (lowercase), a rule with a shape these tools do not change included. */
@@ -137,7 +156,7 @@ export async function assertVerifiedDestination(client: CloudflareClient, addres
   if (state === "missing") {
     throw new ToolError(
       "invalid_argument",
-      `${address} is not a destination address of this account. Add it as one; Cloudflare then mails its owner, and a rule can forward to it once they confirm. ${NOTHING_CHANGED}`,
+      `${address} is not a destination address of this account. cloudflare_email_address_add adds it; Cloudflare then mails its owner, and a rule can forward to it once they confirm. ${NOTHING_CHANGED}`,
     )
   }
   if (state === "unverified") {

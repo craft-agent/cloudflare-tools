@@ -52,15 +52,17 @@ export const toArg = z
     `The address mail is sent to: a local part such as sales (the zone's name is added), or a full address at the zone or one of its subdomains. Lowercased; at most ${MATCHER_MAX_LENGTH} characters.`,
   )
 
-const destinationArg = z
+/** A plain email address, trimmed and lowercased, of at most {@link MATCHER_MAX_LENGTH} characters. */
+export const plainAddress = z
   .string()
   .trim()
   .toLowerCase()
   .max(MATCHER_MAX_LENGTH)
   .refine(isAddress, "must be a plain email address such as owner@example.net")
-  .describe(
-    `The address to forward to, lowercased (at most ${MATCHER_MAX_LENGTH} characters); it must be a verified destination address of the account.`,
-  )
+
+const destinationArg = plainAddress.describe(
+  `The address to forward to, lowercased (at most ${MATCHER_MAX_LENGTH} characters); it must be a verified destination address of the account.`,
+)
 
 /** What a rule does with the mail it matches: forward it to one address, drop it, or hand it to one Worker. */
 export const actionArg = z

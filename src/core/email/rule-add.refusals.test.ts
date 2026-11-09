@@ -199,7 +199,7 @@ describe("cloudflareEmailRuleAdd: an address that already has a rule", () => {
 })
 
 describe("cloudflareEmailRuleAdd: a forward to an address that is not a verified destination", () => {
-  const UNKNOWN = `${DESTINATION} is not a destination address of this account. Add it as one; Cloudflare then mails its owner, and a rule can forward to it once they confirm.${NOTHING_CHANGED}`
+  const UNKNOWN = `${DESTINATION} is not a destination address of this account. cloudflare_email_address_add adds it; Cloudflare then mails its owner, and a rule can forward to it once they confirm.${NOTHING_CHANGED}`
   const PENDING = `${DESTINATION} is a destination address whose owner has not confirmed Cloudflare's mail yet; a rule can forward only to a verified address.${NOTHING_CHANGED}`
 
   test("refuses an address the account does not have", async () => {
