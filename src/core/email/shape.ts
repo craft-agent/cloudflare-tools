@@ -2,10 +2,10 @@ import { z } from "zod"
 import { isPlainObject } from "../cloudflare/reply"
 
 /** Maximum characters retained for an email address. */
-export const ADDRESS_MAX_LENGTH = 254
+const ADDRESS_MAX_LENGTH = 254
 
 /** Maximum characters retained for a rule's name. */
-export const RULE_NAME_MAX_LENGTH = 256
+const RULE_NAME_MAX_LENGTH = 256
 
 /** What a rule carries when its matchers or actions are not the single, plain ones these tools change. */
 export const UNSUPPORTED_RULE_NOTE = "This rule has a shape these tools do not change; the dashboard shows it in full."
@@ -27,6 +27,9 @@ export function shapeRows<T>(rows: unknown[], shape: (row: unknown) => T | undef
     return shaped ? [shaped] : []
   })
 }
+
+/** The `label` of every result: which account the call used. */
+export const accountLabelSchema = z.string().describe("The account label.")
 
 const actionSchema = z.discriminatedUnion("type", [
   z.object({ type: z.literal("forward"), to: z.string().describe("The destination address, lowercased.") }),

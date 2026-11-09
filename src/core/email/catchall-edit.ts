@@ -29,7 +29,7 @@ import {
   type Action,
 } from "./rule"
 import { assertVerifiedDestination, readRoutingEnabled, RULES_EDIT_HINT, shapedRule, withHint } from "./rule.checks"
-import { ruleSchema, type Rule } from "./shape"
+import { accountLabelSchema, ruleSchema, type Rule } from "./shape"
 
 const WRITE_NOTES: WriteFailureNotes = {
   nothing: NOTHING_CHANGED,
@@ -64,7 +64,7 @@ const input = z.object({
 })
 
 const output = z.object({
-  label: z.string().describe("The account label."),
+  label: accountLabelSchema,
   zone: ruleZoneSchema,
   catch_all: z
     .strictObject({

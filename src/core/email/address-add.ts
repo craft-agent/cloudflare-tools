@@ -8,7 +8,7 @@ import { confirmWrite, defineTool, type ToolSpec } from "../tool"
 import { ADDRESS_EDIT_HINT, addressTargets, emailArg, findAddress, standing, type Address } from "./address"
 import { NOTHING_CHANGED } from "./rule"
 import { withHint } from "./rule.checks"
-import { addressSchema, shapeAddress } from "./shape"
+import { accountLabelSchema, addressSchema, shapeAddress } from "./shape"
 
 const WRITE_NOTES: WriteFailureNotes = {
   nothing: NOTHING_CHANGED,
@@ -22,7 +22,7 @@ const input = z.object({
 })
 
 const output = z.object({
-  label: z.string().describe("The account label."),
+  label: accountLabelSchema,
   address: z
     .strictObject({
       before: z.null().describe("The address before the call: none, since the call adds one."),

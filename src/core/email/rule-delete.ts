@@ -10,7 +10,7 @@ import { resolveZone, zoneArg, type Zone } from "../zone/lookup"
 import { describeAction, NOTHING_CHANGED, ruleIdArg, ruleTarget, ruleZoneSchema } from "./rule"
 import { RULES_EDIT_HINT, withHint } from "./rule.checks"
 import { readRule, ruleTargetsOf, type ChangeableRule } from "./rule.current"
-import { ruleSchema, shapeRule, type Rule } from "./shape"
+import { accountLabelSchema, ruleSchema, shapeRule, type Rule } from "./shape"
 
 const WRITE_NOTES: WriteFailureNotes = {
   nothing: NOTHING_CHANGED,
@@ -24,7 +24,7 @@ const input = z.object({
 })
 
 const output = z.object({
-  label: z.string().describe("The account label."),
+  label: accountLabelSchema,
   zone: ruleZoneSchema,
   rule: z
     .strictObject({

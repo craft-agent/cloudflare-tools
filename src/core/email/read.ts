@@ -8,7 +8,18 @@ import type { QueryValue } from "../cloudflare/url"
 import { isToolError, ToolError } from "../errors"
 import { defineTool, type ToolContext, type ToolSpec } from "../tool"
 import { resolveZone, zoneArg } from "../zone/lookup"
-import { addressSchema, routingSchema, ruleSchema, shapeAddress, shapeRouting, shapeRows, shapeRule } from "./shape"
+import { ADDRESS_READ_HINT } from "./address"
+import { PER_PAGE_COUNT, RULES_READ_HINT } from "./rule.checks"
+import {
+  accountLabelSchema,
+  addressSchema,
+  routingSchema,
+  ruleSchema,
+  shapeAddress,
+  shapeRouting,
+  shapeRows,
+  shapeRule,
+} from "./shape"
 
 const METHODS = ["routing", "rules", "addresses"] as const
 type Method = (typeof METHODS)[number]
@@ -19,16 +30,11 @@ const ACCEPTED_KEYS: Record<Method, readonly string[]> = {
   addresses: ["account", "verified", "page"],
 }
 
-const ZONE_PERMISSION_HINT = "The token needs Zone → Email Routing Rules → Read."
-const ADDRESS_PERMISSION_HINT = "The token needs Account → Email Routing Addresses → Read."
-
 const PERMISSION_HINTS: Record<Method, string> = {
-  routing: ZONE_PERMISSION_HINT,
-  rules: ZONE_PERMISSION_HINT,
-  addresses: ADDRESS_PERMISSION_HINT,
+  routing: RULES_READ_HINT,
+  rules: RULES_READ_HINT,
+  addresses: ADDRESS_READ_HINT,
 }
-
-const PER_PAGE_COUNT = 50
 
 const input = z.object({
   account: accountArg,
@@ -55,7 +61,7 @@ const zoneSchema = z.object({
 })
 
 const output = z.object({
-  label: z.string().describe("The account label."),
+  label: accountLabelSchema,
   zone: zoneSchema.optional().describe("routing, rules: the zone."),
   routing: routingSchema.optional().describe("routing: the zone's Email Routing settings."),
   catch_all: ruleSchema

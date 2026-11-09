@@ -6,11 +6,11 @@ import { scanListing, withHint } from "./rule.checks"
 import { shapeRule } from "./shape"
 
 /** What a forbidden read of a zone's rules gains when the call must tell whether a rule forwards to an address. */
-export const USAGE_READ_HINT =
+const USAGE_READ_HINT =
   "The token needs Zone → Email Routing Rules → Read in every zone of the account to tell whether a rule forwards to the address."
 
 /** What a forbidden listing of the account's zones gains. */
-export const ZONES_READ_HINT = "The token needs Zone → Zone → Read to list the account's zones."
+const ZONES_READ_HINT = "The token needs Zone → Zone → Read to list the account's zones."
 
 /** The `rule` of a use that is the zone's catch-all. */
 export const CATCH_ALL_USE = "catch_all"
@@ -19,7 +19,7 @@ export const CATCH_ALL_USE = "catch_all"
 export type ForwardUse = { zone: string; rule: string; to: string | null }
 
 /** Where the account forwards to an address: the number of zones checked and every use found. */
-export type ForwardUsage = { zones: number; uses: ForwardUse[] }
+type ForwardUsage = { zones: number; uses: ForwardUse[] }
 
 type ZoneRef = { id: string; name: string }
 

@@ -28,7 +28,7 @@ import {
   toArg,
   type Action,
 } from "./rule"
-import { ruleSchema, type Rule } from "./shape"
+import { accountLabelSchema, ruleSchema, type Rule } from "./shape"
 
 const WRITE_NOTES: WriteFailureNotes = {
   nothing: NOTHING_CHANGED,
@@ -45,7 +45,7 @@ const input = z.object({
 })
 
 const output = z.object({
-  label: z.string().describe("The account label."),
+  label: accountLabelSchema,
   zone: ruleZoneSchema,
   rule: z
     .strictObject({

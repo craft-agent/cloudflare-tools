@@ -44,7 +44,7 @@ export function findAddress(client: CloudflareClient, email: string): Promise<Ad
 }
 
 /** What a write to the destination address `email` names, as the permission rules of an entry point do. */
-export function addressTarget(accountId: string, email: string): string {
+function addressTarget(accountId: string, email: string): string {
   return `${accountId}/email/addresses/${email}`
 }
 

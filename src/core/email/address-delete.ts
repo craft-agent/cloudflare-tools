@@ -9,7 +9,7 @@ import { ADDRESS_EDIT_HINT, addressTargets, emailArg, findAddress, standing, typ
 import { CATCH_ALL_USE, forwardsTo, type ForwardUse } from "./address.usage"
 import { NOTHING_CHANGED } from "./rule"
 import { withHint } from "./rule.checks"
-import { addressSchema } from "./shape"
+import { accountLabelSchema, addressSchema } from "./shape"
 
 /** The most uses a refusal names; the rest are counted. */
 const MAX_LISTED_USES = 5
@@ -26,7 +26,7 @@ const input = z.object({
 })
 
 const output = z.object({
-  label: z.string().describe("The account label."),
+  label: accountLabelSchema,
   address: z
     .strictObject({
       before: addressSchema.describe(

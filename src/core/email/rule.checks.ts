@@ -7,7 +7,7 @@ import { NOTHING_CHANGED } from "./rule"
 import { shapeAddress, shapeRows, shapeRule, type Rule } from "./shape"
 
 /** Rows per page of a listing; the most Cloudflare serves. */
-const PER_PAGE_COUNT = 50
+export const PER_PAGE_COUNT = 50
 
 /** The most pages of a listing the checks read. */
 const MAX_PAGES = 5
@@ -16,13 +16,13 @@ const MAX_PAGES = 5
 export const RULES_READ_HINT = "The token needs Zone → Email Routing Rules → Read."
 
 /** What a forbidden read of the account's destination addresses gains when it checks a forward. */
-export const ADDRESSES_READ_HINT = "The token needs Account → Email Routing Addresses → Read to check the forward."
+const ADDRESSES_READ_HINT = "The token needs Account → Email Routing Addresses → Read to check the forward."
 
 /** What a forbidden write of a zone's rules gains. */
 export const RULES_EDIT_HINT = "The token needs Zone → Email Routing Rules → Edit."
 
 /** How a destination address stands: confirmed by its owner, added but not confirmed, or not an address of the account. */
-export type DestinationState = "verified" | "unverified" | "missing"
+type DestinationState = "verified" | "unverified" | "missing"
 
 /** A forbidden failure gains the permission the call needs; any other failure is returned as it is. */
 export function withHint(error: ToolError, hint: string): ToolError {
@@ -31,7 +31,7 @@ export function withHint(error: ToolError, hint: string): ToolError {
 }
 
 /** A paged Cloudflare listing the checks read: its route, what it holds and how a row is shaped. */
-export type Listing<T> = {
+type Listing<T> = {
   route: Route
   path?: Record<string, string>
   /** Query parameters sent with every page, besides the paging ones. */
@@ -94,7 +94,7 @@ export async function findInListing<T>(
 }
 
 /** The rule of the zone that matches the address `to` (lowercase), a rule with a shape these tools do not change included. */
-export function findRuleFor(client: CloudflareClient, zoneId: string, to: string): Promise<Rule | undefined> {
+function findRuleFor(client: CloudflareClient, zoneId: string, to: string): Promise<Rule | undefined> {
   return findInListing(
     client,
     {
@@ -110,7 +110,7 @@ export function findRuleFor(client: CloudflareClient, zoneId: string, to: string
 }
 
 /** How the account's destination address `email` stands; addresses compare without regard to case. */
-export async function destinationState(client: CloudflareClient, email: string): Promise<DestinationState> {
+async function destinationState(client: CloudflareClient, email: string): Promise<DestinationState> {
   const wanted = email.toLowerCase()
   const found = await findInListing(
     client,
