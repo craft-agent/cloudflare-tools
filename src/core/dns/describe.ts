@@ -1,11 +1,17 @@
 import { isPlainObject } from "../cloudflare/reply"
 import type { CallFact } from "../tool"
+import { EDITABLE_FIELDS, type EditableField } from "./current"
 import { relativeName } from "./names"
-import { AUTOMATIC_TTL } from "./values"
+import type { RecordListItem } from "./records"
+import { AUTOMATIC_TTL, DATA_KEYS, type NewRecord } from "./values"
 import { DNS_WORDS } from "./words"
 
 const AUTO_TTL_WORD = "auto"
+const NO_VALUE = "(none)"
+const TRUE_WORD = "yes"
+const FALSE_WORD = "no"
 const LINE_SEPARATOR = "  "
+const CHANGE_INDENT = "  "
 
 /** A Cloudflare record or the body a create sends: the fields the one-line forms read. */
 export type RecordLike = {
@@ -46,6 +52,51 @@ export function recordLine(record: RecordLike, zoneName: string): string {
     ...(typeof record.comment === "string" && record.comment !== "" ? [`# ${record.comment}`] : []),
   ]
   return parts.join(LINE_SEPARATOR)
+}
+
+/** The values of a CAA or SRV record's `data` in the order of its keys, joined by a space. */
+function dataWord(type: string, data: unknown): string {
+  if (!isPlainObject(data)) return NO_VALUE
+  const keys = type === "CAA" || type === "SRV" ? DATA_KEYS[type] : Object.keys(data)
+  return keys.flatMap((key) => (data[key] !== undefined ? [String(data[key])] : [])).join(" ")
+}
+
+/** One value of an edit as the prompt shows it, by the field of the record it belongs to. */
+function fieldWord(field: EditableField, type: string, value: unknown, zoneName: string): string {
+  if (value === undefined || value === null) return NO_VALUE
+  switch (field) {
+    case "name":
+      return relativeName(String(value), zoneName)
+    case "data":
+      return dataWord(type, value)
+    case "ttl":
+      return ttlWord(value)
+    case "proxied":
+      return value === true ? TRUE_WORD : FALSE_WORD
+    case "comment":
+      return value === "" ? NO_VALUE : String(value)
+    default:
+      return String(value)
+  }
+}
+
+/**
+ * One changed record: its name and type as Cloudflare reports them, then one
+ * indented line `field: before → after` for each field of `fields` (the
+ * patch's fields) in the order a patch lists them. `before` is the record in
+ * the form an edit is laid over.
+ */
+export function changeBlock(
+  record: RecordListItem,
+  before: NewRecord,
+  fields: Record<string, unknown>,
+  zoneName: string,
+): string {
+  const lines = EDITABLE_FIELDS.filter((field) => field in fields).map(
+    (field) =>
+      `${CHANGE_INDENT}${field}: ${fieldWord(field, before.type, before[field], zoneName)} → ${fieldWord(field, before.type, fields[field], zoneName)}`,
+  )
+  return [`${relativeName(record.name, zoneName)} ${record.type}`, ...lines].join("\n")
 }
 
 /** A record-count fact under `label`, as `1 record` or `3 records`. */

@@ -1,14 +1,21 @@
 import { describe, expect, test } from "bun:test"
-import { recordCountFact, recordLine, recordValue, type RecordLike } from "./describe"
+import { currentForm } from "./current"
+import { changeBlock, recordCountFact, recordLine, recordValue, type RecordLike } from "./describe"
 import { A_RECORD, CAA_RECORD, CNAME_RECORD, MX_RECORD, PLAIN_A_RECORD, SRV_RECORD, TXT_RECORD } from "./fixtures"
 import { shapeRecord } from "./records"
-import { recordBody } from "./values"
+import { recordBody, type NewRecord } from "./values"
 
 const ZONE = "example.com"
 
 /** The line of a create body, as the tools build it from `recordBody`. */
 function bodyLine(body: Record<string, unknown>): string {
   return recordLine(body as RecordLike, ZONE)
+}
+
+/** The block an edit of `record` into `fields` shows. */
+function blockFor(raw: Record<string, unknown>, fields: Record<string, unknown>): string {
+  const record = shapeRecord(raw)
+  return changeBlock(record, currentForm(record, record.type as NewRecord["type"]), fields, ZONE)
 }
 
 describe("recordLine", () => {
@@ -77,6 +84,46 @@ describe("recordLine", () => {
 describe("recordValue", () => {
   test("is empty for a record with neither content nor data", () => {
     expect(recordValue({ type: "A", name: "www.example.com" })).toBe("")
+  })
+})
+
+describe("changeBlock", () => {
+  test("heads the block with the record's name and type, then one indented line per changed field", () => {
+    expect(blockFor(A_RECORD, { content: "192.0.2.2", ttl: 300, proxied: false })).toBe(
+      "www A\n  content: 192.0.2.1 → 192.0.2.2\n  ttl: auto → 300\n  proxied: yes → no",
+    )
+  })
+
+  test("lists the fields in the order of a patch whatever the order they were given in", () => {
+    expect(blockFor(PLAIN_A_RECORD, { comment: "x", ttl: 1, content: "192.0.2.8" })).toBe(
+      "api A\n  content: 192.0.2.7 → 192.0.2.8\n  ttl: 300 → auto\n  comment: (none) → x",
+    )
+  })
+
+  test("shows a removed comment as (none) and a new one as written", () => {
+    expect(blockFor(A_RECORD, { comment: "" })).toBe("www A\n  comment: web front → (none)")
+    expect(blockFor(CNAME_RECORD, { comment: "docs" })).toBe("blog CNAME\n  comment: (none) → docs")
+  })
+
+  test("shows a rename relative to the zone, the apex as @", () => {
+    expect(blockFor(A_RECORD, { name: "news.example.com" })).toBe("www A\n  name: www → news")
+    expect(blockFor(A_RECORD, { name: "example.com" })).toBe("www A\n  name: www → @")
+  })
+
+  test("shows the data values of a CAA or SRV record in the order of its keys", () => {
+    const caa = { flags: 0, tag: "issuewild", value: "pki.example.org" }
+    const srv = { port: 5061, target: "sip2.example.org", priority: 10, weight: 5 }
+
+    expect(blockFor(CAA_RECORD, { data: caa })).toBe(
+      "@ CAA\n  data: 0 issue letsencrypt.org → 0 issuewild pki.example.org",
+    )
+    expect(blockFor(SRV_RECORD, { data: srv })).toBe(
+      "_sip._tcp SRV\n  data: 10 5 5060 sip.example.org → 10 5 5061 sip2.example.org",
+    )
+  })
+
+  test("shows a changed MX preference", () => {
+    expect(blockFor(MX_RECORD, { priority: 20 })).toBe("@ MX\n  priority: 10 → 20")
   })
 })
 
