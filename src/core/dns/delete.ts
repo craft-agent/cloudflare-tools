@@ -1,11 +1,11 @@
 import { z } from "zod"
 import { accountArg } from "../cloudflare/args"
 import type { CloudflareDeps } from "../cloudflare/client"
-import { isPlainObject } from "../cloudflare/reply"
 import { ToolError } from "../errors"
 import { confirmWrite, defineTool, type ToolContext, type ToolSpec } from "../tool"
 import { zoneArg } from "../zone/lookup"
 import { sendBatch } from "./batch"
+import { recordValue, type RecordLike } from "./describe"
 import { relativeName } from "./names"
 import { assertWritableRecord, readRecords, recordIdArg, recordListItemSchema, type RecordListItem } from "./records"
 import { resolveDnsTargets, resolveDnsZone } from "./targets"
@@ -62,25 +62,6 @@ function assertDistinctIds(ids: string[]): void {
     }
     firstSeen.set(id, index)
   }
-}
-
-type RecordLike = {
-  type: string
-  name: string
-  content?: unknown
-  data?: unknown
-  priority?: unknown
-}
-
-function recordValue(record: RecordLike): string {
-  const raw =
-    typeof record.content === "string" && record.content !== ""
-      ? record.content
-      : isPlainObject(record.data)
-        ? Object.values(record.data).join(" ")
-        : ""
-  const priority = record.type === "MX" && typeof record.priority === "number" ? `${record.priority} ` : ""
-  return `${priority}${raw}`
 }
 
 /** One line of the confirmation: `TYPE relative-name → value`, with the value on one line and clipped. */
