@@ -2,7 +2,14 @@ import { z } from "zod"
 import { cloudflareClient, type CloudflareClient, type CloudflareDeps } from "../cloudflare/client"
 import { ROUTES } from "../cloudflare/routes"
 import { ToolError, isToolError } from "../errors"
-import { confirmWrite, defineTool, stepErrorsSchema, type ToolSpec } from "../tool"
+import {
+  confirmWrite,
+  defineTool,
+  stepErrorsSchema,
+  type CallDescription,
+  type ToolContext,
+  type ToolSpec,
+} from "../tool"
 import {
   domainInput,
   domainName,
@@ -14,6 +21,7 @@ import {
 } from "./domains"
 import { projectName, requestProject, requireObject } from "./projects"
 import { domainSchema, shapeDomain } from "./shape"
+import { PAGES_WORDS } from "./words"
 
 /** Cloudflare's code for a hostname that is not one of the project's domains; it answers HTTP 400 with it. */
 const NO_SUCH_DOMAIN_CODE = "8000021"
@@ -54,11 +62,39 @@ async function sendRemove(client: CloudflareClient, project: string, name: strin
   }
 }
 
+/** What a call will do: the project, the hostname, the client and the domain as the project holds it; refuses a hostname it does not hold. */
+async function planDomainRemove(args: z.output<typeof domainInput>, ctx: ToolContext, deps?: CloudflareDeps) {
+  const project = projectName(args.project)
+  const name = domainName(args.name)
+  const client = cloudflareClient(args.account, { ...deps, signal: ctx.signal })
+
+  const domain = await readDomain(client, project, name)
+  return { project, name, client, domain }
+}
+
+/** The description of the call: the domain's status now and what removing it does to visitors. */
+async function describeDomainRemove(
+  args: z.output<typeof domainInput>,
+  ctx: ToolContext,
+  deps?: CloudflareDeps,
+): Promise<CallDescription> {
+  const { project, name, domain } = await planDomainRemove(args, ctx, deps)
+  const { status } = shapeDomain(domain)
+  return {
+    headline: { text: PAGES_WORDS.domainRemove, values: { name, project } },
+    facts: [
+      ...(status !== null ? [{ label: PAGES_WORDS.status, value: status }] : []),
+      { label: PAGES_WORDS.effect, value: { text: PAGES_WORDS.effectRemove } },
+    ],
+  }
+}
+
 /** Defines the `cloudflare_pages_domain_remove` tool spec with injected dependencies. */
 export function definePagesDomainRemove(deps?: CloudflareDeps): DomainRemoveSpec {
   const spec: DomainRemoveSpec = defineTool({
     id: "cloudflare_pages_domain_remove",
     title: "Remove a custom domain from a Cloudflare Pages project",
+    intent: "About to remove a custom domain",
     description: [
       "Remove a custom domain, a hostname, from a Cloudflare Pages project; the tool always asks first, since visitors to the hostname stop getting the site at once.",
       "The hostname must be one of the project's domains, as cloudflare_pages_read domains lists them; the result returns it as it was.",
@@ -72,12 +108,9 @@ export function definePagesDomainRemove(deps?: CloudflareDeps): DomainRemoveSpec
     input: domainInput,
     output,
     targets: (args, ctx) => domainTargets(args, ctx, deps),
+    describe: (args, ctx) => describeDomainRemove(args, ctx, deps),
     async execute(args, ctx) {
-      const project = projectName(args.project)
-      const name = domainName(args.name)
-      const client = cloudflareClient(args.account, { ...deps, signal: ctx.signal })
-
-      const domain = await readDomain(client, project, name)
+      const { project, name, client, domain } = await planDomainRemove(args, ctx, deps)
       await confirmWrite(
         spec,
         ctx,
