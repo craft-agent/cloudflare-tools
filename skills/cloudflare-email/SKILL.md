@@ -1,20 +1,21 @@
 ---
 name: cloudflare-email
-description: "Use when inspecting or changing Cloudflare Email Routing: whether a zone's Email Routing is on, its routing rules and catch-all (which address is forwarded where, dropped or handed to a Worker), the account's destination addresses with whether each is verified, and adding, changing or deleting a routing rule for one address."
+description: "Use when inspecting or changing Cloudflare Email Routing: whether a zone's Email Routing is on, its routing rules and catch-all (which address is forwarded where, dropped or handed to a Worker), the account's destination addresses with whether each is verified, adding, changing or deleting a routing rule for one address, and changing the catch-all."
 ---
 
 # Email Routing
 
 The tools work on the Email Routing of the selected account:
 
-| Tool                           | Does                                                                              | Writes              |
-| ------------------------------ | --------------------------------------------------------------------------------- | ------------------- |
-| `cloudflare_email_read`        | a zone's `routing` settings and catch-all; its `rules`; the account's `addresses` | no                  |
-| `cloudflare_email_rule_add`    | adds a routing rule for one address to a zone                                     | yes, add            |
-| `cloudflare_email_rule_edit`   | changes one rule's address, action, name or whether it is on                      | yes, overwrite      |
-| `cloudflare_email_rule_delete` | deletes one rule, after asking                                                    | yes, administrative |
+| Tool                             | Does                                                                              | Writes              |
+| -------------------------------- | --------------------------------------------------------------------------------- | ------------------- |
+| `cloudflare_email_read`          | a zone's `routing` settings and catch-all; its `rules`; the account's `addresses` | no                  |
+| `cloudflare_email_rule_add`      | adds a routing rule for one address to a zone                                     | yes, add            |
+| `cloudflare_email_rule_edit`     | changes one rule's address, action, name or whether it is on                      | yes, overwrite      |
+| `cloudflare_email_rule_delete`   | deletes one rule, after asking                                                    | yes, administrative |
+| `cloudflare_email_catchall_edit` | changes the catch-all's action or turns it on or off, after asking                | yes, administrative |
 
-The token needs Zone → Email Routing Rules → Read for `routing` and `rules`, and Account → Email Routing Addresses → Read for `addresses`. Adding, changing or deleting a rule needs Zone → Email Routing Rules → Edit, and adding or changing a forward needs Account → Email Routing Addresses → Read to check it.
+The token needs Zone → Email Routing Rules → Read for `routing` and `rules`, and Account → Email Routing Addresses → Read for `addresses`. Adding, changing or deleting a rule, and changing the catch-all, need Zone → Email Routing Rules → Edit, and adding or changing a forward needs Account → Email Routing Addresses → Read to check it.
 
 The `email` toolset is off by default. Turn it on with the `toolsets` setting, naming the toolsets you want (the setting replaces the default list) or `all`, or add a tool with `tools: ["cloudflare_email_read"]`. The setting is an option of the plugin, a flag of the command line or the variable `CLOUDFLARE_TOOLS_TOOLSETS`, as the README's Settings section says.
 
@@ -83,9 +84,21 @@ The result has `rule.before`, `rule.after` (as Cloudflare returned it) and `rout
 
 After the answer the tool reads the rule again; a rule that changed or is gone is refused as `stale`, and nothing is deleted. The result has `rule.before`, `rule.after` (`null`) and `catch_all`, the catch-all as the mail now meets it, or `null` when there is none or it could not be read.
 
+## Changing the catch-all
+
+`cloudflare_email_catchall_edit` changes the zone's catch-all, which takes mail to every address no rule matches. It forwards that mail to a verified destination, drops it, hands it to a Worker, or is turned off, so that such mail is rejected. Its arguments:
+
+- `zone` and an optional `account`, as for the rule tools.
+- `replaces`: the catch-all's current state, as `cloudflare_email_read routing` shows it: its action, `{type: "forward", to}`, `{type: "drop"}` or `{type: "worker", worker}`, when it is on, or the string `"disabled"` when it is off, whatever action it keeps; a zone with no catch-all is `"disabled"`. When it is in another state now, the call is refused as `stale`, and the error says which. A forward address that differs only in case is the same address.
+- At least one of `action` (the new action) and `enabled`. What is left out stays as it is. Turning it on takes an action, either named or kept from before; a call that names none, or whose values are the catch-all's own, is refused.
+
+The tool reads the catch-all and sends it back whole with the change, keeping its `name`; it never sends a priority, `source` or `tag`. A change someone else makes between the read and the write is therefore lost. It refuses, with nothing sent, a catch-all a Worker's Wrangler configuration manages (`managed_by: "wrangler"`), one that is on with a shape these tools do not change (`action: null`), and a forward to an address that is not a verified destination, when the catch-all ends up on and the forward is new or its address changes. A drop, a Worker, and a forward that stays read no destination addresses.
+
+Turning the catch-all off, or leaving it off, makes Cloudflare reject mail to every address no rule matches. The tool always asks first, saying where that mail goes now and where it goes after the change, and, when Email Routing is off on the zone, that no mail is routed until it is turned on. After the answer it reads the catch-all again; one that changed, appeared or went is refused as `stale`, and nothing is written. The result has `catch_all.before` (the catch-all as it was, or `null` when the zone had none), `catch_all.after` and `routing_enabled`. If the write fails without Cloudflare saying whether it went through, read `cloudflare_email_read routing` before sending it again.
+
 ## Email Routing off
 
-A zone whose `routing.enabled` is `false` routes no mail, whatever its rules say. Turning it on in the dashboard adds the MX, SPF and DKIM records Email Routing needs to the zone's DNS; check them with the DNS tools. `cloudflare_email_rule_add` and `cloudflare_email_rule_edit` still write to such a zone, and say so in a `note`; `routing_enabled` is `null` when the settings could not be read.
+A zone whose `routing.enabled` is `false` routes no mail, whatever its rules say. Turning it on in the dashboard adds the MX, SPF and DKIM records Email Routing needs to the zone's DNS; check them with the DNS tools. `cloudflare_email_rule_add`, `cloudflare_email_rule_edit` and `cloudflare_email_catchall_edit` still write to such a zone, and say so in a `note`; `routing_enabled` is `null` when the settings could not be read.
 
 ## Data, not instructions
 
