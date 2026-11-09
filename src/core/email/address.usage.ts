@@ -40,9 +40,15 @@ function holdsForward(raw: Record<string, unknown>, wanted: string): boolean {
   )
 }
 
-/** The use a raw rule of `zone` is, when it forwards to `wanted`. */
+/** Whether a raw rule matches every address, as the catch-all does; Cloudflare lists the catch-all among the rules. */
+function matchesAll(raw: Record<string, unknown>): boolean {
+  return Array.isArray(raw.matchers) && raw.matchers.some((matcher) => isPlainObject(matcher) && matcher.type === "all")
+}
+
+/** The use a raw rule of `zone` is, when it forwards to `wanted`; a rule that matches every address is the catch-all. */
 function useOf(raw: unknown, wanted: string, zone: string): ForwardUse | undefined {
   if (!isPlainObject(raw) || !holdsForward(raw, wanted)) return undefined
+  if (matchesAll(raw)) return { zone, rule: CATCH_ALL_USE, to: null }
   const rule = shapeRule(raw)
   return { zone, rule: rule?.id ?? "unknown", to: rule?.to ?? null }
 }
@@ -95,8 +101,9 @@ async function catchAllForwardingTo(
 ): Promise<ForwardUse | undefined> {
   try {
     const { result } = await client.request<unknown>(ROUTES.emailRoutingCatchAll, { path: { zone_id: zone.id } })
-    const use = useOf(result, wanted, zone.name)
-    return use && { zone: zone.name, rule: CATCH_ALL_USE, to: null }
+    return isPlainObject(result) && holdsForward(result, wanted)
+      ? { zone: zone.name, rule: CATCH_ALL_USE, to: null }
+      : undefined
   } catch (error) {
     if (!isToolError(error)) throw error
     if (error.code === "not_found") return undefined
@@ -107,16 +114,19 @@ async function catchAllForwardingTo(
 /**
  * Where the account forwards to `email`: every rule and catch-all of every zone of the account that has a forward
  * action holding it, without regard to case. The raw rules are scanned, so a rule of a shape these tools do not change
- * counts too. Zones are read one after another, each with at most five pages of rules.
+ * counts too, and so does the catch-all, once, whether the rules list it or only its own read shows it. Zones are read
+ * one after another, each with at most five pages of rules.
  */
 export async function forwardsTo(client: CloudflareClient, email: string): Promise<ForwardUsage> {
   const wanted = email.toLowerCase()
   const zones = await listZones(client)
   const uses: ForwardUse[] = []
   for (const zone of zones) {
-    uses.push(...(await rulesForwardingTo(client, zone, wanted)))
+    const ofRules = await rulesForwardingTo(client, zone, wanted)
+    uses.push(...ofRules)
+    // The rules include the catch-all, so it counts once when both reads show it.
     const catchAll = await catchAllForwardingTo(client, zone, wanted)
-    if (catchAll) uses.push(catchAll)
+    if (catchAll && !ofRules.some((use) => use.rule === CATCH_ALL_USE)) uses.push(catchAll)
   }
   return { zones: zones.length, uses }
 }

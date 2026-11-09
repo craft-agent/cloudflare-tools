@@ -4,6 +4,7 @@ import { fail, ok, type FakeRoute } from "../cloudflare/testing"
 import { invoke } from "../tool"
 import {
   DESTINATION,
+  NO_CATCH_ALL,
   RULE_ID,
   ZONE_A,
   ZONE_B,
@@ -58,9 +59,7 @@ describe("cloudflareEmailAddressDelete: where the account forwards to the addres
   })
 
   test("names a rule without an address of its own by its id alone", async () => {
-    const message = await refused(
-      zoneRulesRoute(ZONE_A, paged([[forwardingRule([DESTINATION], { matchers: [{ type: "all" }] })]])),
-    )
+    const message = await refused(zoneRulesRoute(ZONE_A, paged([[forwardingRule([DESTINATION], { matchers: [] })]])))
 
     expect(message).toBe(`${DESTINATION} is still where example.com's rule ${RULE_ID} forwards${END}`)
   })
@@ -69,6 +68,32 @@ describe("cloudflareEmailAddressDelete: where the account forwards to the addres
     const message = await refused(zoneCatchAllRoute(ZONE_B, ok(FORWARDING_CATCH_ALL)))
 
     expect(message).toBe(`${DESTINATION} is still where example.org's catch-all forwards${END}`)
+  })
+
+  test("counts a catch-all once when the rules list it and its own read shows it too", async () => {
+    const message = await refused(
+      zoneRulesRoute(ZONE_B, paged([[forwardingRule(["x@example.net"]), FORWARDING_CATCH_ALL]])),
+      zoneCatchAllRoute(ZONE_B, ok(FORWARDING_CATCH_ALL)),
+    )
+
+    expect(message).toBe(`${DESTINATION} is still where example.org's catch-all forwards${END}`)
+  })
+
+  test("finds a catch-all that only the rules list shows, naming it as the catch-all", async () => {
+    const message = await refused(
+      zoneRulesRoute(ZONE_B, paged([[FORWARDING_CATCH_ALL]])),
+      zoneCatchAllRoute(ZONE_B, NO_CATCH_ALL),
+    )
+
+    expect(message).toBe(`${DESTINATION} is still where example.org's catch-all forwards${END}`)
+  })
+
+  test("does not count a catch-all in the rules list that forwards elsewhere", async () => {
+    const { tool, requests } = addressDeleteFor(zoneRulesRoute(ZONE_B, paged([[CATCH_ALL_RULE]])))
+
+    await invoke(tool, ARGS, CTX)
+
+    expect(sent(requests, "DELETE")).toHaveLength(1)
   })
 
   test("finds it in a rule that is turned off", async () => {

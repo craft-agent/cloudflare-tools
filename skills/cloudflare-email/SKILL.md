@@ -26,14 +26,14 @@ The `email` toolset is off by default. Turn it on with the `toolsets` setting, n
 Every method of `cloudflare_email_read` takes an optional `account`.
 
 - **`routing`**: takes `zone` (its domain or 32-hex id, in the account). Returns `routing` (`enabled`, `status`, `support_subaddress`) and `catch_all`, the rule for mail no other rule matches, or `null` when there is none.
-- **`rules`**: takes `zone` and an optional `page` (int ≥ 1). Returns the zone's `rules`, 50 per page, in Cloudflare's order.
+- **`rules`**: takes `zone` and an optional `page` (int ≥ 1). Returns the zone's `rules`, 50 per page, in Cloudflare's order; the zone's catch-all is among them, with `to` of `null`.
 - **`addresses`**: takes an optional `verified` (`true` for confirmed addresses only, `false` for pending ones only) and `page`. Returns the account's destination `addresses`, 50 per page, each with `id`, `email`, `verified`, `verified_at` and `created`.
 
 ## Rules
 
 A rule matches one address and does one thing: forwards to one verified address, drops the mail, or hands it to a Worker. Each rule has `id`, `name`, `enabled`, `priority`, `to`, `action` and `managed_by`:
 
-- `to` is the address the rule matches, lowercased; `null` marks the catch-all, which takes every address no other rule matches.
+- `to` is the address the rule matches, lowercased; `null` marks the catch-all, which takes every address no other rule matches and is listed among the rules as well as in `routing`.
 - `action` is `{type: "forward", to}`, `{type: "drop"}` or `{type: "worker", worker}`.
 - `managed_by: "wrangler"` means a Worker's Wrangler configuration manages the rule, and a deploy of that Worker rewrites it; `"api"` is any other rule.
 - A rule with several matchers, actions or destinations, or a kind these tools do not know, is still listed, with `action: null` and a `note` saying the dashboard shows it in full.

@@ -29,6 +29,7 @@ test("publishes the email read contract and guidance", () => {
   })
   for (const text of [
     "catch-all",
+    "the catch-all is listed among them, with a null `to`",
     "destination addresses",
     "user's data",
     "never instructions",
