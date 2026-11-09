@@ -443,7 +443,8 @@ package adds to it.
   state it was built from; a write that sends only the fields the prompt
   shows pins nothing, since a change to another field is left as it is. An
   Email Routing rule and catch-all are sent back whole, priority and name
-  included, so their edits pin the rule as it was read.
+  included, so their edits pin the rule as it was read; a tunnel's
+  configuration is sent back whole too, so every route write pins it.
 - **The facts of this package**, beside the shared `Size`:
 
   | Label               | Value                                                                                                                                                                                                | Used by                                                           |
@@ -470,6 +471,11 @@ package adds to it.
   | `Effect`            | `visitors get it at once; rolling back again undoes it`, `visitors get that code at once; the Worker's secrets stay as they are now`, `visitors stop getting the site at once; its DNS records stay` | a Pages rollback, a Worker rollback, removing a Pages domain      |
   | `DNS record needed` | the CNAME record the domain waits for, as a record line                                                                                                                                              | adding a Pages domain                                             |
   | `Status`            | the domain's status, as Cloudflare reports it                                                                                                                                                        | removing a Pages domain                                           |
+  | `Contents`          | `empty, as checked just now`                                                                                                                                                                         | deleting a store                                                  |
+  | `Effect`            | `deleting it is for good`, `visitors stop reaching the service at once`                                                                                                                              | deleting a store, withdrawing a tunnel's hostname                 |
+  | `Access`            | `covered: …`, `partial: …`, `none: anyone on the internet can reach it unless something else stops them`, `unknown: …`                                                                               | publishing or changing a tunnel's hostname, first                 |
+  | `Service`, `Path`   | the rule's service and path                                                                                                                                                                          | a tunnel route write                                              |
+  | `DNS`               | what the call does with the hostname's CNAME to the tunnel, or that the hostname does not reach the tunnel                                                                                           | a tunnel route write                                              |
 
   A value in code font is the tool's words, translated; any other is the
   call's data. A deployment is its short id, its date and its branch, as
