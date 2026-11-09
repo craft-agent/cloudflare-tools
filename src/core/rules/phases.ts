@@ -98,6 +98,14 @@ export type Phase = (typeof PHASES)[number]["phase"]
 /** Every phase name, in order, as a tuple `z.enum` takes. */
 export const PHASE_NAMES = PHASES.map((entry) => entry.phase) as unknown as readonly [Phase, ...Phase[]]
 
+/** A phase whose rules the write tools may change. */
+export type WritablePhase = Extract<(typeof PHASES)[number], { writable: true }>["phase"]
+
+/** Every writable phase name, in table order, as a tuple `z.enum` takes. */
+export const WRITABLE_PHASE_NAMES = PHASES.filter((entry) => entry.writable).map(
+  (entry) => entry.phase,
+) as unknown as readonly [WritablePhase, ...WritablePhase[]]
+
 /** The table row of a phase. */
 export function phaseInfo(phase: Phase): (typeof PHASES)[number] {
   const found = PHASES.find((entry) => entry.phase === phase)

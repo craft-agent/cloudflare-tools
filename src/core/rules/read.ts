@@ -7,7 +7,7 @@ import { isToolError, ToolError } from "../errors"
 import { defineTool, type ToolContext, type ToolSpec } from "../tool"
 import { resolveZone, zoneArg } from "../zone/lookup"
 import { PHASES, PHASE_NAMES, phaseInfo, readHint, type Phase } from "./phases"
-import { accountLabelSchema, ruleSchema, rulesetSchema, shapeEntrypoint, zoneSchema } from "./shape"
+import { accountLabelSchema, ruleSchema, rulesetSchema, shapeEntrypoint, zoneSchema, type Entrypoint } from "./shape"
 
 const METHODS = ["phases", "rules"] as const
 type Method = (typeof METHODS)[number]
@@ -83,7 +83,11 @@ function forbiddenOf(error: unknown, phase: Phase): ToolError | undefined {
 }
 
 /** The shaped entry point of a phase, or null when the zone has none. */
-async function readEntrypoint(client: CloudflareClient, zoneId: string, phase: Phase) {
+export async function readEntrypoint(
+  client: CloudflareClient,
+  zoneId: string,
+  phase: Phase,
+): Promise<Entrypoint | null> {
   try {
     const { result } = await client.request<unknown>(ROUTES.rulesetEntrypoint, {
       path: { zone_id: zoneId, phase },

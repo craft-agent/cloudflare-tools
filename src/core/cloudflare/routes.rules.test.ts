@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test"
 import { ToolError } from "../errors"
-import { PATH_PARAMS, PHASE_PATTERN, ROUTES, isAllowed } from "./routes"
+import { PATH_PARAMS, PHASE_PATTERN, ROUTES, RULESET_ID_PATTERN, isAllowed } from "./routes"
 import { fillPath } from "./url"
 
 const ZONE_ID = "a".repeat(32)
@@ -34,6 +34,34 @@ describe("the ruleset routes", () => {
       "",
     ]) {
       expect(() => fillPath(ROUTES.rulesetEntrypoint, "x", { zone_id: ZONE_ID, phase })).toThrow(ToolError)
+    }
+  })
+})
+
+describe("the ruleset write routes", () => {
+  test("creating an entry point and adding a rule are POSTs, and nothing replaces an entry point", () => {
+    expect(ROUTES.rulesetCreate).toEqual({ method: "POST", path: "/zones/{zone_id}/rulesets" })
+    expect(ROUTES.rulesetRuleCreate).toEqual({
+      method: "POST",
+      path: "/zones/{zone_id}/rulesets/{ruleset_id}/rules",
+    })
+    expect(isAllowed(ROUTES.rulesetCreate)).toBe(true)
+    expect(isAllowed(ROUTES.rulesetRuleCreate)).toBe(true)
+    expect(PATH_PARAMS.ruleset_id).toBe(RULESET_ID_PATTERN)
+    for (const method of ["PUT", "PATCH", "DELETE"] as const) {
+      expect(isAllowed({ method, path: ROUTES.rulesetCreate.path })).toBe(false)
+      expect(isAllowed({ method, path: ROUTES.rulesetEntrypoint.path })).toBe(false)
+      expect(isAllowed({ method, path: ROUTES.rulesetRuleCreate.path })).toBe(false)
+    }
+  })
+
+  test("the rule path fills only for a 32-hex ruleset id", () => {
+    const rulesetId = "e1".repeat(16)
+    expect(fillPath(ROUTES.rulesetRuleCreate, "x", { zone_id: ZONE_ID, ruleset_id: rulesetId })).toBe(
+      `/zones/${ZONE_ID}/rulesets/${rulesetId}/rules`,
+    )
+    for (const id of ["phases", "../rules", `${rulesetId}/rules`, rulesetId.toUpperCase(), "e1", ""]) {
+      expect(() => fillPath(ROUTES.rulesetRuleCreate, "x", { zone_id: ZONE_ID, ruleset_id: id })).toThrow(ToolError)
     }
   })
 })

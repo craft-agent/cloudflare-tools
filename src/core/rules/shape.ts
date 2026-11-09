@@ -71,8 +71,11 @@ function shapeRule(raw: Record<string, unknown>, position: number): Rule {
   }
 }
 
+/** An entry point ruleset as shaped: its identity and its rules in Cloudflare's order. */
+export type Entrypoint = { ruleset: Ruleset; rules: Rule[] }
+
 /** Shapes an entry point ruleset: its identity and its rules in Cloudflare's order; a row that is not an object is skipped but still counts for the position. */
-export function shapeEntrypoint(result: unknown): { ruleset: Ruleset; rules: Rule[] } {
+export function shapeEntrypoint(result: unknown): Entrypoint {
   if (!isPlainObject(result)) {
     throw new ToolError("upstream_error", "Cloudflare returned an unexpected ruleset response.")
   }

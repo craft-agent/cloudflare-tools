@@ -1,6 +1,6 @@
 import { expect, test } from "bun:test"
 import { PHASE_PATTERN } from "../cloudflare/routes"
-import { PHASES, PHASE_NAMES, editHint, phaseInfo, readHint } from "./phases"
+import { PHASES, PHASE_NAMES, WRITABLE_PHASE_NAMES, editHint, phaseInfo, readHint } from "./phases"
 
 test("the phase names are exactly the ones the path check accepts", () => {
   expect(PHASE_NAMES).toHaveLength(11)
@@ -18,6 +18,13 @@ test("a phase that is read only has no actions, a writable one has", () => {
     "http_ratelimit",
     "http_custom_errors",
   ])
+})
+
+test("the writable phase names are the writable rows, in table order", () => {
+  expect([...WRITABLE_PHASE_NAMES]).toEqual(PHASES.filter((entry) => entry.writable).map((entry) => entry.phase))
+  expect(WRITABLE_PHASE_NAMES).toHaveLength(8)
+  for (const name of WRITABLE_PHASE_NAMES) expect(PHASE_NAMES).toContain(name)
+  expect(WRITABLE_PHASE_NAMES).not.toContain("http_ratelimit")
 })
 
 test("the hints name the phase's permission group", () => {

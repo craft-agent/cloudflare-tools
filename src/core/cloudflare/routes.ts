@@ -33,6 +33,9 @@ export const RULE_ID_PATTERN = /^[A-Za-z0-9]{1,64}$/
 /** An Email Routing destination address's id; the same shape as a rule's id. */
 export const ADDRESS_ID_PATTERN = RULE_ID_PATTERN
 
+/** A ruleset's id, and the id of a rule in one: 32 lowercase hexadecimal digits. */
+export const RULESET_ID_PATTERN = ID_PATTERN
+
 /** A Ruleset Engine phase the rules tools reach: exactly these eleven zone phases, nothing else. */
 export const PHASE_PATTERN =
   /^(?:http_request_dynamic_redirect|http_request_cache_settings|http_config_settings|http_request_transform|http_request_late_transform|http_response_headers_transform|http_request_origin|http_response_compression|http_request_firewall_custom|http_ratelimit|http_custom_errors)$/
@@ -67,6 +70,7 @@ export const PATH_PARAMS: Readonly<Record<string, RegExp>> = Object.freeze({
   rule_id: RULE_ID_PATTERN,
   address_id: ADDRESS_ID_PATTERN,
   phase: PHASE_PATTERN,
+  ruleset_id: RULESET_ID_PATTERN,
 })
 
 function defineRoute(method: Method, path: string, body?: Route["body"]): Route {
@@ -162,6 +166,8 @@ export const ROUTES = Object.freeze({
   emailRoutingAddressCreate: defineRoute("POST", "/accounts/{account_id}/email/routing/addresses"),
   emailRoutingAddressDelete: defineRoute("DELETE", "/accounts/{account_id}/email/routing/addresses/{address_id}"),
   rulesetEntrypoint: defineRoute("GET", "/zones/{zone_id}/rulesets/phases/{phase}/entrypoint"),
+  rulesetCreate: defineRoute("POST", "/zones/{zone_id}/rulesets"),
+  rulesetRuleCreate: defineRoute("POST", "/zones/{zone_id}/rulesets/{ruleset_id}/rules"),
 } satisfies Record<string, Route>)
 
 /** Whether a route is one of `ROUTES`, including its fixed body when present. */
