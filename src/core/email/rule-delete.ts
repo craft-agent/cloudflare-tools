@@ -5,12 +5,22 @@ import { cloudflareClient, type CloudflareClient, type CloudflareDeps } from "..
 import { failureOfWrite, type WriteFailureNotes } from "../cloudflare/refusal"
 import { ROUTES } from "../cloudflare/routes"
 import { isAbortError, isToolError, ToolError } from "../errors"
-import { confirmWrite, defineTool, type ToolSpec } from "../tool"
+import {
+  confirmWrite,
+  defineTool,
+  type CallDescription,
+  type CallFact,
+  type CallValue,
+  type ToolContext,
+  type ToolSpec,
+} from "../tool"
 import { resolveZone, zoneArg, type Zone } from "../zone/lookup"
+import { actionText } from "./describe"
 import { describeAction, NOTHING_CHANGED, ruleIdArg, ruleTarget, ruleZoneSchema } from "./rule"
 import { RULES_EDIT_HINT, withHint } from "./rule.checks"
 import { readRule, ruleTargetsOf, type ChangeableRule } from "./rule.current"
 import { accountLabelSchema, ruleSchema, shapeRule, type Rule } from "./shape"
+import { EMAIL_WORDS } from "./words"
 
 const WRITE_NOTES: WriteFailureNotes = {
   nothing: NOTHING_CHANGED,
@@ -41,6 +51,7 @@ const output = z.object({
     ),
 })
 
+type Args = z.output<typeof input>
 type RuleDeleteSpec = ToolSpec<typeof input, typeof output>
 
 /** The zone's catch-all: its rule, `null` when the zone has none, `undefined` when it could not be read or shaped. */
@@ -63,6 +74,14 @@ function whereNext(catchAll: CatchAll): string {
   if (catchAll === null || !catchAll.enabled) return "is rejected, since the catch-all is off"
   if (catchAll.action === null) return "goes to the catch-all"
   return `goes to the catch-all, where it ${describeAction(catchAll.action)}`
+}
+
+/** Where the mail of a deleted rule goes, as a fact's value; none when the catch-all could not be read, since the prompt cannot tell. */
+function afterwards(catchAll: CatchAll): CallValue | undefined {
+  if (catchAll === undefined) return undefined
+  if (catchAll === null || !catchAll.enabled) return { text: EMAIL_WORDS.mailRejected }
+  if (catchAll.action === null) return { text: EMAIL_WORDS.catchAllTakes }
+  return { text: EMAIL_WORDS.catchAllTakesAction, values: { action: actionText(catchAll.action) } }
 }
 
 /** The line the person is asked to approve. */
@@ -105,11 +124,34 @@ async function deleteRule(client: CloudflareClient, zoneId: string, id: string):
   }
 }
 
+/** What a call will do: the client, the zone, the rule as it is and the catch-all that takes its mail afterwards. */
+async function planRuleDelete(args: Args, ctx: ToolContext, deps?: CloudflareDeps) {
+  const client = cloudflareClient(args.account, { ...deps, signal: ctx.signal })
+  const zone = await resolveZone(client, args.zone)
+  const current = await readRule(client, zone, args.id)
+  const catchAll = await readCatchAll(client, zone.id)
+  return { client, zone, current, catchAll }
+}
+
+/** The description of the call: the rule's address, what it does and where its mail goes once it is gone. */
+async function describeRuleDelete(args: Args, ctx: ToolContext, deps?: CloudflareDeps): Promise<CallDescription> {
+  const { current, catchAll } = await planRuleDelete(args, ctx, deps)
+  const next = afterwards(catchAll)
+  const facts: CallFact[] = [
+    { label: EMAIL_WORDS.action, value: actionText(current.action) },
+    ...(current.name === null ? [] : [{ label: EMAIL_WORDS.name, value: current.name }]),
+    ...(current.enabled ? [] : [{ label: EMAIL_WORDS.state, value: { text: EMAIL_WORDS.off } }]),
+    ...(next === undefined ? [] : [{ label: EMAIL_WORDS.afterwards, value: next }]),
+  ]
+  return { headline: { text: EMAIL_WORDS.ruleDelete, values: { address: current.to } }, facts }
+}
+
 /** Defines the `cloudflare_email_rule_delete` tool spec with injected dependencies. */
 export function defineEmailRuleDelete(deps?: CloudflareDeps): RuleDeleteSpec {
   const spec: RuleDeleteSpec = defineTool({
     id: "cloudflare_email_rule_delete",
     title: "Delete an Email Routing rule",
+    intent: "About to delete a routing rule",
     description: [
       "Deletes one routing rule of a zone, named by `id` as cloudflare_email_read rules lists it.",
       "Mail to its address then goes to the catch-all, or is rejected when the catch-all is off, which the confirmation names.",
@@ -124,11 +166,9 @@ export function defineEmailRuleDelete(deps?: CloudflareDeps): RuleDeleteSpec {
     output,
     targets: (args, ctx) =>
       ruleTargetsOf(args, ctx, deps, ({ accountId, zone, rule }) => [ruleTarget(accountId, zone.id, rule.to)]),
+    describe: (args, ctx) => describeRuleDelete(args, ctx, deps),
     async execute(args, ctx) {
-      const client = cloudflareClient(args.account, { ...deps, signal: ctx.signal })
-      const zone = await resolveZone(client, args.zone)
-      const current = await readRule(client, zone, args.id)
-      const catchAll = await readCatchAll(client, zone.id)
+      const { client, zone, current, catchAll } = await planRuleDelete(args, ctx, deps)
 
       await confirmWrite(spec, ctx, confirmation(current, zone.name, catchAll))
       if (ctx.confirm) await assertUnchanged(client, zone, current)
