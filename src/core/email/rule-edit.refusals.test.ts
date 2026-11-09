@@ -1,13 +1,17 @@
 import { describe, expect, test } from "bun:test"
 import { fail, ok } from "../cloudflare/testing"
 import { toolError } from "../cloudflare/client.fixtures"
+import { writeTargets } from "../targets"
 import { invoke } from "../tool"
 import {
   CATCH_ALL_RULE,
   CURRENT_RULE,
   EDIT_BASE,
+  INVALID_RULE_OPERATION,
+  INVALID_RULE_OPERATION_MESSAGE,
   OTHER_DESTINATION,
   RULE_ID,
+  catchAllRoute,
   ruleEditFor,
   ruleRoute,
 } from "./rule.current.fixtures"
@@ -49,6 +53,43 @@ describe("cloudflareEmailRuleEdit: a rule these tools do not change", () => {
       `${RULE_ID} is the zone's catch-all; cloudflare_email_catchall_edit changes it.${NOTHING_CHANGED}`,
     )
     expect(sent(requests, "PUT")).toHaveLength(0)
+  })
+
+  test("refuses the id of the catch-all, which Cloudflare will not read as a rule, with the same words", async () => {
+    const { tool, requests } = ruleEditFor(
+      ruleRoute(INVALID_RULE_OPERATION),
+      catchAllRoute(ok({ ...CATCH_ALL_RULE, id: RULE_ID })),
+    )
+
+    const message = await refusalOf(invoke(tool, { ...EDIT_BASE, name: "x" }, CTX))
+
+    expect(message).toBe(
+      `${RULE_ID} is the zone's catch-all; cloudflare_email_catchall_edit changes it.${NOTHING_CHANGED}`,
+    )
+    expect(sent(requests, "PUT")).toHaveLength(0)
+  })
+
+  test.each([
+    ["the catch-all has another id", catchAllRoute(ok(CATCH_ALL_RULE))],
+    ["the catch-all cannot be read", catchAllRoute(fail(500, [{ code: 1000, message: "Down" }]))],
+    ["the zone has no catch-all", catchAllRoute(fail(404, [{ code: 1004, message: "Not found" }]))],
+  ])("passes the error of Cloudflare on when %s", async (_what, route) => {
+    const { tool, requests } = ruleEditFor(ruleRoute(INVALID_RULE_OPERATION), route)
+
+    const error = await toolError(invoke(tool, { ...EDIT_BASE, name: "x" }, CTX))
+
+    expect(error.code).toBe("upstream_error")
+    expect(error.message).toBe(INVALID_RULE_OPERATION_MESSAGE)
+    expect(sent(requests, "PUT")).toHaveLength(0)
+  })
+
+  test("names no target for the id of the catch-all", async () => {
+    const { tool } = ruleEditFor(
+      ruleRoute(INVALID_RULE_OPERATION),
+      catchAllRoute(ok({ ...CATCH_ALL_RULE, id: RULE_ID })),
+    )
+
+    expect(await writeTargets(tool, { ...EDIT_BASE, name: "x" }, CTX)).toEqual(["*"])
   })
 
   test("refuses a rule that a Worker's Wrangler configuration manages", async () => {

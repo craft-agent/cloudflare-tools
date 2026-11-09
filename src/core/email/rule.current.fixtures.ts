@@ -1,5 +1,5 @@
 import { envFor } from "../cloudflare/client.fixtures"
-import { fakeCloudflare, ok, type FakeReply, type FakeRequest, type FakeRoute } from "../cloudflare/testing"
+import { fail, fakeCloudflare, ok, type FakeReply, type FakeRequest, type FakeRoute } from "../cloudflare/testing"
 import { ZONE_ROUTE } from "../zone/fixtures"
 import { CATCH_ALL_PATH, CATCH_ALL_RULE, RULE_ID, SHAPED_FORWARD_RULE } from "./fixtures"
 import { defineEmailRuleDelete } from "./rule-delete"
@@ -48,6 +48,12 @@ export const EDIT_BASE = { zone: "example.com", id: RULE_ID, replaces: { type: "
 
 /** The arguments of a delete. */
 export const DELETE_ARGS = { zone: "example.com", id: RULE_ID }
+
+/** What Cloudflare answers a read of the catch-all as a rule with, by its own id. */
+export const INVALID_RULE_OPERATION = fail(409, [{ code: 2020, message: "Invalid rule operation" }])
+
+/** The error message the client makes of `INVALID_RULE_OPERATION`. */
+export const INVALID_RULE_OPERATION_MESSAGE = "Cloudflare answered HTTP 409: 2020: Invalid rule operation"
 
 type Reply = FakeReply | ((request: FakeRequest) => FakeReply)
 

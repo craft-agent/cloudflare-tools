@@ -6,7 +6,7 @@ import type { ToolContext } from "../tool"
 import { resolveZone, type Zone } from "../zone/lookup"
 import { NOTHING_CHANGED, type Action } from "./rule"
 import { RULES_READ_HINT, shapedRule, withHint } from "./rule.checks"
-import type { Rule } from "./shape"
+import { shapeRule, type Rule } from "./shape"
 
 /** A rule these tools change: one address and one plain action, not the catch-all, not managed by Wrangler. */
 export type ChangeableRule = Rule & { to: string; action: Action }
@@ -17,6 +17,25 @@ type Found = { accountId: string; zone: Zone; rule: ChangeableRule }
 /** An `invalid_argument` that says nothing was changed. */
 export function refusal(message: string): ToolError {
   return new ToolError("invalid_argument", `${message} ${NOTHING_CHANGED}`)
+}
+
+function catchAllRefusal(id: string): ToolError {
+  return refusal(`${id} is the zone's catch-all; cloudflare_email_catchall_edit changes it.`)
+}
+
+/**
+ * Whether `id` is the id of the zone's catch-all. Cloudflare answers a read of the catch-all as a rule with an error
+ * that says nothing of it, so the catch-all is read for its id; a catch-all that cannot be read is no answer. A
+ * cancellation is passed on.
+ */
+async function isCatchAllId(client: CloudflareClient, zoneId: string, id: string): Promise<boolean> {
+  try {
+    const { result } = await client.request<unknown>(ROUTES.emailRoutingCatchAll, { path: { zone_id: zoneId } })
+    return shapeRule(result)?.id === id
+  } catch (error) {
+    if (isAbortError(error)) throw error
+    return false
+  }
 }
 
 async function requestRule(client: CloudflareClient, zone: Pick<Zone, "id" | "name">, id: string): Promise<unknown> {
@@ -34,7 +53,8 @@ async function requestRule(client: CloudflareClient, zone: Pick<Zone, "id" | "na
         { cause: error },
       )
     }
-    throw withHint(error, RULES_READ_HINT)
+    if (error.code === "forbidden") throw withHint(error, RULES_READ_HINT)
+    throw (await isCatchAllId(client, zone.id, id)) ? catchAllRefusal(id) : error
   }
 }
 
@@ -49,7 +69,7 @@ export async function readRule(
 ): Promise<ChangeableRule> {
   const rule = shapedRule(await requestRule(client, zone, id))
   if (rule.to === null && rule.action !== null) {
-    throw refusal(`${id} is the zone's catch-all; cloudflare_email_catchall_edit changes it.`)
+    throw catchAllRefusal(id)
   }
   if (rule.managed_by === "wrangler") {
     throw refusal(

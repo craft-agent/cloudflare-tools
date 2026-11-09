@@ -2,12 +2,15 @@ import { describe, expect, test } from "bun:test"
 import { rejection, toolError } from "../cloudflare/client.fixtures"
 import { fail, ok, type FakeReply, type FakeRoute } from "../cloudflare/testing"
 import { isAbortError, isToolError, type ErrorCode } from "../errors"
+import { writeTargets } from "../targets"
 import { invoke, type ToolContext } from "../tool"
 import {
   CATCH_ALL_PATH,
   CATCH_ALL_RULE,
   CURRENT_RULE,
   DELETE_ARGS,
+  INVALID_RULE_OPERATION,
+  INVALID_RULE_OPERATION_MESSAGE,
   RULE_ID,
   RULE_PATH,
   catchAllRoute,
@@ -75,6 +78,32 @@ describe("cloudflareEmailRuleDelete: a rule it does not delete", () => {
 
     expect(error.code).toBe("forbidden")
     expect(error.message).toBe("10000: Authentication error. The token needs Zone → Email Routing Rules → Read.")
+    expect(sent(requests, "DELETE")).toHaveLength(0)
+  })
+
+  test("refuses the id of the catch-all, which Cloudflare will not read as a rule, with the same words", async () => {
+    const { tool, requests } = ruleDeleteFor(
+      ruleRoute(INVALID_RULE_OPERATION),
+      catchAllRoute(ok({ ...CATCH_ALL_RULE, id: RULE_ID })),
+    )
+
+    const error = await toolError(invoke(tool, DELETE_ARGS, CONFIRMED))
+
+    expect(error.code).toBe("invalid_argument")
+    expect(error.message).toBe(
+      `${RULE_ID} is the zone's catch-all; cloudflare_email_catchall_edit changes it.${NOTHING_CHANGED}`,
+    )
+    expect(sent(requests, "DELETE")).toHaveLength(0)
+    expect(await writeTargets(tool, DELETE_ARGS, CTX)).toEqual(["*"])
+  })
+
+  test("passes the error of Cloudflare on when the catch-all has another id", async () => {
+    const { tool, requests } = ruleDeleteFor(ruleRoute(INVALID_RULE_OPERATION))
+
+    const error = await toolError(invoke(tool, DELETE_ARGS, CONFIRMED))
+
+    expect(error.code).toBe("upstream_error")
+    expect(error.message).toBe(INVALID_RULE_OPERATION_MESSAGE)
     expect(sent(requests, "DELETE")).toHaveLength(0)
   })
 })
