@@ -263,6 +263,19 @@ describe("routes", () => {
     }
   })
 
+  test("the Email Routing routes are read-only and their zone parameter is a zone id", () => {
+    expect(ROUTES.emailRouting).toEqual({ method: "GET", path: "/zones/{zone_id}/email/routing" })
+    expect(ROUTES.emailRoutingRules).toEqual({ method: "GET", path: "/zones/{zone_id}/email/routing/rules" })
+    expect(ROUTES.emailRoutingCatchAll).toEqual({
+      method: "GET",
+      path: "/zones/{zone_id}/email/routing/rules/catch_all",
+    })
+    expect(ROUTES.emailRoutingAddresses).toEqual({
+      method: "GET",
+      path: "/accounts/{account_id}/email/routing/addresses",
+    })
+  })
+
   test("no route exposes a token", () => {
     for (const route of Object.values(ROUTES)) {
       expect(route.path.endsWith("/token")).toBe(false)

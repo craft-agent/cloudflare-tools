@@ -21,6 +21,7 @@ TOOLSET_EMOJI: dict[str, str] = {
     "pages": "📄",
     "storage": "🗄️",
     "tunnels": "🚇",
+    "email": "📧",
 }
 
 __all__ = [

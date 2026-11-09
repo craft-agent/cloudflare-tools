@@ -4,6 +4,7 @@ import { cloudflareDnsRecordAdd } from "./core/dns/add"
 import { cloudflareDnsRecordDelete } from "./core/dns/delete"
 import { cloudflareDnsRecordEdit } from "./core/dns/edit"
 import { cloudflareDnsRead } from "./core/dns/read"
+import { cloudflareEmailRead } from "./core/email/read"
 import { cloudflarePagesDomainAdd } from "./core/pages/domain-add"
 import { cloudflarePagesDomainRemove } from "./core/pages/domain-remove"
 import { cloudflarePagesRead } from "./core/pages/read"
@@ -52,4 +53,5 @@ export const ALL_TOOLS: ToolSpec[] = [
   cloudflareTunnelRouteAdd,
   cloudflareTunnelRouteEdit,
   cloudflareTunnelRouteRemove,
+  cloudflareEmailRead,
 ]

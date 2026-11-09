@@ -137,6 +137,10 @@ export const ROUTES = Object.freeze({
   cfdTunnelConfiguration: defineRoute("GET", "/accounts/{account_id}/cfd_tunnel/{tunnel_id}/configurations"),
   cfdTunnelConfigurationEdit: defineRoute("PUT", "/accounts/{account_id}/cfd_tunnel/{tunnel_id}/configurations"),
   accessApps: defineRoute("GET", "/accounts/{account_id}/access/apps"),
+  emailRouting: defineRoute("GET", "/zones/{zone_id}/email/routing"),
+  emailRoutingRules: defineRoute("GET", "/zones/{zone_id}/email/routing/rules"),
+  emailRoutingCatchAll: defineRoute("GET", "/zones/{zone_id}/email/routing/rules/catch_all"),
+  emailRoutingAddresses: defineRoute("GET", "/accounts/{account_id}/email/routing/addresses"),
 } satisfies Record<string, Route>)
 
 /** Whether a route is one of `ROUTES`, including its fixed body when present. */
