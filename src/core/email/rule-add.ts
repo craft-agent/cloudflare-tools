@@ -4,8 +4,9 @@ import { cloudflareClient, type CloudflareClient, type CloudflareDeps } from "..
 import { failureOfWrite, type WriteFailureNotes } from "../cloudflare/refusal"
 import { ROUTES } from "../cloudflare/routes"
 import { isToolError } from "../errors"
-import { defineTool, type ToolSpec } from "../tool"
+import { defineTool, type CallDescription, type CallFact, type ToolContext, type ToolSpec } from "../tool"
 import { resolveZone, zoneArg } from "../zone/lookup"
+import { actionText, routingOffFacts } from "./describe"
 import {
   assertNoRuleFor,
   assertVerifiedDestination,
@@ -29,6 +30,7 @@ import {
   type Action,
 } from "./rule"
 import { accountLabelSchema, ruleSchema, type Rule } from "./shape"
+import { EMAIL_WORDS } from "./words"
 
 const WRITE_NOTES: WriteFailureNotes = {
   nothing: NOTHING_CHANGED,
@@ -87,11 +89,36 @@ function ruleBody(args: Args, to: string, enabled: boolean): Record<string, unkn
   }
 }
 
+/** What a call will do: the client, the zone, the address the rule matches, whether it is on and whether Email Routing is; refuses what the tool refuses before it writes. */
+async function planRuleAdd(args: Args, ctx: ToolContext, deps?: CloudflareDeps) {
+  const client = cloudflareClient(args.account, { ...deps, signal: ctx.signal })
+  const zone = await resolveZone(client, args.zone)
+  const to = normalizedTo(args.to, zone.name)
+  const enabled = args.enabled ?? true
+  const routingEnabled = await readRoutingEnabled(client, zone.id)
+
+  await assertRuleFits(client, zone.id, to, args.action)
+  return { client, zone, to, enabled, routingEnabled }
+}
+
+/** The description of the call: the rule's address, its action, its name when given, and that it is added off. */
+async function describeRuleAdd(args: Args, ctx: ToolContext, deps?: CloudflareDeps): Promise<CallDescription> {
+  const { to, enabled, routingEnabled } = await planRuleAdd(args, ctx, deps)
+  const facts: CallFact[] = [
+    ...routingOffFacts(routingEnabled),
+    { label: EMAIL_WORDS.action, value: actionText(args.action) },
+    ...(args.name === undefined ? [] : [{ label: EMAIL_WORDS.name, value: args.name }]),
+    ...(enabled ? [] : [{ label: EMAIL_WORDS.state, value: { text: EMAIL_WORDS.off } }]),
+  ]
+  return { headline: { text: EMAIL_WORDS.ruleAdd, values: { address: to } }, facts }
+}
+
 /** Defines the `cloudflare_email_rule_add` tool spec with injected dependencies. */
 export function defineEmailRuleAdd(deps?: CloudflareDeps): RuleAddSpec {
   return defineTool({
     id: "cloudflare_email_rule_add",
     title: "Add an Email Routing rule",
+    intent: "About to add a routing rule",
     description: [
       "Adds a routing rule to a zone: mail to one address at the zone (or at a subdomain of it) is forwarded to one destination address the account has verified, dropped, or handed to a Worker (Cloudflare refuses a Worker that does not exist).",
       "`to` is a local part such as sales or a full address; `action` is {type: forward, to}, {type: drop} or {type: worker, worker}.",
@@ -106,14 +133,9 @@ export function defineEmailRuleAdd(deps?: CloudflareDeps): RuleAddSpec {
     input,
     output,
     targets: (args, ctx) => ruleTargets(args, ctx, deps),
+    describe: (args, ctx) => describeRuleAdd(args, ctx, deps),
     async execute(args, ctx) {
-      const client = cloudflareClient(args.account, { ...deps, signal: ctx.signal })
-      const zone = await resolveZone(client, args.zone)
-      const to = normalizedTo(args.to, zone.name)
-      const enabled = args.enabled ?? true
-      const routingEnabled = await readRoutingEnabled(client, zone.id)
-
-      await assertRuleFits(client, zone.id, to, args.action)
+      const { client, zone, to, enabled, routingEnabled } = await planRuleAdd(args, ctx, deps)
 
       const rule = await createRule(client, zone.id, ruleBody(args, to, enabled))
       return {

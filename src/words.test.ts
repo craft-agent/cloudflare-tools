@@ -1,12 +1,13 @@
 import { describe, expect, test } from "bun:test"
 import { templatePlaceholders } from "./core/describe"
 import { DNS_TRANSLATIONS } from "./core/dns/words"
+import { EMAIL_TRANSLATIONS } from "./core/email/words"
 import { FACT_TRANSLATIONS } from "./core/facts"
 import { ZONE_TRANSLATIONS } from "./core/zone/words"
 import { ALL_TOOLS } from "./tools"
 import { ALL_TRANSLATIONS, TOOL_WORDS } from "./words"
 
-const TABLES = [FACT_TRANSLATIONS, DNS_TRANSLATIONS, ZONE_TRANSLATIONS]
+const TABLES = [FACT_TRANSLATIONS, DNS_TRANSLATIONS, ZONE_TRANSLATIONS, EMAIL_TRANSLATIONS]
 
 const WRITE_TOOLS = ALL_TOOLS.filter((spec) => spec.class !== "read")
 const TOOL_PHRASES = ALL_TOOLS.flatMap((spec) => [spec.title, ...(spec.intent !== undefined ? [spec.intent] : [])])
