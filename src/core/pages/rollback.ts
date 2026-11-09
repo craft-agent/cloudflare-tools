@@ -6,10 +6,11 @@ import { isPlainObject } from "../cloudflare/reply"
 import { ROUTES } from "../cloudflare/routes"
 import { isAbortError } from "../errors"
 import { ANY_TARGET } from "../targets"
-import { confirmWrite, defineTool, type ToolSpec } from "../tool"
+import { confirmWrite, defineTool, type CallDescription, type ToolContext, type ToolSpec } from "../tool"
 import { projectArg, projectName, requestProject, requireObject } from "./projects"
 import { checkServable, checkServing, confirmation, parseRequest } from "./rollback.checks"
 import { deploymentSchema, shapeDeployment, shapeLiveRef } from "./shape"
+import { PAGES_WORDS } from "./words"
 
 const WRITE_NOTES: WriteFailureNotes = {
   nothing: "Nothing changed.",
@@ -51,11 +52,52 @@ async function sendRollback(client: CloudflareClient, project: string, deploymen
   }
 }
 
+/** What a call will do: the project, the client, the deployment serving now and the one to serve; refuses what the tool refuses before it asks. */
+async function planRollback(args: z.output<typeof input>, ctx: ToolContext, deps?: CloudflareDeps) {
+  const project = projectName(args.project)
+  const request = parseRequest(args)
+  const client = cloudflareClient(args.account, { ...deps, signal: ctx.signal })
+
+  const projectReply = await requestProject<unknown>(client, ROUTES.pagesProject, project)
+  const canonical = requireObject(projectReply.result, "project").canonical_deployment
+  const serving = checkServing(project, shapeLiveRef(canonical), request)
+
+  const deploymentReply = await requestProject<unknown>(client, ROUTES.pagesDeployment, project, {
+    path: { deployment_id: request.deployment },
+    notFoundMessage: `No deployment ${request.deployment} in Pages project ${project} of the account ${client.label}; cloudflare_pages_read deployments lists them.`,
+  })
+  const target = shapeDeployment(requireObject(deploymentReply.result, "deployment"), true)
+  checkServable(target)
+  return { project, request, client, canonical, serving, target }
+}
+
+/** The description of a rollback: the deployment serving now and the one to serve instead. */
+async function describeRollback(
+  args: z.output<typeof input>,
+  ctx: ToolContext,
+  deps?: CloudflareDeps,
+): Promise<CallDescription> {
+  const { project, request, serving, target } = await planRollback(args, ctx, deps)
+  const named = (parts: (string | null)[]) => parts.filter((part) => part !== null).join("  ")
+  return {
+    headline: { text: PAGES_WORDS.rollback, values: { project } },
+    facts: [
+      { label: PAGES_WORDS.servingNow, value: named([serving.short_id ?? serving.id, serving.created_on]) },
+      {
+        label: PAGES_WORDS.serveInstead,
+        value: named([target.short_id ?? target.id ?? request.deployment, target.created_on, target.trigger.branch]),
+      },
+      { label: PAGES_WORDS.effect, value: { text: PAGES_WORDS.effectRollback } },
+    ],
+  }
+}
+
 /** Defines the `cloudflare_pages_rollback` tool spec with injected dependencies. */
 export function definePagesRollback(deps?: CloudflareDeps): RollbackSpec {
   const spec: RollbackSpec = defineTool({
     id: "cloudflare_pages_rollback",
     title: "Roll back a Cloudflare Pages project",
+    intent: "About to roll back a Pages project",
     description: [
       "Roll a Cloudflare Pages project's production back, or forward, to a production deployment that built successfully; the tool always asks first.",
       "The arguments come from cloudflare_pages_read deployments: `replaces` is the id of the deployment marked live (the one serving production now), `deployment` the id of the one to serve, older or newer.",
@@ -77,21 +119,9 @@ export function definePagesRollback(deps?: CloudflareDeps): RollbackSpec {
         return [ANY_TARGET]
       }
     },
+    describe: (args, ctx) => describeRollback(args, ctx, deps),
     async execute(args, ctx) {
-      const project = projectName(args.project)
-      const request = parseRequest(args)
-      const client = cloudflareClient(args.account, { ...deps, signal: ctx.signal })
-
-      const projectReply = await requestProject<unknown>(client, ROUTES.pagesProject, project)
-      const canonical = requireObject(projectReply.result, "project").canonical_deployment
-      const serving = checkServing(project, shapeLiveRef(canonical), request)
-
-      const deploymentReply = await requestProject<unknown>(client, ROUTES.pagesDeployment, project, {
-        path: { deployment_id: request.deployment },
-        notFoundMessage: `No deployment ${request.deployment} in Pages project ${project} of the account ${client.label}; cloudflare_pages_read deployments lists them.`,
-      })
-      const target = shapeDeployment(requireObject(deploymentReply.result, "deployment"), true)
-      checkServable(target)
+      const { project, request, client, canonical, serving, target } = await planRollback(args, ctx, deps)
       await confirmWrite(spec, ctx, confirmation(project, client.label, serving, target))
 
       const result = await sendRollback(client, project, request.deployment)
