@@ -12,6 +12,7 @@ provides_tools:
   - cloudflare_dns_record_edit
   - cloudflare_email_read
   - cloudflare_email_rule_add
+  - cloudflare_email_rule_delete
   - cloudflare_email_rule_edit
   - cloudflare_pages_domain_add
   - cloudflare_pages_domain_remove

@@ -6,6 +6,7 @@ import { cloudflareDnsRecordEdit } from "./core/dns/edit"
 import { cloudflareDnsRead } from "./core/dns/read"
 import { cloudflareEmailRead } from "./core/email/read"
 import { cloudflareEmailRuleAdd } from "./core/email/rule-add"
+import { cloudflareEmailRuleDelete } from "./core/email/rule-delete"
 import { cloudflareEmailRuleEdit } from "./core/email/rule-edit"
 import { cloudflarePagesDomainAdd } from "./core/pages/domain-add"
 import { cloudflarePagesDomainRemove } from "./core/pages/domain-remove"
@@ -58,4 +59,5 @@ export const ALL_TOOLS: ToolSpec[] = [
   cloudflareEmailRead,
   cloudflareEmailRuleAdd,
   cloudflareEmailRuleEdit,
+  cloudflareEmailRuleDelete,
 ]
