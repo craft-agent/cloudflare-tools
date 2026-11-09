@@ -74,7 +74,7 @@ export const actionArg = z
       worker: z
         .string()
         .regex(SCRIPT_NAME_PATTERN, "must be a Worker name: 1–63 lowercase letters, digits, - and _")
-        .describe("The Worker's name; whether it exists is not checked."),
+        .describe("The Worker's name; Cloudflare refuses a Worker that does not exist."),
     }),
   ])
   .describe(

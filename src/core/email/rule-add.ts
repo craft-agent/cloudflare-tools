@@ -93,7 +93,7 @@ export function defineEmailRuleAdd(deps?: CloudflareDeps): RuleAddSpec {
     id: "cloudflare_email_rule_add",
     title: "Add an Email Routing rule",
     description: [
-      "Adds a routing rule to a zone: mail to one address at the zone (or at a subdomain of it) is forwarded to one destination address the account has verified, dropped, or handed to a Worker, whose existence is not checked.",
+      "Adds a routing rule to a zone: mail to one address at the zone (or at a subdomain of it) is forwarded to one destination address the account has verified, dropped, or handed to a Worker (Cloudflare refuses a Worker that does not exist).",
       "`to` is a local part such as sales or a full address; `action` is {type: forward, to}, {type: drop} or {type: worker, worker}.",
       "The tool refuses an address that already has a rule (Cloudflare uses only the first), a forward to an address that is not a verified destination, and an address outside the zone; nothing is changed then.",
       "A zone with Email Routing off takes the rule but routes no mail until it is turned on in the dashboard.",

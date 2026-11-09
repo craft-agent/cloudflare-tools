@@ -54,7 +54,7 @@ A forward reaches only a verified destination address. When an address is added 
 
 - `zone` (its domain or 32-hex id, in the account) and an optional `account`.
 - `to`: the address the rule matches. A local part such as `sales` (the zone's name is added) or a full address at the zone or one of its subdomains; trimmed and lowercased, at most 90 characters, the local part 1–64 characters of letters, digits and `. ! # $ % & ' * + / = ? ^ _ { | } ~ -`.
-- `action`: `{type: "forward", to}` to a verified destination address, `{type: "drop"}`, or `{type: "worker", worker}`; the Worker's existence is not checked.
+- `action`: `{type: "forward", to}` to a verified destination address, `{type: "drop"}`, or `{type: "worker", worker}`; Cloudflare refuses a Worker that does not exist, as `not_found`.
 - `name` (optional, one line of up to 100 characters) and `enabled` (optional, default `true`; `false` adds the rule turned off).
 
 The rule goes in at Cloudflare's default priority; the tool sends none. Before it writes anything, it refuses:

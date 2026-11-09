@@ -50,7 +50,7 @@ describe("cloudflareEmailRuleAdd", () => {
     expect(toolMeta(cloudflareEmailRuleAdd)).toBeUndefined()
     for (const text of [
       "forwarded to one destination address the account has verified, dropped, or handed to a Worker",
-      "whose existence is not checked",
+      "Cloudflare refuses a Worker that does not exist",
       "already has a rule (Cloudflare uses only the first)",
       "not a verified destination",
       "outside the zone",
