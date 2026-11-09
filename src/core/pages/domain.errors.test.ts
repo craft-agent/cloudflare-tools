@@ -55,7 +55,7 @@ describe("domain add and remove: Cloudflare's refusal", () => {
     const error = await addFailedWith(fail(400, [RESERVED]))
 
     expect(error.code).toBe("invalid_argument")
-    expect(error.message).toBe(`${RESERVED.code}: ${RESERVED.message} Nothing was added.`)
+    expect(error.message).toBe(`${RESERVED.code}: ${RESERVED.message}. Nothing was added.`)
     expect(isToolError(error.cause)).toBe(true)
   })
 
@@ -63,7 +63,7 @@ describe("domain add and remove: Cloudflare's refusal", () => {
     const error = await removeFailedWith(fail(400, [GONE]))
 
     expect(error.code).toBe("invalid_argument")
-    expect(error.message).toBe(`${GONE.code}: ${GONE.message} Nothing was removed.`)
+    expect(error.message).toBe(`${GONE.code}: ${GONE.message}. Nothing was removed.`)
   })
 
   test.each([
@@ -85,8 +85,8 @@ describe("domain add and remove: Cloudflare's refusal", () => {
     const removed = await removeFailedWith(fail(409, [{ code: 10003, message: "Conflict" }]))
 
     expect(added.code).toBe("upstream_error")
-    expect(added.message).toBe("Cloudflare answered HTTP 409: 10003: Conflict Nothing was added.")
-    expect(removed.message).toBe("Cloudflare answered HTTP 409: 10003: Conflict Nothing was removed.")
+    expect(added.message).toBe("Cloudflare answered HTTP 409: 10003: Conflict. Nothing was added.")
+    expect(removed.message).toBe("Cloudflare answered HTTP 409: 10003: Conflict. Nothing was removed.")
   })
 })
 
@@ -96,7 +96,7 @@ describe("domain add and remove: failures that do not tell", () => {
 
     expect(error.code).toBe("upstream_error")
     expect(error.message).toBe(
-      "Cloudflare answered HTTP 500: 1000: Down Cloudflare may or may not have added it; read cloudflare_pages_read domains before sending it again.",
+      "Cloudflare answered HTTP 500: 1000: Down. Cloudflare may or may not have added it; read cloudflare_pages_read domains before sending it again.",
     )
   })
 
@@ -107,7 +107,7 @@ describe("domain add and remove: failures that do not tell", () => {
 
     expect(error.code).toBe("upstream_error")
     expect(error.message).toBe(
-      "Cloudflare could not be reached: connection reset Cloudflare may or may not have removed it; read cloudflare_pages_read domains before sending it again.",
+      "Cloudflare could not be reached: connection reset. Cloudflare may or may not have removed it; read cloudflare_pages_read domains before sending it again.",
     )
   })
 

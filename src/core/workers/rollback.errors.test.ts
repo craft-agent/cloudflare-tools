@@ -24,7 +24,7 @@ describe("cloudflareWorkersRollback: Cloudflare's refusal", () => {
     const error = await failedWith(fail(400, [{ code: 10001, message: "Bad request" }]))
 
     expect(error.code).toBe("invalid_argument")
-    expect(error.message).toBe(`10001: Bad request ${NOTHING_DEPLOYED}`)
+    expect(error.message).toBe(`10001: Bad request. ${NOTHING_DEPLOYED}`)
   })
 
   test.each([
@@ -41,7 +41,7 @@ describe("cloudflareWorkersRollback: Cloudflare's refusal", () => {
     const error = await failedWith(fail(409, [{ code: 10003, message: "Conflict" }]))
 
     expect(error.code).toBe("upstream_error")
-    expect(error.message).toBe(`Cloudflare answered HTTP 409: 10003: Conflict ${NOTHING_DEPLOYED}`)
+    expect(error.message).toBe(`Cloudflare answered HTTP 409: 10003: Conflict. ${NOTHING_DEPLOYED}`)
   })
 
   test("explains a refusal about secrets and never forces it", async () => {
@@ -74,7 +74,7 @@ describe("cloudflareWorkersRollback: failures that do not tell", () => {
     const error = await failedWith(fail(500, [{ code: 1000, message: "Down" }]))
 
     expect(error.code).toBe("upstream_error")
-    expect(error.message).toBe(`Cloudflare answered HTTP 500: 1000: Down ${MAY_OR_MAY_NOT}`)
+    expect(error.message).toBe(`Cloudflare answered HTTP 500: 1000: Down. ${MAY_OR_MAY_NOT}`)
   })
 
   test("says the same when the network fails", async () => {
@@ -83,7 +83,7 @@ describe("cloudflareWorkersRollback: failures that do not tell", () => {
     })
 
     expect(error.code).toBe("upstream_error")
-    expect(error.message).toBe(`Cloudflare could not be reached: connection reset ${MAY_OR_MAY_NOT}`)
+    expect(error.message).toBe(`Cloudflare could not be reached: connection reset. ${MAY_OR_MAY_NOT}`)
   })
 
   test("passes a cancellation on untouched", async () => {

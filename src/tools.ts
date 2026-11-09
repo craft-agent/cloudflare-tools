@@ -4,6 +4,13 @@ import { cloudflareDnsRecordAdd } from "./core/dns/add"
 import { cloudflareDnsRecordDelete } from "./core/dns/delete"
 import { cloudflareDnsRecordEdit } from "./core/dns/edit"
 import { cloudflareDnsRead } from "./core/dns/read"
+import { cloudflareEmailAddressAdd } from "./core/email/address-add"
+import { cloudflareEmailAddressDelete } from "./core/email/address-delete"
+import { cloudflareEmailCatchAllEdit } from "./core/email/catchall-edit"
+import { cloudflareEmailRead } from "./core/email/read"
+import { cloudflareEmailRuleAdd } from "./core/email/rule-add"
+import { cloudflareEmailRuleDelete } from "./core/email/rule-delete"
+import { cloudflareEmailRuleEdit } from "./core/email/rule-edit"
 import { cloudflarePagesDomainAdd } from "./core/pages/domain-add"
 import { cloudflarePagesDomainRemove } from "./core/pages/domain-remove"
 import { cloudflarePagesRead } from "./core/pages/read"
@@ -52,4 +59,11 @@ export const ALL_TOOLS: ToolSpec[] = [
   cloudflareTunnelRouteAdd,
   cloudflareTunnelRouteEdit,
   cloudflareTunnelRouteRemove,
+  cloudflareEmailRead,
+  cloudflareEmailRuleAdd,
+  cloudflareEmailRuleEdit,
+  cloudflareEmailRuleDelete,
+  cloudflareEmailCatchAllEdit,
+  cloudflareEmailAddressAdd,
+  cloudflareEmailAddressDelete,
 ]

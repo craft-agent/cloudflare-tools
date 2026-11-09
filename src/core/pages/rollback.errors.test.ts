@@ -22,7 +22,7 @@ describe("cloudflarePagesRollback: Cloudflare's refusal", () => {
     const error = await failedWith(fail(400, [{ code: 8000039, message: "Cannot rollback to the live deployment" }]))
 
     expect(error.code).toBe("invalid_argument")
-    expect(error.message).toBe(`8000039: Cannot rollback to the live deployment ${NOTHING_CHANGED}`)
+    expect(error.message).toBe(`8000039: Cannot rollback to the live deployment. ${NOTHING_CHANGED}`)
     expect(isToolError(error.cause)).toBe(true)
   })
 
@@ -41,7 +41,7 @@ describe("cloudflarePagesRollback: Cloudflare's refusal", () => {
     const error = await failedWith(fail(409, [{ code: 10003, message: "Conflict" }]))
 
     expect(error.code).toBe("upstream_error")
-    expect(error.message).toBe(`Cloudflare answered HTTP 409: 10003: Conflict ${NOTHING_CHANGED}`)
+    expect(error.message).toBe(`Cloudflare answered HTTP 409: 10003: Conflict. ${NOTHING_CHANGED}`)
   })
 })
 
@@ -50,7 +50,7 @@ describe("cloudflarePagesRollback: failures that do not tell", () => {
     const error = await failedWith(fail(500, [{ code: 1000, message: "Down" }]))
 
     expect(error.code).toBe("upstream_error")
-    expect(error.message).toBe(`Cloudflare answered HTTP 500: 1000: Down ${MAY_OR_MAY_NOT}`)
+    expect(error.message).toBe(`Cloudflare answered HTTP 500: 1000: Down. ${MAY_OR_MAY_NOT}`)
   })
 
   test("says the same when the network fails", async () => {
@@ -59,7 +59,7 @@ describe("cloudflarePagesRollback: failures that do not tell", () => {
     })
 
     expect(error.code).toBe("upstream_error")
-    expect(error.message).toBe(`Cloudflare could not be reached: connection reset ${MAY_OR_MAY_NOT}`)
+    expect(error.message).toBe(`Cloudflare could not be reached: connection reset. ${MAY_OR_MAY_NOT}`)
   })
 
   test("passes a cancellation on untouched", async () => {

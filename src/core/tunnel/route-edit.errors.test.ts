@@ -41,7 +41,7 @@ describe("route edit: the write fails", () => {
     const error = await toolError(invoke(tool, ARGS, CTX))
 
     expect(error.code).toBe(code)
-    expect(error.message).toBe(`9005: Content is invalid Nothing was changed.`)
+    expect(error.message).toBe(`9005: Content is invalid. Nothing was changed.`)
     expect(sent(requests, "PUT")).toHaveLength(1)
   })
 
@@ -57,8 +57,8 @@ describe("route edit: the write fails", () => {
   })
 
   test.each([
-    ["a 500", fail(500, [{ code: 1000, message: "Down" }]), "Cloudflare answered HTTP 500: 1000: Down "],
-    ["a dropped connection", dropped, "Cloudflare could not be reached: connection reset "],
+    ["a 500", fail(500, [{ code: 1000, message: "Down" }]), "Cloudflare answered HTTP 500: 1000: Down. "],
+    ["a dropped connection", dropped, "Cloudflare could not be reached: connection reset. "],
   ])("says Cloudflare may or may not have changed it after %s", async (_what, reply, failure) => {
     const { tool } = editFor(putRoute(reply))
 

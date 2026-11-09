@@ -27,6 +27,12 @@ export const DATABASE_ID_PATTERN = DEPLOYMENT_ID_PATTERN
 /** A Cloudflare Tunnel's id: a lowercase hexadecimal UUID. */
 export const TUNNEL_ID_PATTERN = DEPLOYMENT_ID_PATTERN
 
+/** An Email Routing rule's id: 1–64 letters and digits; it holds no `_`, so the path segment `catch_all` is never a rule id. */
+export const RULE_ID_PATTERN = /^[A-Za-z0-9]{1,64}$/
+
+/** An Email Routing destination address's id; the same shape as a rule's id. */
+export const ADDRESS_ID_PATTERN = RULE_ID_PATTERN
+
 /** The only SQL the schema route sends; excludes internal tables and never reads rows. */
 export const D1_SCHEMA_SQL =
   "SELECT type, name, tbl_name, sql FROM sqlite_master WHERE type IN ('table', 'index', 'view', 'trigger') AND substr(name, 1, 7) != 'sqlite_' AND substr(name, 1, 4) != '_cf_' ORDER BY type, name"
@@ -54,6 +60,8 @@ export const PATH_PARAMS: Readonly<Record<string, RegExp>> = Object.freeze({
   namespace_id: NAMESPACE_ID_PATTERN,
   database_id: DATABASE_ID_PATTERN,
   tunnel_id: TUNNEL_ID_PATTERN,
+  rule_id: RULE_ID_PATTERN,
+  address_id: ADDRESS_ID_PATTERN,
 })
 
 function defineRoute(method: Method, path: string, body?: Route["body"]): Route {
@@ -137,6 +145,17 @@ export const ROUTES = Object.freeze({
   cfdTunnelConfiguration: defineRoute("GET", "/accounts/{account_id}/cfd_tunnel/{tunnel_id}/configurations"),
   cfdTunnelConfigurationEdit: defineRoute("PUT", "/accounts/{account_id}/cfd_tunnel/{tunnel_id}/configurations"),
   accessApps: defineRoute("GET", "/accounts/{account_id}/access/apps"),
+  emailRouting: defineRoute("GET", "/zones/{zone_id}/email/routing"),
+  emailRoutingRules: defineRoute("GET", "/zones/{zone_id}/email/routing/rules"),
+  emailRoutingCatchAll: defineRoute("GET", "/zones/{zone_id}/email/routing/rules/catch_all"),
+  emailRoutingAddresses: defineRoute("GET", "/accounts/{account_id}/email/routing/addresses"),
+  emailRoutingRuleCreate: defineRoute("POST", "/zones/{zone_id}/email/routing/rules"),
+  emailRoutingRule: defineRoute("GET", "/zones/{zone_id}/email/routing/rules/{rule_id}"),
+  emailRoutingRuleEdit: defineRoute("PUT", "/zones/{zone_id}/email/routing/rules/{rule_id}"),
+  emailRoutingRuleDelete: defineRoute("DELETE", "/zones/{zone_id}/email/routing/rules/{rule_id}"),
+  emailRoutingCatchAllEdit: defineRoute("PUT", "/zones/{zone_id}/email/routing/rules/catch_all"),
+  emailRoutingAddressCreate: defineRoute("POST", "/accounts/{account_id}/email/routing/addresses"),
+  emailRoutingAddressDelete: defineRoute("DELETE", "/accounts/{account_id}/email/routing/addresses/{address_id}"),
 } satisfies Record<string, Route>)
 
 /** Whether a route is one of `ROUTES`, including its fixed body when present. */
