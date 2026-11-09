@@ -179,7 +179,7 @@ describe("cloudflareEmailAddressAdd: the write fails", () => {
     const error = await toolError(invoke(tool, ARGS, CTX))
 
     expect(error.code).toBe("upstream_error")
-    expect(error.message).toBe(`Cloudflare answered HTTP 500: 1000: Down ${MAYBE}`)
+    expect(error.message).toBe(`Cloudflare answered HTTP 500: 1000: Down. ${MAYBE}`)
   })
 
   test("says so too when the connection drops", async () => {
@@ -188,7 +188,7 @@ describe("cloudflareEmailAddressAdd: the write fails", () => {
     const error = await toolError(invoke(tool, ARGS, CTX))
 
     expect(error.code).toBe("upstream_error")
-    expect(error.message).toBe(`Cloudflare could not be reached: connection reset ${MAYBE}`)
+    expect(error.message).toBe(`Cloudflare could not be reached: connection reset. ${MAYBE}`)
     expect(sent(requests, "POST")).toHaveLength(1)
   })
 

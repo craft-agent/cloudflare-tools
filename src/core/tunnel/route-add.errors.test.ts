@@ -62,7 +62,7 @@ describe("route add: the configuration write fails", () => {
 
     expect(error.code).toBe("upstream_error")
     expect(error.message).toBe(
-      "Cloudflare answered HTTP 500: 1000: Down Cloudflare may or may not have changed the tunnel's configuration, and no DNS record was added; read cloudflare_tunnel_read tunnel before sending it again.",
+      "Cloudflare answered HTTP 500: 1000: Down. Cloudflare may or may not have changed the tunnel's configuration, and no DNS record was added; read cloudflare_tunnel_read tunnel before sending it again.",
     )
     expect(sent(requests, "POST")).toHaveLength(0)
   })
@@ -74,7 +74,7 @@ describe("route add: the configuration write fails", () => {
 
     expect(error.code).toBe("upstream_error")
     expect(error.message).toStartWith(
-      "Cloudflare could not be reached: connection reset Cloudflare may or may not have",
+      "Cloudflare could not be reached: connection reset. Cloudflare may or may not have",
     )
     expect(sent(requests, "POST")).toHaveLength(0)
   })

@@ -13,7 +13,7 @@ describe("failureOfWrite", () => {
     const failure = failureOfWrite(error, notes) as ToolError
     expect(failure).toBeInstanceOf(ToolError)
     expect(failure.code).toBe(code)
-    expect(failure.message).toBe(`${message} Nothing changed.`)
+    expect(failure.message).toBe(`${message}. Nothing changed.`)
     expect(failure.cause).toBe(error)
   })
 
@@ -21,9 +21,25 @@ describe("failureOfWrite", () => {
     const error = new ToolError("upstream_error", "Cloudflare answered HTTP 500: 1000: Down")
     const failure = failureOfWrite(error, notes) as ToolError
     expect(failure.code).toBe("upstream_error")
-    expect(failure.message).toBe("Cloudflare answered HTTP 500: 1000: Down It may have changed.")
+    expect(failure.message).toBe("Cloudflare answered HTTP 500: 1000: Down. It may have changed.")
     expect(failure.cause).toBe(error)
   })
+
+  test.each([
+    ["Content is invalid", "Content is invalid. "],
+    ["Content is invalid.", "Content is invalid. "],
+    ["Is it invalid?", "Is it invalid? "],
+    ["Invalid!", "Invalid! "],
+  ])(
+    "ends the message %p as a sentence before either note, adding a period only when it has none",
+    (message, start) => {
+      const refused = failureOfWrite(new ToolError("not_found", message), notes) as ToolError
+      const unknown = failureOfWrite(new ToolError("upstream_error", message), notes) as ToolError
+
+      expect(refused.message).toBe(`${start}Nothing changed.`)
+      expect(unknown.message).toBe(`${start}It may have changed.`)
+    },
+  )
 
   test("another code is returned as is", () => {
     const error = new ToolError("internal_error", "Broke")

@@ -1,4 +1,5 @@
 import { ToolError, isAbortError, type ErrorCode } from "../errors"
+import { sentence } from "./graphql"
 
 /** Codes of a failure Cloudflare raised before it deployed anything. */
 const REFUSED_CODES: readonly ErrorCode[] = [
@@ -21,14 +22,14 @@ export function refusedByCloudflare(error: ToolError): boolean {
 /** What a failed write's message gains: `nothing` when Cloudflare refused it, `maybe` when the failure does not tell. */
 export type WriteFailureNotes = { readonly nothing: string; readonly maybe: string }
 
-/** The failure of one write, with the note that says whether anything changed. A cancellation and anything not a ToolError pass untouched. */
+/** The failure of one write, with the note that says whether anything changed; the message ends as a sentence first. A cancellation and anything not a ToolError pass untouched. */
 export function failureOfWrite(error: unknown, notes: WriteFailureNotes): unknown {
   if (isAbortError(error) || !(error instanceof ToolError)) return error
   if (refusedByCloudflare(error)) {
-    return new ToolError(error.code, `${error.message} ${notes.nothing}`, { cause: error })
+    return new ToolError(error.code, `${sentence(error.message)} ${notes.nothing}`, { cause: error })
   }
   if (error.code === "upstream_error") {
-    return new ToolError("upstream_error", `${error.message} ${notes.maybe}`, { cause: error })
+    return new ToolError("upstream_error", `${sentence(error.message)} ${notes.maybe}`, { cause: error })
   }
   return error
 }
