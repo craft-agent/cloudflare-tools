@@ -141,6 +141,7 @@ export const ROUTES = Object.freeze({
   emailRoutingRules: defineRoute("GET", "/zones/{zone_id}/email/routing/rules"),
   emailRoutingCatchAll: defineRoute("GET", "/zones/{zone_id}/email/routing/rules/catch_all"),
   emailRoutingAddresses: defineRoute("GET", "/accounts/{account_id}/email/routing/addresses"),
+  emailRoutingRuleCreate: defineRoute("POST", "/zones/{zone_id}/email/routing/rules"),
 } satisfies Record<string, Route>)
 
 /** Whether a route is one of `ROUTES`, including its fixed body when present. */
