@@ -16,6 +16,7 @@ TOOLSET_EMOJI: dict[str, str] = {
     "account": "🪪",
     "zones": "🌐",
     "dns": "🧭",
+    "rules": "📜",
     "analytics": "📊",
     "workers": "⚙️",
     "pages": "📄",
