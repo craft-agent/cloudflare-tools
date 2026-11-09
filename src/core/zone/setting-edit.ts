@@ -7,6 +7,7 @@ export function defineZoneSettingEdit(deps?: CloudflareDeps): SettingChangeSpec 
     {
       id: SETTING_EDIT_ID,
       title: "Edit Cloudflare zone settings",
+      intent: "About to change zone settings",
       description: [
         "Change 1 to 20 settings of a Cloudflare zone, in order.",
         "Every setting is read first, and nothing is sent if any change is refused:",
@@ -29,6 +30,7 @@ export function defineZoneSettingWeaken(deps?: CloudflareDeps): SettingChangeSpe
     {
       id: SETTING_WEAKEN_ID,
       title: "Lower Cloudflare zone protection",
+      intent: "About to lower zone protection",
       description: [
         "Change 1 to 20 settings of a Cloudflare zone, in order, where a change lowers a visitor's protection:",
         "a lower step of ssl, min_tls_version or security_level,",

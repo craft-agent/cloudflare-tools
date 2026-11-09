@@ -4,10 +4,19 @@ import { cloudflareClient, type CloudflareClient, type CloudflareDeps } from "..
 import { ROUTES } from "../cloudflare/routes"
 import { ToolError, isAbortError } from "../errors"
 import { ANY_TARGET } from "../targets"
-import { confirmWrite, defineTool, StepErrors, type ToolContext, type ToolSpec } from "../tool"
+import {
+  confirmWrite,
+  defineTool,
+  StepErrors,
+  type CallDescription,
+  type CallHeadline,
+  type ToolContext,
+  type ToolSpec,
+} from "../tool"
 import { resolveZone, resolveZoneTarget, zoneArg, type Zone } from "./lookup"
 import { settingItem, settingItemSchema, ZONE_SETTINGS, type ZoneSetting } from "./settings"
 import { lowersProtection, parseSettingValue, SETTING_VALUES } from "./values"
+import { ZONE_WORDS } from "./words"
 
 export const SETTING_EDIT_ID = "cloudflare_zone_setting_edit"
 export const SETTING_WEAKEN_ID = "cloudflare_zone_setting_weaken"
@@ -73,6 +82,7 @@ export type SettingChangeSpec = ToolSpec<typeof input, typeof output>
 export type SettingChangeVariant = {
   id: string
   title: string
+  intent: string
   description: string
   /** Whether the tool may lower protection, and then always asks first; otherwise it refuses such a change. */
   weakens: boolean
@@ -151,28 +161,73 @@ async function applyChange(client: CloudflareClient, zone: Zone, change: Planned
   }
 }
 
-async function changeSettings(
+function lowers(change: PlannedChange): boolean {
+  return lowersProtection(change.setting, change.before, change.value)
+}
+
+/** What a call will send: the client, the zone it resolved and every change as planned; a tool that may not lower protection refuses a plan that does. */
+async function planSettingChange(
   variant: SettingChangeVariant,
   args: z.output<typeof input>,
   ctx: ToolContext,
   deps?: CloudflareDeps,
-): Promise<z.input<typeof output>> {
+) {
   const requested = parseChanges(args.changes)
   const client = cloudflareClient(args.account, { ...deps, signal: ctx.signal })
   const zone = await resolveZone(client, args.zone)
   const plan = await planChanges(client, zone, requested)
 
-  if (variant.weakens) {
-    const message = `Change settings of zone ${zone.name} (${zone.id}) in the Cloudflare account ${client.label}: ${plan.map(describeChange).join("; ")}`
-    await confirmWrite({ id: variant.id, class: writeClass(variant) }, ctx, message)
-  } else {
-    const lowering = plan.filter((change) => lowersProtection(change.setting, change.before, change.value))
+  if (!variant.weakens) {
+    const lowering = plan.filter(lowers)
     if (lowering.length > 0) {
       throw new ToolError(
         "invalid_argument",
         `These changes lower protection: ${lowering.map(describeChange).join("; ")}. Nothing was sent; use ${SETTING_WEAKEN_ID} for them.`,
       )
     }
+  }
+  return { client, zone, plan }
+}
+
+/** The headline of a description: one change or several, and whether the tool names a lowering. */
+function settingHeadline(zone: Zone, plan: PlannedChange[], lowering: PlannedChange[]): CallHeadline {
+  if (plan.length === 1) {
+    const text = lowering.length > 0 ? ZONE_WORDS.settingLowerOne : ZONE_WORDS.settingChangeOne
+    return { text, values: { setting: plan[0]!.setting, zone: zone.name } }
+  }
+  const text = lowering.length > 0 ? ZONE_WORDS.settingLowerMany : ZONE_WORDS.settingChangeMany
+  return { text, values: { zone: zone.name } }
+}
+
+async function describeSettingChange(
+  variant: SettingChangeVariant,
+  args: z.output<typeof input>,
+  ctx: ToolContext,
+  deps?: CloudflareDeps,
+): Promise<CallDescription> {
+  const { zone, plan } = await planSettingChange(variant, args, ctx, deps)
+  const lowering = variant.weakens ? plan.filter(lowers) : []
+  return {
+    headline: settingHeadline(zone, plan, lowering),
+    facts:
+      plan.length > 1 && lowering.length > 0
+        ? [{ label: ZONE_WORDS.lowered, value: lowering.map((change) => change.setting).join(", ") }]
+        : [],
+    text: { label: ZONE_WORDS.changes, body: plan.map(describeChange).join("\n") },
+  }
+}
+
+async function changeSettings(
+  variant: SettingChangeVariant,
+  args: z.output<typeof input>,
+  ctx: ToolContext,
+  deps?: CloudflareDeps,
+): Promise<z.input<typeof output>> {
+  const { client, zone, plan } = await planSettingChange(variant, args, ctx, deps)
+
+  if (variant.weakens) {
+    const message = `Change settings of zone ${zone.name} (${zone.id}) in the Cloudflare account ${client.label}: ${plan.map(describeChange).join("; ")}`
+    await confirmWrite({ id: variant.id, class: writeClass(variant) }, ctx, message)
   }
 
   const steps = new StepErrors()
@@ -213,12 +268,14 @@ export function defineSettingChangeTool(variant: SettingChangeVariant, deps?: Cl
   return defineTool({
     id: variant.id,
     title: variant.title,
+    intent: variant.intent,
     description: variant.description,
     toolset: "zones",
     class: writeClass(variant),
     input,
     output,
     targets: (args, ctx) => settingTargets(args, ctx, deps),
+    describe: (args, ctx) => describeSettingChange(variant, args, ctx, deps),
     execute: (args, ctx) => changeSettings(variant, args, ctx, deps),
   })
 }
