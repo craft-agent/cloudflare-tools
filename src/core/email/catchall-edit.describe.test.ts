@@ -21,7 +21,8 @@ const ROUTING_OFF = {
   value: { text: "off: no mail is routed until it is turned on in the dashboard" },
 }
 const NO_CATCH_ALL = catchAllRoute(fail(404, [{ code: 1004, message: "Not found" }]))
-const OFF = { text: "off" }
+const OFF = { text: "off: mail no rule matches is rejected" }
+const on = (action: string) => ({ text: "on: {action}", values: { action } })
 
 describe("cloudflareEmailCatchAllEdit: describe", () => {
   test("states its intent", () => {
@@ -39,8 +40,8 @@ describe("cloudflareEmailCatchAllEdit: describe", () => {
     expect(description).toEqual({
       headline: HEADLINE,
       facts: [
-        { label: "Now", value: "drop" },
-        { label: "After", value: `forward ${OTHER_DESTINATION}` },
+        { label: "Now", value: on("drop") },
+        { label: "After", value: on(`forward ${OTHER_DESTINATION}`) },
       ],
       pins: { catch_all: expect.any(String) },
     })
@@ -55,7 +56,7 @@ describe("cloudflareEmailCatchAllEdit: describe", () => {
     const { description } = await describing(tool, { ...CATCH_BASE, enabled: false })
 
     expect(description.facts).toEqual([
-      { label: "Now", value: "drop" },
+      { label: "Now", value: on("drop") },
       { label: "After", value: OFF },
     ])
   })
@@ -67,7 +68,7 @@ describe("cloudflareEmailCatchAllEdit: describe", () => {
 
     expect(description.facts).toEqual([
       { label: "Now", value: OFF },
-      { label: "After", value: "drop" },
+      { label: "After", value: on("drop") },
     ])
   })
 
@@ -83,7 +84,7 @@ describe("cloudflareEmailCatchAllEdit: describe", () => {
 
     expect(description.facts).toEqual([
       { label: "Now", value: OFF },
-      { label: "After", value: `forward ${DESTINATION}` },
+      { label: "After", value: on(`forward ${DESTINATION}`) },
     ])
     expect(description.pins).toEqual({ catch_all: "null" })
   })
@@ -105,8 +106,8 @@ describe("cloudflareEmailCatchAllEdit: describe", () => {
     })
 
     expect(change.description.facts).toEqual([
-      { label: "Now", value: `forward ${DESTINATION}` },
-      { label: "After", value: "worker inbox" },
+      { label: "Now", value: on(`forward ${DESTINATION}`) },
+      { label: "After", value: on("worker inbox") },
     ])
     expect(off.description.facts[1]).toEqual({ label: "After", value: OFF })
   })
