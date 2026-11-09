@@ -95,7 +95,7 @@ export function createRoute(
 }
 
 /** The zone listing: the zone whose name the query asks for. */
-const ZONES_ROUTE: FakeRoute = {
+export const ZONES_ROUTE: FakeRoute = {
   method: "GET",
   path: "/zones",
   reply: (request) => ok(request.query.get("name") === SAMPLE_ZONE.name ? [SAMPLE_ZONE] : []),
