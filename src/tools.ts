@@ -15,6 +15,7 @@ import { cloudflarePagesDomainAdd } from "./core/pages/domain-add"
 import { cloudflarePagesDomainRemove } from "./core/pages/domain-remove"
 import { cloudflarePagesRead } from "./core/pages/read"
 import { cloudflarePagesRollback } from "./core/pages/rollback"
+import { cloudflareRulesAdd } from "./core/rules/add"
 import { cloudflareRulesRead } from "./core/rules/read"
 import { cloudflareStorageCreate } from "./core/storage/create"
 import { cloudflareStorageDelete } from "./core/storage/delete"
@@ -47,6 +48,7 @@ export const ALL_TOOLS: ToolSpec[] = [
   cloudflareDnsRecordEdit,
   cloudflareDnsRecordDelete,
   cloudflareRulesRead,
+  cloudflareRulesAdd,
   cloudflareAnalyticsRead,
   cloudflareWorkersRead,
   cloudflareWorkersRollback,

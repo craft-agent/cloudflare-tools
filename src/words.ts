@@ -3,6 +3,7 @@ import { DNS_TRANSLATIONS, DNS_WORDS } from "./core/dns/words"
 import { EMAIL_TRANSLATIONS, EMAIL_WORDS } from "./core/email/words"
 import { FACT_TRANSLATIONS } from "./core/facts"
 import { PAGES_TRANSLATIONS, PAGES_WORDS } from "./core/pages/words"
+import { RULES_TRANSLATIONS, RULES_WORDS } from "./core/rules/words"
 import { STORAGE_TRANSLATIONS, STORAGE_WORDS } from "./core/storage/words"
 import { TUNNEL_TRANSLATIONS, TUNNEL_WORDS } from "./core/tunnel/words"
 import { WORKERS_TRANSLATIONS, WORKERS_WORDS } from "./core/workers/words"
@@ -14,6 +15,7 @@ export const ALL_TRANSLATIONS: Translations = mergeTranslations(
   DNS_TRANSLATIONS,
   ZONE_TRANSLATIONS,
   EMAIL_TRANSLATIONS,
+  RULES_TRANSLATIONS,
   PAGES_TRANSLATIONS,
   WORKERS_TRANSLATIONS,
   STORAGE_TRANSLATIONS,
@@ -25,6 +27,7 @@ export const TOOL_WORDS: readonly string[] = [
   ...Object.values(DNS_WORDS),
   ...Object.values(ZONE_WORDS),
   ...Object.values(EMAIL_WORDS),
+  ...Object.values(RULES_WORDS),
   ...Object.values(PAGES_WORDS),
   ...Object.values(WORKERS_WORDS),
   ...Object.values(STORAGE_WORDS),

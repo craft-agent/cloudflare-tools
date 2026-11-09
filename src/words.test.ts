@@ -4,6 +4,7 @@ import { DNS_TRANSLATIONS } from "./core/dns/words"
 import { EMAIL_TRANSLATIONS } from "./core/email/words"
 import { FACT_TRANSLATIONS } from "./core/facts"
 import { PAGES_TRANSLATIONS } from "./core/pages/words"
+import { RULES_TRANSLATIONS } from "./core/rules/words"
 import { STORAGE_TRANSLATIONS } from "./core/storage/words"
 import { TUNNEL_TRANSLATIONS } from "./core/tunnel/words"
 import { WORKERS_TRANSLATIONS } from "./core/workers/words"
@@ -16,6 +17,7 @@ const TABLES = [
   DNS_TRANSLATIONS,
   ZONE_TRANSLATIONS,
   EMAIL_TRANSLATIONS,
+  RULES_TRANSLATIONS,
   PAGES_TRANSLATIONS,
   WORKERS_TRANSLATIONS,
   STORAGE_TRANSLATIONS,

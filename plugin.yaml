@@ -21,6 +21,7 @@ provides_tools:
   - cloudflare_pages_domain_remove
   - cloudflare_pages_read
   - cloudflare_pages_rollback
+  - cloudflare_rules_add
   - cloudflare_rules_read
   - cloudflare_storage_create
   - cloudflare_storage_delete
