@@ -1,8 +1,9 @@
 import { z } from "zod"
 import { accountArg } from "../cloudflare/args"
 import { cloudflareClient, type CloudflareClient, type CloudflareDeps } from "../cloudflare/client"
-import { confirmWrite, defineTool, type ToolSpec } from "../tool"
+import { confirmWrite, defineTool, type CallDescription, type CallFact, type ToolContext, type ToolSpec } from "../tool"
 import type { Zone } from "../zone/lookup"
+import { configurationPins, pathFacts, routeHeadline } from "./describe"
 import {
   assertRouteUnchanged,
   dnsReport,
@@ -39,6 +40,7 @@ import {
   type RuleKey,
 } from "./route.rules"
 import { INGRESS_TEXT_MAX_LENGTH, clip } from "./shape"
+import { TUNNEL_WORDS } from "./words"
 
 const MAYBE_WRITTEN =
   "Cloudflare may or may not have changed the tunnel's configuration, and no DNS record was deleted; read cloudflare_tunnel_read tunnel before sending it again."
@@ -65,6 +67,7 @@ const output = z.object({
   ),
 })
 
+type Args = z.output<typeof input>
 type RouteRemoveSpec = ToolSpec<typeof input, typeof output>
 
 /** What the call found before it writes: the rule to drop, the hostname's DNS, and the record the call will delete if any. */
@@ -104,11 +107,44 @@ function confirmation(plan: Plan, key: RuleKey): string {
   return `Withdraw ${ruleLabel(key)} from tunnel ${plan.tunnel.name ?? plan.tunnel.id} (it sent it to ${service})${cname}.`
 }
 
+/** What a call will do: the rule's key, the client and what the plan found; refuses what the tool refuses before it asks. */
+async function planCall(args: Args, ctx: ToolContext, deps?: CloudflareDeps) {
+  const hostname = normalizedHostname(args.hostname)
+  const key: RuleKey = { hostname, ...(args.path === undefined ? {} : { path: args.path }) }
+  const client = cloudflareClient(args.account, { ...deps, signal: ctx.signal })
+
+  const plan = await planFor(client, args.tunnel, key)
+  return { hostname, key, client, plan }
+}
+
+/** What the call does with the hostname's CNAME to the tunnel, as a fact's value template. */
+function dnsText(plan: Plan): string {
+  if (plan.drop) return TUNNEL_WORDS.dnsDelete
+  return plan.dns.action === "keep" ? TUNNEL_WORDS.dnsKeepShared : TUNNEL_WORDS.dnsUntouched
+}
+
+/** The description of the call: the hostname and the tunnel, the service it sent to, the path, what happens to the CNAME and that visitors stop at once; the configuration is pinned, since it is sent back whole. */
+async function describeCall(args: Args, ctx: ToolContext, deps?: CloudflareDeps): Promise<CallDescription> {
+  const { hostname, key, plan } = await planCall(args, ctx, deps)
+  const facts: CallFact[] = [
+    ...(plan.service === undefined ? [] : [{ label: TUNNEL_WORDS.service, value: plan.service }]),
+    ...pathFacts(key.path),
+    { label: TUNNEL_WORDS.dns, value: { text: dnsText(plan) } },
+    { label: TUNNEL_WORDS.effect, value: { text: TUNNEL_WORDS.effectWithdraw } },
+  ]
+  return {
+    headline: routeHeadline(TUNNEL_WORDS.withdraw, plan.tunnel, hostname),
+    facts,
+    pins: configurationPins(plan.configuration),
+  }
+}
+
 /** Defines the `cloudflare_tunnel_route_remove` tool spec with injected dependencies. */
 export function defineTunnelRouteRemove(deps?: CloudflareDeps): RouteRemoveSpec {
   const spec: RouteRemoveSpec = defineTool({
     id: "cloudflare_tunnel_route_remove",
     title: "Withdraw a hostname from a Cloudflare Tunnel",
+    intent: "About to withdraw a hostname from a tunnel",
     description: [
       "Withdraw a hostname (and path) from a dashboard-managed Cloudflare Tunnel: the rule is removed from the tunnel's configuration, and the proxied CNAME from the hostname to the tunnel is deleted when no other rule of the tunnel still uses the hostname; the tool always asks first, since visitors stop reaching the service at once.",
       "Name the rule by `hostname` and `path` (left out, the rule without a path), as cloudflare_tunnel_read tunnel shows it; a rule the tunnel does not publish is not_found.",
@@ -125,12 +161,9 @@ export function defineTunnelRouteRemove(deps?: CloudflareDeps): RouteRemoveSpec 
     input,
     output,
     targets: (args, ctx) => routeTargets(args, ctx, deps),
+    describe: (args, ctx) => describeCall(args, ctx, deps),
     async execute(args, ctx) {
-      const hostname = normalizedHostname(args.hostname)
-      const key: RuleKey = { hostname, ...(args.path === undefined ? {} : { path: args.path }) }
-      const client = cloudflareClient(args.account, { ...deps, signal: ctx.signal })
-
-      const plan = await planFor(client, args.tunnel, key)
+      const { hostname, key, client, plan } = await planCall(args, ctx, deps)
       await confirmWrite(spec, ctx, confirmation(plan, key))
       // An answer can take minutes; read again so the write acts on what was approved.
       if (ctx.confirm) await assertRouteUnchanged(client, args.tunnel, plan, hostname)

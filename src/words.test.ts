@@ -86,6 +86,14 @@ describe("the tools' words", () => {
     }
   })
 
+  test("every write tool states its intent and describes its call", () => {
+    expect(WRITE_TOOLS.length).toBeGreaterThan(0)
+    for (const spec of WRITE_TOOLS) {
+      expect([spec.id, spec.intent !== undefined]).toEqual([spec.id, true])
+      expect([spec.id, spec.describe !== undefined]).toEqual([spec.id, true])
+    }
+  })
+
   test("every word of the describers has a Japanese translation", () => {
     expect(TOOL_WORDS.length).toBeGreaterThan(0)
     for (const word of TOOL_WORDS) {
