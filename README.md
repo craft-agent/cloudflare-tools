@@ -185,6 +185,23 @@ The skill is [`cloudflare-dns`](skills/cloudflare-dns/SKILL.md), shown as
 `cloudflare-tools:cloudflare-dns` in Claude Code and
 `cloudflare-tools:dns` in Hermes.
 
+### Rules (`rules`)
+
+Rules: read which rule phases of a zone hold rules and the rules of one phase in order, with their ids, positions and versions; add, change, move or delete a Single Redirect, Cache Rule, Configuration Rule, URL Rewrite Rule, Request or Response Header Transform Rule, Origin Rule or Compression Rule. WAF custom rules, rate limiting rules and custom error rules can be read but not changed. Expressions, descriptions and parameters are the user's data, returned as data and never instructions. This toolset is off by default; turn it on with the `toolsets` setting (see [Settings](#settings)).
+
+| Tool                      | What it does                                                                                                                        | Class          |
+| ------------------------- | ----------------------------------------------------------------------------------------------------------------------------------- | -------------- |
+| `cloudflare_rules_read`   | which `phases` of a zone hold rules; the `rules` of one phase in order                                                              | read           |
+| `cloudflare_rules_add`    | add a rule to a phase, last or before, after or at a place; refuses a duplicate of a rule the phase holds                           | add            |
+| `cloudflare_rules_edit`   | change a rule's expression, action, parameters, description, on/off or place, naming the version read; refuses a rule changed since | overwrite      |
+| `cloudflare_rules_delete` | delete a rule of a phase; always asks first                                                                                         | administrative |
+
+The token needs Zone → Dynamic URL Redirects, Cache Settings, Config Settings, Zone Transform Rules, Origin or Response Compression → Read for the phase it reads, and Edit to add, change or delete a rule in it. Zone → Zone WAF and Custom Errors → Read cover the read-only phases.
+
+The skill is [`cloudflare-rules`](skills/cloudflare-rules/SKILL.md), shown as
+`cloudflare-tools:cloudflare-rules` in Claude Code and
+`cloudflare-tools:rules` in Hermes.
+
 ### Analytics (`analytics`)
 
 Analytics: read a zone's traffic per day (requests, bandwidth, cache hits, threats, page views and unique visitors), the most requested paths, client countries and response statuses, what the security features did (not on the Free plan) and the latest security events, and the account's Workers invocations, errors and CPU time, over a recent time range. This toolset is off by default; turn it on with the `toolsets` setting (see [Settings](#settings)).
