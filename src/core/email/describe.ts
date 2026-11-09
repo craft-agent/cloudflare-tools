@@ -20,7 +20,9 @@ export function routingOffFacts(routingEnabled: boolean | null): CallFact[] {
   return routingEnabled === false ? [{ label: EMAIL_WORDS.emailRouting, value: { text: EMAIL_WORDS.routingOff } }] : []
 }
 
-/** The value of a catch-all's state: `off` while it is disabled, else its action. */
+/** The value of a catch-all's state, saying whether it is on: `off: …` while it is disabled, else `on: <action>`. */
 export function stateValue(state: CatchAllState): CallFact["value"] {
-  return state === "disabled" ? { text: EMAIL_WORDS.off } : actionText(state)
+  return state === "disabled"
+    ? { text: EMAIL_WORDS.catchAllOff }
+    : { text: EMAIL_WORDS.catchAllOn, values: { action: actionText(state) } }
 }
