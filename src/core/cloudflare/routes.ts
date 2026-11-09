@@ -71,6 +71,7 @@ export const PATH_PARAMS: Readonly<Record<string, RegExp>> = Object.freeze({
   address_id: ADDRESS_ID_PATTERN,
   phase: PHASE_PATTERN,
   ruleset_id: RULESET_ID_PATTERN,
+  ruleset_rule_id: RULESET_ID_PATTERN,
 })
 
 function defineRoute(method: Method, path: string, body?: Route["body"]): Route {
@@ -168,6 +169,7 @@ export const ROUTES = Object.freeze({
   rulesetEntrypoint: defineRoute("GET", "/zones/{zone_id}/rulesets/phases/{phase}/entrypoint"),
   rulesetCreate: defineRoute("POST", "/zones/{zone_id}/rulesets"),
   rulesetRuleCreate: defineRoute("POST", "/zones/{zone_id}/rulesets/{ruleset_id}/rules"),
+  rulesetRuleEdit: defineRoute("PATCH", "/zones/{zone_id}/rulesets/{ruleset_id}/rules/{ruleset_rule_id}"),
 } satisfies Record<string, Route>)
 
 /** Whether a route is one of `ROUTES`, including its fixed body when present. */

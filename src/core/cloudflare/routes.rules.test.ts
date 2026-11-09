@@ -64,4 +64,25 @@ describe("the ruleset write routes", () => {
       expect(() => fillPath(ROUTES.rulesetRuleCreate, "x", { zone_id: ZONE_ID, ruleset_id: id })).toThrow(ToolError)
     }
   })
+
+  test("changing a rule is a PATCH of one rule, and only that method is allowed on its path", () => {
+    expect(ROUTES.rulesetRuleEdit).toEqual({
+      method: "PATCH",
+      path: "/zones/{zone_id}/rulesets/{ruleset_id}/rules/{ruleset_rule_id}",
+    })
+    expect(isAllowed(ROUTES.rulesetRuleEdit)).toBe(true)
+    expect(PATH_PARAMS.ruleset_rule_id).toBe(RULESET_ID_PATTERN)
+    for (const method of ["GET", "POST", "PUT", "DELETE"] as const) {
+      expect(isAllowed({ method, path: ROUTES.rulesetRuleEdit.path })).toBe(false)
+    }
+  })
+
+  test("the rule path fills only for 32-hex ids", () => {
+    const id = "e1".repeat(16)
+    const path = { zone_id: ZONE_ID, ruleset_id: id, ruleset_rule_id: id }
+    expect(fillPath(ROUTES.rulesetRuleEdit, "x", path)).toBe(`/zones/${ZONE_ID}/rulesets/${id}/rules/${id}`)
+    for (const bad of ["../rules", `${id}/x`, id.toUpperCase(), "e1", "catch_all", ""]) {
+      expect(() => fillPath(ROUTES.rulesetRuleEdit, "x", { ...path, ruleset_rule_id: bad })).toThrow(ToolError)
+    }
+  })
 })
