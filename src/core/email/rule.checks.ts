@@ -3,6 +3,7 @@ import { sentence } from "../cloudflare/graphql"
 import { isPlainObject } from "../cloudflare/reply"
 import { ROUTES, type Route } from "../cloudflare/routes"
 import { isAbortError, isToolError, ToolError } from "../errors"
+import { NOTHING_CHANGED } from "./rule"
 import { shapeAddress, shapeRows, shapeRule, type Rule } from "./shape"
 
 /** Rows per page of a listing; the most Cloudflare serves. */
@@ -105,6 +106,46 @@ export async function destinationState(client: CloudflareClient, email: string):
   )
   if (found === undefined) return "missing"
   return found.verified ? "verified" : "unverified"
+}
+
+/** The rule in a Cloudflare result; a result that is not a rule is `upstream_error`. */
+export function shapedRule(result: unknown): Rule {
+  const rule = shapeRule(result)
+  if (rule === undefined)
+    throw new ToolError("upstream_error", "Cloudflare returned an unexpected routing rule response.")
+  return rule
+}
+
+/** Refuses an address that already has a rule other than `ownId`, since Cloudflare uses only the first rule for an address. */
+export async function assertNoRuleFor(
+  client: CloudflareClient,
+  zoneId: string,
+  to: string,
+  ownId?: string,
+): Promise<void> {
+  const existing = await findRuleFor(client, zoneId, to)
+  if (existing === undefined || existing.id === ownId) return
+  throw new ToolError(
+    "invalid_argument",
+    `${to} already has a routing rule (${existing.id}, ${existing.name ?? "unnamed"}), and Cloudflare uses only the first rule for an address; change that one instead. ${NOTHING_CHANGED}`,
+  )
+}
+
+/** Refuses a forward to an address that is not a verified destination address of the account. */
+export async function assertVerifiedDestination(client: CloudflareClient, address: string): Promise<void> {
+  const state = await destinationState(client, address)
+  if (state === "missing") {
+    throw new ToolError(
+      "invalid_argument",
+      `${address} is not a destination address of this account. Add it as one; Cloudflare then mails its owner, and a rule can forward to it once they confirm. ${NOTHING_CHANGED}`,
+    )
+  }
+  if (state === "unverified") {
+    throw new ToolError(
+      "invalid_argument",
+      `${address} is a destination address whose owner has not confirmed Cloudflare's mail yet; a rule can forward only to a verified address. ${NOTHING_CHANGED}`,
+    )
+  }
 }
 
 /** Whether Email Routing is on for the zone; `null` when that cannot be told, since it never stops a call. A cancellation is passed on. */

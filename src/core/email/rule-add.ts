@@ -3,25 +3,35 @@ import { accountArg } from "../cloudflare/args"
 import { cloudflareClient, type CloudflareClient, type CloudflareDeps } from "../cloudflare/client"
 import { failureOfWrite, type WriteFailureNotes } from "../cloudflare/refusal"
 import { ROUTES } from "../cloudflare/routes"
-import { isToolError, ToolError } from "../errors"
+import { isToolError } from "../errors"
 import { defineTool, type ToolSpec } from "../tool"
 import { resolveZone, zoneArg } from "../zone/lookup"
-import { destinationState, findRuleFor, readRoutingEnabled, RULES_EDIT_HINT, withHint } from "./rule.checks"
+import {
+  assertNoRuleFor,
+  assertVerifiedDestination,
+  readRoutingEnabled,
+  RULES_EDIT_HINT,
+  shapedRule,
+  withHint,
+} from "./rule.checks"
 import {
   actionArg,
   actionBody,
   matchersBody,
   normalizedTo,
+  NOTHING_CHANGED,
+  routingOffNote,
+  routingResultShape,
   ruleNameArg,
   ruleTargets,
   ruleZoneSchema,
   toArg,
   type Action,
 } from "./rule"
-import { ruleSchema, shapeRule, type Rule } from "./shape"
+import { ruleSchema, type Rule } from "./shape"
 
 const WRITE_NOTES: WriteFailureNotes = {
-  nothing: "Nothing was changed.",
+  nothing: NOTHING_CHANGED,
   maybe: "Cloudflare may or may not have added the rule; read cloudflare_email_read rules before sending it again.",
 }
 
@@ -43,14 +53,7 @@ const output = z.object({
       after: ruleSchema.describe("The rule Cloudflare created; addresses, names and Worker names are user data."),
     })
     .describe("The rule the call added."),
-  routing_enabled: z
-    .boolean()
-    .nullable()
-    .describe("Whether Email Routing is on for the zone, or null when that could not be read."),
-  note: z
-    .string()
-    .optional()
-    .describe("Present when Email Routing is off on the zone, so the rule routes no mail yet."),
+  ...routingResultShape,
 })
 
 type Args = z.output<typeof input>
@@ -58,28 +61,8 @@ type RuleAddSpec = ToolSpec<typeof input, typeof output>
 
 /** Refuses an address that already has a rule, and a forward to an address that is not a verified destination. */
 async function assertRuleFits(client: CloudflareClient, zoneId: string, to: string, action: Action): Promise<void> {
-  const existing = await findRuleFor(client, zoneId, to)
-  if (existing !== undefined) {
-    throw new ToolError(
-      "invalid_argument",
-      `${to} already has a routing rule (${existing.id}, ${existing.name ?? "unnamed"}), and Cloudflare uses only the first rule for an address; change that one instead. Nothing was changed.`,
-    )
-  }
-  if (action.type !== "forward") return
-
-  const state = await destinationState(client, action.to)
-  if (state === "missing") {
-    throw new ToolError(
-      "invalid_argument",
-      `${action.to} is not a destination address of this account. Add it as one; Cloudflare then mails its owner, and a rule can forward to it once they confirm. Nothing was changed.`,
-    )
-  }
-  if (state === "unverified") {
-    throw new ToolError(
-      "invalid_argument",
-      `${action.to} is a destination address whose owner has not confirmed Cloudflare's mail yet; a rule can forward only to a verified address. Nothing was changed.`,
-    )
-  }
+  await assertNoRuleFor(client, zoneId, to)
+  if (action.type === "forward") await assertVerifiedDestination(client, action.to)
 }
 
 /** Creates the rule. A refusal says nothing was changed; a failure that does not tell says the rule may or may not be there. */
@@ -89,11 +72,7 @@ async function createRule(client: CloudflareClient, zoneId: string, body: Record
       path: { zone_id: zoneId },
       body,
     })
-    const rule = shapeRule(result)
-    if (rule === undefined) {
-      throw new ToolError("upstream_error", "Cloudflare returned an unexpected routing rule response.")
-    }
-    return rule
+    return shapedRule(result)
   } catch (error) {
     throw failureOfWrite(isToolError(error) ? withHint(error, RULES_EDIT_HINT) : error, WRITE_NOTES)
   }
@@ -142,11 +121,7 @@ export function defineEmailRuleAdd(deps?: CloudflareDeps): RuleAddSpec {
         zone: { id: zone.id, name: zone.name },
         rule: { before: null, after: rule },
         routing_enabled: routingEnabled,
-        ...(routingEnabled === false
-          ? {
-              note: `Email Routing is off on ${zone.name}: no mail is routed until it is turned on in the dashboard, which adds the zone's MX, SPF and DKIM records.`,
-            }
-          : {}),
+        ...(routingEnabled === false ? { note: routingOffNote(zone.name) } : {}),
       }
     },
   })

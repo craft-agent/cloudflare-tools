@@ -71,7 +71,7 @@ export function createRoute(
 }
 
 /** The zone listing: the zone whose name the query asks for. */
-const ZONES_ROUTE: FakeRoute = {
+export const ZONES_ROUTE: FakeRoute = {
   method: "GET",
   path: "/zones",
   reply: (request) => ok(request.query.get("name") === SAMPLE_ZONE.name ? [SAMPLE_ZONE] : []),
@@ -91,7 +91,7 @@ export function ruleAddFor(...routes: FakeRoute[]) {
   return { tool: defineEmailRuleAdd({ fetch, env: envFor() }), requests }
 }
 
-export function sent(requests: FakeRequest[], method: "GET" | "POST"): FakeRequest[] {
+export function sent(requests: FakeRequest[], method: "GET" | "POST" | "PUT" | "DELETE"): FakeRequest[] {
   return requests.filter((request) => request.method === method)
 }
 
