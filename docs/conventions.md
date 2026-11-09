@@ -434,23 +434,37 @@ package adds to it.
   These lines are the call's data, in the notation of DNS, so they stay as
   they are in every language: `TTL`, `auto`, `proxied` and the field names
   are never translated.
+- **An Email Routing action is written as the API names it**:
+  `forward sales@example.net`, `drop`, `worker inbox`. It is the call's
+  data, never translated; a rule's change lists `to`, `action`, `name` and
+  `enabled` (`on` or `off`) the way a record's change lists its fields.
 - **Pins only where a call writes what the prompt does not show.** A write
   that sends the whole object (a tunnel's configuration, a rule) pins the
   state it was built from; a write that sends only the fields the prompt
-  shows pins nothing, since a change to another field is left as it is.
+  shows pins nothing, since a change to another field is left as it is. An
+  Email Routing rule and catch-all are sent back whole, priority and name
+  included, so their edits pin the rule as it was read.
 - **The facts of this package**, beside the shared `Size`:
 
-  | Label       | Value                                                   | Used by                                                          |
-  | ----------- | ------------------------------------------------------- | ---------------------------------------------------------------- |
-  | `Records`   | `{count} record`, `{count} records`                     | a DNS add or edit of several, a delete of several that adds none |
-  | `Deletions` | `{count} record`, `{count} records`                     | a DNS delete that also adds                                      |
-  | `Additions` | `{count} record`, `{count} records`                     | a DNS delete that also adds                                      |
-  | `Count`     | the number of items                                     | a cache purge                                                    |
-  | `Effect`    | `every next request goes to the origin`                 | a purge of the whole cache                                       |
-  | `Status`    | DNSSEC's status, as Cloudflare reports it               | a DNSSEC change                                                  |
-  | `Next step` | `add the DS record at the domain's registrar`           | turning DNSSEC on, when it changes                               |
-  | `Registrar` | `remove the DS record there first and wait for its TTL` | turning DNSSEC off, when it changes                              |
-  | `Lowered`   | the settings that lower protection                      | a weakening of several settings                                  |
+  | Label           | Value                                                                                                                                                                                         | Used by                                                           |
+  | --------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------- |
+  | `Records`       | `{count} record`, `{count} records`                                                                                                                                                           | a DNS add or edit of several, a delete of several that adds none  |
+  | `Deletions`     | `{count} record`, `{count} records`                                                                                                                                                           | a DNS delete that also adds                                       |
+  | `Additions`     | `{count} record`, `{count} records`                                                                                                                                                           | a DNS delete that also adds                                       |
+  | `Count`         | the number of items                                                                                                                                                                           | a cache purge                                                     |
+  | `Effect`        | `every next request goes to the origin`                                                                                                                                                       | a purge of the whole cache                                        |
+  | `Status`        | DNSSEC's status, as Cloudflare reports it                                                                                                                                                     | a DNSSEC change                                                   |
+  | `Next step`     | `add the DS record at the domain's registrar`                                                                                                                                                 | turning DNSSEC on, when it changes                                |
+  | `Registrar`     | `remove the DS record there first and wait for its TTL`                                                                                                                                       | turning DNSSEC off, when it changes                               |
+  | `Lowered`       | the settings that lower protection                                                                                                                                                            | a weakening of several settings                                   |
+  | `Email Routing` | `off: no mail is routed until it is turned on in the dashboard`                                                                                                                               | a rule or catch-all write on a zone with Email Routing off, first |
+  | `Action`        | the rule's action                                                                                                                                                                             | adding or deleting a rule                                         |
+  | `Name`          | the rule's name                                                                                                                                                                               | adding or deleting a named rule                                   |
+  | `State`         | `off`; `verified`, `pending`                                                                                                                                                                  | a rule that is off; a destination address being deleted           |
+  | `Afterwards`    | where the mail of a deleted rule goes: `the catch-all takes the mail`, with its action when it is on, or `the mail is rejected: the catch-all is off`; none when the catch-all cannot be read | deleting a rule                                                   |
+  | `Now`, `After`  | the catch-all's action, or `off`                                                                                                                                                              | changing the catch-all                                            |
+  | `Next step`     | `its owner follows the link Cloudflare mails to it`                                                                                                                                           | adding a destination address                                      |
+  | `Uses`          | `none in {count} zone`, `none in {count} zones`                                                                                                                                               | deleting a destination address                                    |
 
   A value in code font is the tool's words, translated; any other is the
   call's data. A warning that decides the answer (the registrar's DS record,
