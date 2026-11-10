@@ -13,6 +13,7 @@ export const PROJECT = {
     "account",
     "zones",
     "dns",
+    "rules",
     "analytics",
     "workers",
     "pages",
