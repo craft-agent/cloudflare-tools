@@ -12,6 +12,18 @@ const ID_PATTERN = /^[0-9a-f]{32}$/
 /** A KV namespace's id: 32 lowercase hexadecimal digits. */
 export const NAMESPACE_ID_PATTERN = ID_PATTERN
 
+/** A queue's id: 32 lowercase hexadecimal digits. */
+export const QUEUE_ID_PATTERN = ID_PATTERN
+
+/** A Hyperdrive configuration's id: 32 lowercase hexadecimal digits. */
+export const HYPERDRIVE_ID_PATTERN = ID_PATTERN
+
+/** A Vectorize index's name: 1–64 lowercase letters, digits and `-`, starting with a letter. */
+export const INDEX_NAME_PATTERN = /^[a-z][a-z0-9-]{0,63}$/
+
+/** A Turnstile widget's sitekey: 1–64 letters, digits, `-` and `_`. */
+export const SITEKEY_PATTERN = /^[0-9A-Za-z_-]{1,64}$/
+
 /** A Worker's name: 1–63 lowercase letters, digits, `-` and `_`. */
 export const SCRIPT_NAME_PATTERN = /^[a-z0-9_-]{1,63}$/
 
@@ -26,6 +38,9 @@ export const DATABASE_ID_PATTERN = DEPLOYMENT_ID_PATTERN
 
 /** A Cloudflare Tunnel's id: a lowercase hexadecimal UUID. */
 export const TUNNEL_ID_PATTERN = DEPLOYMENT_ID_PATTERN
+
+/** A Zero Trust Access application's id: a lowercase hexadecimal UUID. */
+export const ACCESS_APP_ID_PATTERN = DEPLOYMENT_ID_PATTERN
 
 /** An Email Routing rule's id: 1–64 letters and digits; it holds no `_`, so the path segment `catch_all` is never a rule id. */
 export const RULE_ID_PATTERN = /^[A-Za-z0-9]{1,64}$/
@@ -65,6 +80,11 @@ export const PATH_PARAMS: Readonly<Record<string, RegExp>> = Object.freeze({
   domain_name: DOMAIN_NAME_PATTERN,
   bucket_name: BUCKET_NAME_PATTERN,
   namespace_id: NAMESPACE_ID_PATTERN,
+  queue_id: QUEUE_ID_PATTERN,
+  hyperdrive_id: HYPERDRIVE_ID_PATTERN,
+  index_name: INDEX_NAME_PATTERN,
+  sitekey: SITEKEY_PATTERN,
+  app_id: ACCESS_APP_ID_PATTERN,
   database_id: DATABASE_ID_PATTERN,
   tunnel_id: TUNNEL_ID_PATTERN,
   rule_id: RULE_ID_PATTERN,
@@ -166,6 +186,27 @@ export const ROUTES = Object.freeze({
   emailRoutingCatchAllEdit: defineRoute("PUT", "/zones/{zone_id}/email/routing/rules/catch_all"),
   emailRoutingAddressCreate: defineRoute("POST", "/accounts/{account_id}/email/routing/addresses"),
   emailRoutingAddressDelete: defineRoute("DELETE", "/accounts/{account_id}/email/routing/addresses/{address_id}"),
+  queues: defineRoute("GET", "/accounts/{account_id}/queues"),
+  queue: defineRoute("GET", "/accounts/{account_id}/queues/{queue_id}"),
+  hyperdriveConfigs: defineRoute("GET", "/accounts/{account_id}/hyperdrive/configs"),
+  hyperdriveConfig: defineRoute("GET", "/accounts/{account_id}/hyperdrive/configs/{hyperdrive_id}"),
+  vectorizeIndexes: defineRoute("GET", "/accounts/{account_id}/vectorize/v2/indexes"),
+  vectorizeIndex: defineRoute("GET", "/accounts/{account_id}/vectorize/v2/indexes/{index_name}"),
+  vectorizeIndexInfo: defineRoute("GET", "/accounts/{account_id}/vectorize/v2/indexes/{index_name}/info"),
+  vectorizeMetadataIndexes: defineRoute(
+    "GET",
+    "/accounts/{account_id}/vectorize/v2/indexes/{index_name}/metadata_index/list",
+  ),
+  turnstileWidgets: defineRoute("GET", "/accounts/{account_id}/challenges/widgets"),
+  turnstileWidget: defineRoute("GET", "/accounts/{account_id}/challenges/widgets/{sitekey}"),
+  accessApp: defineRoute("GET", "/accounts/{account_id}/access/apps/{app_id}"),
+  accessAppPolicies: defineRoute("GET", "/accounts/{account_id}/access/apps/{app_id}/policies"),
+  accessPolicies: defineRoute("GET", "/accounts/{account_id}/access/policies"),
+  zoneAccessApps: defineRoute("GET", "/zones/{zone_id}/access/apps"),
+  zoneAccessApp: defineRoute("GET", "/zones/{zone_id}/access/apps/{app_id}"),
+  zoneAccessAppPolicies: defineRoute("GET", "/zones/{zone_id}/access/apps/{app_id}/policies"),
+  registrarRegistrations: defineRoute("GET", "/accounts/{account_id}/registrar/registrations"),
+  registrarRegistration: defineRoute("GET", "/accounts/{account_id}/registrar/registrations/{domain_name}"),
   rulesetEntrypoint: defineRoute("GET", "/zones/{zone_id}/rulesets/phases/{phase}/entrypoint"),
   rulesetCreate: defineRoute("POST", "/zones/{zone_id}/rulesets"),
   rulesetRuleCreate: defineRoute("POST", "/zones/{zone_id}/rulesets/{ruleset_id}/rules"),

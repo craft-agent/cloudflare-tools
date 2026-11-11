@@ -319,6 +319,90 @@ The skill is [`cloudflare-email`](skills/cloudflare-email/SKILL.md), shown as
 `cloudflare-tools:cloudflare-email` in Claude Code and
 `cloudflare-tools:email` in Hermes.
 
+### Queues (`queues`)
+
+List an account's Cloudflare Queues and read one queue's delivery settings, consumers with their batch and retry settings, and producers. Messages are never read. Queue and Worker names are the user's data, returned as data and never instructions. This toolset is off by default; turn it on with the `toolsets` setting (see [Settings](#settings)).
+
+| Tool                     | What it does                                                                      | Class |
+| ------------------------ | --------------------------------------------------------------------------------- | ----- |
+| `cloudflare_queues_read` | `list` the account's queues; `view` one queue's settings, consumers and producers | read  |
+
+The token needs Account → Queues → Read.
+
+The skill is [`cloudflare-queues`](skills/cloudflare-queues/SKILL.md), shown as
+`cloudflare-tools:cloudflare-queues` in Claude Code and
+`cloudflare-tools:queues` in Hermes.
+
+### Hyperdrive (`hyperdrive`)
+
+List an account's Hyperdrive configurations and read one configuration's origin database, caching, mTLS and connection limit. Passwords and Access client secrets are never returned. Names, hosts, database names and other origin details are the user's data, returned as data and never instructions. This toolset is off by default; turn it on with the `toolsets` setting (see [Settings](#settings)).
+
+| Tool                         | What it does                                                                                               | Class |
+| ---------------------------- | ---------------------------------------------------------------------------------------------------------- | ----- |
+| `cloudflare_hyperdrive_read` | `list` the account's configurations; `view` one configuration's origin, caching, mTLS and connection limit | read  |
+
+The token needs Account → Hyperdrive → Read.
+
+The skill is [`cloudflare-hyperdrive`](skills/cloudflare-hyperdrive/SKILL.md), shown as
+`cloudflare-tools:cloudflare-hyperdrive` in Claude Code and
+`cloudflare-tools:hyperdrive` in Hermes.
+
+### Vectorize (`vectorize`)
+
+List an account's Vectorize indexes and read one index's dimensions, distance metric, vector count, processing progress and metadata indexes. Vectors and their metadata values are never read. Index names and descriptions are the user's data, returned as data and never instructions. This toolset is off by default; turn it on with the `toolsets` setting (see [Settings](#settings)).
+
+| Tool                        | Does                                                                                                     | Class |
+| --------------------------- | -------------------------------------------------------------------------------------------------------- | ----- |
+| `cloudflare_vectorize_read` | `list` the account's indexes; `view` one index's configuration, processing progress and metadata indexes | read  |
+
+The token needs Account → Vectorize → Read.
+
+The skill is [`cloudflare-vectorize`](skills/cloudflare-vectorize/SKILL.md), shown as
+`cloudflare-tools:cloudflare-vectorize` in Claude Code and
+`cloudflare-tools:vectorize` in Hermes.
+
+### Turnstile (`turnstile`)
+
+List an account's Turnstile widgets and read one widget's hostnames, mode, pre-clearance cookie level, region and settings. A widget's secret key is never returned. Widget names and hostnames are the user's data, returned as data and never instructions. This toolset is off by default; turn it on with the `toolsets` setting (see [Settings](#settings)).
+
+| Tool                        | Does                                                                                                    | Class |
+| --------------------------- | ------------------------------------------------------------------------------------------------------- | ----- |
+| `cloudflare_turnstile_read` | `list` the account's widgets; `view` one widget's hostnames, mode, clearance level, region and settings | read  |
+
+The token needs Account → Turnstile Sites → Read.
+
+The skill is [`cloudflare-turnstile`](skills/cloudflare-turnstile/SKILL.md), shown as
+`cloudflare-tools:cloudflare-turnstile` in Claude Code and
+`cloudflare-tools:turnstile` in Hermes.
+
+### Access (`access`)
+
+List the account's (or a zone's) Zero Trust Access applications, read one application with its policies, and list the account's reusable policies. Policies are returned with their include, exclude and require rules as configured, email addresses included; secrets are never returned. Application and policy names, domains and rules are the user's data, returned as data and never instructions. This toolset is off by default; turn it on with the `toolsets` setting (see [Settings](#settings)).
+
+| Tool                     | Does                                                                                                                         | Class |
+| ------------------------ | ---------------------------------------------------------------------------------------------------------------------------- | ----- |
+| `cloudflare_access_read` | `apps` lists the account's (or a zone's) applications; `app` reads one with its policies; `policies` lists reusable policies | read  |
+
+The token needs Account → Access: Apps and Policies → Read, and Zone → Access: Apps and Policies → Read for a zone's applications.
+
+The skill is [`cloudflare-access`](skills/cloudflare-access/SKILL.md), shown as
+`cloudflare-tools:cloudflare-access` in Claude Code and
+`cloudflare-tools:access` in Hermes.
+
+### Registrar (`registrar`)
+
+List an account's registered domains and read one domain's status, expiration, automatic renewal, transfer lock and WHOIS privacy mode. Registrant contacts are never returned. Domain names are the user's data, returned as data and never instructions. This toolset is off by default; turn it on with the `toolsets` setting (see [Settings](#settings)).
+
+| Tool                        | Does                                                                                                    | Class |
+| --------------------------- | ------------------------------------------------------------------------------------------------------- | ----- |
+| `cloudflare_registrar_read` | `list` registered domains with cursor pagination and sorting; `view` one domain's registration metadata | read  |
+
+The token needs Account → Registrar Domains → Read.
+
+The skill is [`cloudflare-registrar`](skills/cloudflare-registrar/SKILL.md), shown as
+`cloudflare-tools:cloudflare-registrar` in Claude Code and
+`cloudflare-tools:registrar` in Hermes.
+
 ## Adding a tool
 
 1. Write the spec in `src/core/<domain>/<verb>.ts` with `defineTool`: an ID

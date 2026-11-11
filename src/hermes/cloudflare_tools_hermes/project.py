@@ -23,6 +23,12 @@ TOOLSET_EMOJI: dict[str, str] = {
     "storage": "🗄️",
     "tunnels": "🚇",
     "email": "📧",
+    "queues": "📬",
+    "hyperdrive": "🔌",
+    "vectorize": "🧮",
+    "turnstile": "🚦",
+    "access": "🔐",
+    "registrar": "🏷️",
 }
 
 __all__ = [

@@ -4,6 +4,7 @@ description: "Cloudflare tools for coding agents: zones, DNS, analytics, Workers
 manifest_version: 1
 requires_hermes: ">=0.22"
 provides_tools:
+  - cloudflare_access_read
   - cloudflare_account_read
   - cloudflare_analytics_read
   - cloudflare_dns_read
@@ -17,10 +18,13 @@ provides_tools:
   - cloudflare_email_rule_add
   - cloudflare_email_rule_delete
   - cloudflare_email_rule_edit
+  - cloudflare_hyperdrive_read
   - cloudflare_pages_domain_add
   - cloudflare_pages_domain_remove
   - cloudflare_pages_read
   - cloudflare_pages_rollback
+  - cloudflare_queues_read
+  - cloudflare_registrar_read
   - cloudflare_rules_add
   - cloudflare_rules_delete
   - cloudflare_rules_edit
@@ -32,6 +36,8 @@ provides_tools:
   - cloudflare_tunnel_route_add
   - cloudflare_tunnel_route_edit
   - cloudflare_tunnel_route_remove
+  - cloudflare_turnstile_read
+  - cloudflare_vectorize_read
   - cloudflare_workers_read
   - cloudflare_workers_rollback
   - cloudflare_zone_cache_purge
