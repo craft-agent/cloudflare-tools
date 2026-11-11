@@ -27,6 +27,7 @@ TOOLSET_EMOJI: dict[str, str] = {
     "hyperdrive": "🔌",
     "vectorize": "🧮",
     "turnstile": "🚦",
+    "access": "🔐",
 }
 
 __all__ = [
