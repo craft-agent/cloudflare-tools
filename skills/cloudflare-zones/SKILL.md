@@ -1,6 +1,8 @@
 ---
 name: cloudflare-zones
 description: "Use when looking up Cloudflare zones, viewing zone details, reading or changing zone settings, Universal SSL, certificates, or DNSSEC status."
+metadata:
+  toolset: zones
 ---
 
 # Zones

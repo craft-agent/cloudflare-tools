@@ -1,6 +1,8 @@
 ---
 name: cloudflare-email
 description: "Use when inspecting or changing Cloudflare Email Routing: whether a zone's Email Routing is on, its routing rules and catch-all (which address is forwarded where, dropped or handed to a Worker), the account's destination addresses with whether each is verified, adding, changing or deleting a routing rule for one address, changing the catch-all, and adding or deleting a destination address."
+metadata:
+  toolset: email
 ---
 
 # Email Routing

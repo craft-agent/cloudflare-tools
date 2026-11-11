@@ -1,6 +1,8 @@
 ---
 name: cloudflare-rules
 description: "Use when inspecting or changing the Cloudflare rules of a zone: which rule phases have rules and how many, a phase's rules in order with their ids, positions and versions, and adding, changing, moving or deleting a Single Redirect, Cache Rule, Configuration Rule, URL Rewrite Rule, Request or Response Header Transform Rule, Origin Rule or Compression Rule. WAF custom rules, rate limiting rules and custom error rules can be read but not changed. Not for DNS records (use the DNS tools), zone settings (use the zone tools) or Workers routes."
+metadata:
+  toolset: rules
 ---
 
 # Rules

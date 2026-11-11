@@ -1,6 +1,8 @@
 ---
 name: cloudflare-storage
 description: "Use when reading an account's Cloudflare storage or creating or deleting a store: R2 buckets and a bucket's objects and folders by name, size and date, whether a bucket is public (its r2.dev domain and custom domains), its CORS and lifecycle rules; Workers KV namespaces and their key names and expiry; D1 databases with their size and schema (tables, indexes, views, triggers); creating an empty bucket, namespace or database, and deleting one that is empty."
+metadata:
+  toolset: storage
 ---
 
 # Storage

@@ -1,6 +1,8 @@
 ---
 name: cloudflare-analytics
 description: "Use when reading Cloudflare analytics: a zone's traffic (requests, bandwidth, cache hits, threats, page views and unique visitors per day), the most requested paths, the countries requests come from and the response statuses served, what Cloudflare's security features did (blocks, challenges) and the latest security events, or the account's Workers invocations, errors and CPU time, over a recent time range."
+metadata:
+  toolset: analytics
 ---
 
 # Analytics

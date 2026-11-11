@@ -1,6 +1,8 @@
 ---
 name: cloudflare-dns
 description: "Use when looking up Cloudflare DNS records of a zone, reading one record in full by its id, exporting a zone's DNS records as a BIND zone file, adding DNS records (A, AAAA, CNAME, MX, TXT, NS, CAA, SRV) to a zone, changing existing records (their content, name, TTL, proxying or comment), or deleting records, also to replace them (for instance to change a record's type)."
+metadata:
+  toolset: dns
 ---
 
 # DNS
