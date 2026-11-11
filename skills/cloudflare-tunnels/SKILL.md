@@ -1,6 +1,8 @@
 ---
 name: cloudflare-tunnels
 description: "Use when listing or inspecting an account's Cloudflare Tunnels: their health status, connector edge connections and colos, and public-hostname ingress routing rules; or when publishing a hostname through a dashboard-managed tunnel to a local service (with the proxied CNAME it needs), changing the service a published hostname goes to, or withdrawing a hostname from a tunnel."
+metadata:
+  toolset: tunnels
 ---
 
 # Tunnels

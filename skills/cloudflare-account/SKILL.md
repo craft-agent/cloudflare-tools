@@ -1,6 +1,8 @@
 ---
 name: cloudflare-account
 description: "Use when setting up Cloudflare credentials, picking an account, checking a token, or reading the audit log."
+metadata:
+  toolset: account
 ---
 
 # Account

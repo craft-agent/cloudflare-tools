@@ -1,6 +1,8 @@
 ---
 name: cloudflare-workers
 description: "Use when looking up the Cloudflare Workers of an account, reading one Worker's settings and bindings (compatibility date, usage model, placement, observability, Logpush, tail consumers, workers.dev), listing a Worker's deployments to see which version serves now and with what share of traffic, listing its uploaded versions, or reading a zone's Worker routes, custom domains, cron triggers and secret names, or rolling a Worker back to a version that served before."
+metadata:
+  toolset: workers
 ---
 
 # Workers

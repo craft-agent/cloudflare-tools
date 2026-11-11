@@ -1,6 +1,8 @@
 ---
 name: cloudflare-pages
 description: "Use when listing Cloudflare Pages projects, reading a project's build settings, environment variable names and bindings, listing its production and preview deployments and which one is live, reading a deployment's build log, listing a project's custom domains and their validation status, or rolling a project's production back or forward to an earlier deployment, adding a custom domain to a Pages project or removing one."
+metadata:
+  toolset: pages
 ---
 
 # Pages
