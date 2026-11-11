@@ -205,6 +205,8 @@ export const ROUTES = Object.freeze({
   zoneAccessApps: defineRoute("GET", "/zones/{zone_id}/access/apps"),
   zoneAccessApp: defineRoute("GET", "/zones/{zone_id}/access/apps/{app_id}"),
   zoneAccessAppPolicies: defineRoute("GET", "/zones/{zone_id}/access/apps/{app_id}/policies"),
+  registrarRegistrations: defineRoute("GET", "/accounts/{account_id}/registrar/registrations"),
+  registrarRegistration: defineRoute("GET", "/accounts/{account_id}/registrar/registrations/{domain_name}"),
   rulesetEntrypoint: defineRoute("GET", "/zones/{zone_id}/rulesets/phases/{phase}/entrypoint"),
   rulesetCreate: defineRoute("POST", "/zones/{zone_id}/rulesets"),
   rulesetRuleCreate: defineRoute("POST", "/zones/{zone_id}/rulesets/{ruleset_id}/rules"),

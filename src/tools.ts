@@ -20,6 +20,7 @@ import { cloudflareHyperdriveRead } from "./core/hyperdrive/read"
 import { cloudflareVectorizeRead } from "./core/vectorize/read"
 import { cloudflareTurnstileRead } from "./core/turnstile/read"
 import { cloudflareAccessRead } from "./core/access/read"
+import { cloudflareRegistrarRead } from "./core/registrar/read"
 import { cloudflareRulesAdd } from "./core/rules/add"
 import { cloudflareRulesDelete } from "./core/rules/delete"
 import { cloudflareRulesEdit } from "./core/rules/edit"
@@ -84,4 +85,5 @@ export const ALL_TOOLS: ToolSpec[] = [
   cloudflareVectorizeRead,
   cloudflareTurnstileRead,
   cloudflareAccessRead,
+  cloudflareRegistrarRead,
 ]

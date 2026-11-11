@@ -24,6 +24,7 @@ provides_tools:
   - cloudflare_pages_read
   - cloudflare_pages_rollback
   - cloudflare_queues_read
+  - cloudflare_registrar_read
   - cloudflare_rules_add
   - cloudflare_rules_delete
   - cloudflare_rules_edit

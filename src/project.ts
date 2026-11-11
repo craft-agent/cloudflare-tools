@@ -25,6 +25,7 @@ export const PROJECT = {
     "vectorize",
     "turnstile",
     "access",
+    "registrar",
   ] as readonly string[],
   /** The toolsets on when a setting names none. */
   defaultToolsets: ["account", "zones", "dns", "workers", "pages"] as readonly string[],

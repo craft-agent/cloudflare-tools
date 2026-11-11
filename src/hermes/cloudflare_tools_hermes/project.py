@@ -28,6 +28,7 @@ TOOLSET_EMOJI: dict[str, str] = {
     "vectorize": "🧮",
     "turnstile": "🚦",
     "access": "🔐",
+    "registrar": "🏷️",
 }
 
 __all__ = [
