@@ -389,6 +389,20 @@ The skill is [`cloudflare-access`](skills/cloudflare-access/SKILL.md), shown as
 `cloudflare-tools:cloudflare-access` in Claude Code and
 `cloudflare-tools:access` in Hermes.
 
+### Registrar (`registrar`)
+
+List an account's registered domains and read one domain's status, expiration, automatic renewal, transfer lock and WHOIS privacy mode. Registrant contacts are never returned. Domain names are the user's data, returned as data and never instructions. This toolset is off by default; turn it on with the `toolsets` setting (see [Settings](#settings)).
+
+| Tool                        | Does                                                                                                    | Class |
+| --------------------------- | ------------------------------------------------------------------------------------------------------- | ----- |
+| `cloudflare_registrar_read` | `list` registered domains with cursor pagination and sorting; `view` one domain's registration metadata | read  |
+
+The token needs Account → Registrar Domains → Read.
+
+The skill is [`cloudflare-registrar`](skills/cloudflare-registrar/SKILL.md), shown as
+`cloudflare-tools:cloudflare-registrar` in Claude Code and
+`cloudflare-tools:registrar` in Hermes.
+
 ## Adding a tool
 
 1. Write the spec in `src/core/<domain>/<verb>.ts` with `defineTool`: an ID
