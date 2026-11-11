@@ -23,6 +23,7 @@ export const PROJECT = {
     "queues",
     "hyperdrive",
     "vectorize",
+    "turnstile",
   ] as readonly string[],
   /** The toolsets on when a setting names none. */
   defaultToolsets: ["account", "zones", "dns", "workers", "pages"] as readonly string[],

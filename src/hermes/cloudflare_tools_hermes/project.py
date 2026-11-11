@@ -26,6 +26,7 @@ TOOLSET_EMOJI: dict[str, str] = {
     "queues": "📬",
     "hyperdrive": "🔌",
     "vectorize": "🧮",
+    "turnstile": "🚦",
 }
 
 __all__ = [

@@ -34,6 +34,7 @@ provides_tools:
   - cloudflare_tunnel_route_add
   - cloudflare_tunnel_route_edit
   - cloudflare_tunnel_route_remove
+  - cloudflare_turnstile_read
   - cloudflare_vectorize_read
   - cloudflare_workers_read
   - cloudflare_workers_rollback
