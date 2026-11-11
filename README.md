@@ -460,14 +460,15 @@ Where a write is asked about, and where it is not:
 Every entry point takes the same settings. A flag wins over its environment
 variable, and an option or setting wins over the variable too.
 
-| Setting         | Flag              | Variable                         | Meaning                                                                       |
-| --------------- | ----------------- | -------------------------------- | ----------------------------------------------------------------------------- |
-| `toolsets`      | `--toolsets`      | `CLOUDFLARE_TOOLS_TOOLSETS`      | the toolsets that are on, or `all`; default those `src/project.ts` names      |
-| `read_only`     | `--read-only`     | `CLOUDFLARE_TOOLS_READ_ONLY`     | registers no tool that writes; wins over every other setting                  |
-| `tools`         | `--tools`         | `CLOUDFLARE_TOOLS_TOOLS`         | single tools to add by ID, whatever their toolset                             |
-| `exclude_tools` | `--exclude-tools` | `CLOUDFLARE_TOOLS_EXCLUDE_TOOLS` | single tools to remove by ID; wins over `tools` and `toolsets`                |
-| `confirm`       | `--confirm`       | `CLOUDFLARE_TOOLS_CONFIRM`       | MCP server only: `harness` (default) or `elicitation`, as the conventions say |
-| `language`      | `--language`      | `CLOUDFLARE_TOOLS_LANGUAGE`      | native plugins only: the approval prompt's language, such as `ja`             |
+| Setting         | Flag              | Variable                         | Meaning                                                                           |
+| --------------- | ----------------- | -------------------------------- | --------------------------------------------------------------------------------- |
+| `toolsets`      | `--toolsets`      | `CLOUDFLARE_TOOLS_TOOLSETS`      | the toolsets that are on, or `all`; default those `src/project.ts` names          |
+| `read_only`     | `--read-only`     | `CLOUDFLARE_TOOLS_READ_ONLY`     | registers no tool that writes; wins over every other setting                      |
+| `tools`         | `--tools`         | `CLOUDFLARE_TOOLS_TOOLS`         | single tools to add by ID, whatever their toolset                                 |
+| `exclude_tools` | `--exclude-tools` | `CLOUDFLARE_TOOLS_EXCLUDE_TOOLS` | single tools to remove by ID; wins over `tools` and `toolsets`                    |
+| `confirm`       | `--confirm`       | `CLOUDFLARE_TOOLS_CONFIRM`       | MCP server only: `harness` (default) or `elicitation`, as the conventions say     |
+| `language`      | `--language`      | `CLOUDFLARE_TOOLS_LANGUAGE`      | native plugins only: the approval prompt's language, such as `ja`                 |
+| `emoji`         | —                 | —                                | Hermes only: the emoji shown beside each toolset, by toolset name (`""` for none) |
 
 Lists are comma-separated in a flag or a variable. Where each harness reads them:
 
