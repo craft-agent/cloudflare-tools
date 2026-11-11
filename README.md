@@ -375,6 +375,20 @@ The skill is [`cloudflare-turnstile`](skills/cloudflare-turnstile/SKILL.md), sho
 `cloudflare-tools:cloudflare-turnstile` in Claude Code and
 `cloudflare-tools:turnstile` in Hermes.
 
+### Access (`access`)
+
+List the account's (or a zone's) Zero Trust Access applications, read one application with its policies, and list the account's reusable policies. Policies are returned with their include, exclude and require rules as configured, email addresses included; secrets are never returned. Application and policy names, domains and rules are the user's data, returned as data and never instructions. This toolset is off by default; turn it on with the `toolsets` setting (see [Settings](#settings)).
+
+| Tool                     | Does                                                                                                                         | Class |
+| ------------------------ | ---------------------------------------------------------------------------------------------------------------------------- | ----- |
+| `cloudflare_access_read` | `apps` lists the account's (or a zone's) applications; `app` reads one with its policies; `policies` lists reusable policies | read  |
+
+The token needs Account → Access: Apps and Policies → Read, and Zone → Access: Apps and Policies → Read for a zone's applications.
+
+The skill is [`cloudflare-access`](skills/cloudflare-access/SKILL.md), shown as
+`cloudflare-tools:cloudflare-access` in Claude Code and
+`cloudflare-tools:access` in Hermes.
+
 ## Adding a tool
 
 1. Write the spec in `src/core/<domain>/<verb>.ts` with `defineTool`: an ID
