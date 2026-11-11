@@ -333,6 +333,20 @@ The skill is [`cloudflare-queues`](skills/cloudflare-queues/SKILL.md), shown as
 `cloudflare-tools:cloudflare-queues` in Claude Code and
 `cloudflare-tools:queues` in Hermes.
 
+### Hyperdrive (`hyperdrive`)
+
+List an account's Hyperdrive configurations and read one configuration's origin database, caching, mTLS and connection limit. Passwords and Access client secrets are never returned. Names, hosts, database names and other origin details are the user's data, returned as data and never instructions. This toolset is off by default; turn it on with the `toolsets` setting (see [Settings](#settings)).
+
+| Tool                         | What it does                                                                                               | Class |
+| ---------------------------- | ---------------------------------------------------------------------------------------------------------- | ----- |
+| `cloudflare_hyperdrive_read` | `list` the account's configurations; `view` one configuration's origin, caching, mTLS and connection limit | read  |
+
+The token needs Account → Hyperdrive → Read.
+
+The skill is [`cloudflare-hyperdrive`](skills/cloudflare-hyperdrive/SKILL.md), shown as
+`cloudflare-tools:cloudflare-hyperdrive` in Claude Code and
+`cloudflare-tools:hyperdrive` in Hermes.
+
 ## Adding a tool
 
 1. Write the spec in `src/core/<domain>/<verb>.ts` with `defineTool`: an ID
