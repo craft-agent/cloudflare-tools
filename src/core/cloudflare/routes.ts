@@ -15,6 +15,9 @@ export const NAMESPACE_ID_PATTERN = ID_PATTERN
 /** A queue's id: 32 lowercase hexadecimal digits. */
 export const QUEUE_ID_PATTERN = ID_PATTERN
 
+/** A Hyperdrive configuration's id: 32 lowercase hexadecimal digits. */
+export const HYPERDRIVE_ID_PATTERN = ID_PATTERN
+
 /** A Worker's name: 1–63 lowercase letters, digits, `-` and `_`. */
 export const SCRIPT_NAME_PATTERN = /^[a-z0-9_-]{1,63}$/
 
@@ -69,6 +72,7 @@ export const PATH_PARAMS: Readonly<Record<string, RegExp>> = Object.freeze({
   bucket_name: BUCKET_NAME_PATTERN,
   namespace_id: NAMESPACE_ID_PATTERN,
   queue_id: QUEUE_ID_PATTERN,
+  hyperdrive_id: HYPERDRIVE_ID_PATTERN,
   database_id: DATABASE_ID_PATTERN,
   tunnel_id: TUNNEL_ID_PATTERN,
   rule_id: RULE_ID_PATTERN,
@@ -172,6 +176,8 @@ export const ROUTES = Object.freeze({
   emailRoutingAddressDelete: defineRoute("DELETE", "/accounts/{account_id}/email/routing/addresses/{address_id}"),
   queues: defineRoute("GET", "/accounts/{account_id}/queues"),
   queue: defineRoute("GET", "/accounts/{account_id}/queues/{queue_id}"),
+  hyperdriveConfigs: defineRoute("GET", "/accounts/{account_id}/hyperdrive/configs"),
+  hyperdriveConfig: defineRoute("GET", "/accounts/{account_id}/hyperdrive/configs/{hyperdrive_id}"),
   rulesetEntrypoint: defineRoute("GET", "/zones/{zone_id}/rulesets/phases/{phase}/entrypoint"),
   rulesetCreate: defineRoute("POST", "/zones/{zone_id}/rulesets"),
   rulesetRuleCreate: defineRoute("POST", "/zones/{zone_id}/rulesets/{ruleset_id}/rules"),

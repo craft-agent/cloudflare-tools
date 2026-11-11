@@ -16,6 +16,7 @@ import { cloudflarePagesDomainRemove } from "./core/pages/domain-remove"
 import { cloudflarePagesRead } from "./core/pages/read"
 import { cloudflarePagesRollback } from "./core/pages/rollback"
 import { cloudflareQueuesRead } from "./core/queues/read"
+import { cloudflareHyperdriveRead } from "./core/hyperdrive/read"
 import { cloudflareRulesAdd } from "./core/rules/add"
 import { cloudflareRulesDelete } from "./core/rules/delete"
 import { cloudflareRulesEdit } from "./core/rules/edit"
@@ -76,4 +77,5 @@ export const ALL_TOOLS: ToolSpec[] = [
   cloudflareEmailAddressAdd,
   cloudflareEmailAddressDelete,
   cloudflareQueuesRead,
+  cloudflareHyperdriveRead,
 ]
