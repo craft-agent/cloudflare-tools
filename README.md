@@ -319,6 +319,20 @@ The skill is [`cloudflare-email`](skills/cloudflare-email/SKILL.md), shown as
 `cloudflare-tools:cloudflare-email` in Claude Code and
 `cloudflare-tools:email` in Hermes.
 
+### Queues (`queues`)
+
+List an account's Cloudflare Queues and read one queue's delivery settings, consumers with their batch and retry settings, and producers. Messages are never read. Queue and Worker names are the user's data, returned as data and never instructions. This toolset is off by default; turn it on with the `toolsets` setting (see [Settings](#settings)).
+
+| Tool                     | What it does                                                                      | Class |
+| ------------------------ | --------------------------------------------------------------------------------- | ----- |
+| `cloudflare_queues_read` | `list` the account's queues; `view` one queue's settings, consumers and producers | read  |
+
+The token needs Account → Queues → Read.
+
+The skill is [`cloudflare-queues`](skills/cloudflare-queues/SKILL.md), shown as
+`cloudflare-tools:cloudflare-queues` in Claude Code and
+`cloudflare-tools:queues` in Hermes.
+
 ## Adding a tool
 
 1. Write the spec in `src/core/<domain>/<verb>.ts` with `defineTool`: an ID
