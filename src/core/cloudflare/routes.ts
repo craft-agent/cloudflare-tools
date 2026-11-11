@@ -39,6 +39,9 @@ export const DATABASE_ID_PATTERN = DEPLOYMENT_ID_PATTERN
 /** A Cloudflare Tunnel's id: a lowercase hexadecimal UUID. */
 export const TUNNEL_ID_PATTERN = DEPLOYMENT_ID_PATTERN
 
+/** A Zero Trust Access application's id: a lowercase hexadecimal UUID. */
+export const ACCESS_APP_ID_PATTERN = DEPLOYMENT_ID_PATTERN
+
 /** An Email Routing rule's id: 1–64 letters and digits; it holds no `_`, so the path segment `catch_all` is never a rule id. */
 export const RULE_ID_PATTERN = /^[A-Za-z0-9]{1,64}$/
 
@@ -81,6 +84,7 @@ export const PATH_PARAMS: Readonly<Record<string, RegExp>> = Object.freeze({
   hyperdrive_id: HYPERDRIVE_ID_PATTERN,
   index_name: INDEX_NAME_PATTERN,
   sitekey: SITEKEY_PATTERN,
+  app_id: ACCESS_APP_ID_PATTERN,
   database_id: DATABASE_ID_PATTERN,
   tunnel_id: TUNNEL_ID_PATTERN,
   rule_id: RULE_ID_PATTERN,
@@ -195,6 +199,12 @@ export const ROUTES = Object.freeze({
   ),
   turnstileWidgets: defineRoute("GET", "/accounts/{account_id}/challenges/widgets"),
   turnstileWidget: defineRoute("GET", "/accounts/{account_id}/challenges/widgets/{sitekey}"),
+  accessApp: defineRoute("GET", "/accounts/{account_id}/access/apps/{app_id}"),
+  accessAppPolicies: defineRoute("GET", "/accounts/{account_id}/access/apps/{app_id}/policies"),
+  accessPolicies: defineRoute("GET", "/accounts/{account_id}/access/policies"),
+  zoneAccessApps: defineRoute("GET", "/zones/{zone_id}/access/apps"),
+  zoneAccessApp: defineRoute("GET", "/zones/{zone_id}/access/apps/{app_id}"),
+  zoneAccessAppPolicies: defineRoute("GET", "/zones/{zone_id}/access/apps/{app_id}/policies"),
   rulesetEntrypoint: defineRoute("GET", "/zones/{zone_id}/rulesets/phases/{phase}/entrypoint"),
   rulesetCreate: defineRoute("POST", "/zones/{zone_id}/rulesets"),
   rulesetRuleCreate: defineRoute("POST", "/zones/{zone_id}/rulesets/{ruleset_id}/rules"),
