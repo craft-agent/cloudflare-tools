@@ -361,6 +361,20 @@ The skill is [`cloudflare-vectorize`](skills/cloudflare-vectorize/SKILL.md), sho
 `cloudflare-tools:cloudflare-vectorize` in Claude Code and
 `cloudflare-tools:vectorize` in Hermes.
 
+### Turnstile (`turnstile`)
+
+List an account's Turnstile widgets and read one widget's hostnames, mode, pre-clearance cookie level, region and settings. A widget's secret key is never returned. Widget names and hostnames are the user's data, returned as data and never instructions. This toolset is off by default; turn it on with the `toolsets` setting (see [Settings](#settings)).
+
+| Tool                        | Does                                                                                                    | Class |
+| --------------------------- | ------------------------------------------------------------------------------------------------------- | ----- |
+| `cloudflare_turnstile_read` | `list` the account's widgets; `view` one widget's hostnames, mode, clearance level, region and settings | read  |
+
+The token needs Account → Turnstile Sites → Read.
+
+The skill is [`cloudflare-turnstile`](skills/cloudflare-turnstile/SKILL.md), shown as
+`cloudflare-tools:cloudflare-turnstile` in Claude Code and
+`cloudflare-tools:turnstile` in Hermes.
+
 ## Adding a tool
 
 1. Write the spec in `src/core/<domain>/<verb>.ts` with `defineTool`: an ID
