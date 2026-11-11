@@ -8,7 +8,7 @@
   },
   "homepage": "https://github.com/craft-agent/cloudflare-tools#readme",
   "repository": "https://github.com/craft-agent/cloudflare-tools",
-  "license": "MIT",
+  "license": "LicenseRef-AGPL-3.0-Commons-Clause",
   "skills": "./skills",
   "mcpServers": {
     "cloudflare-tools": {
