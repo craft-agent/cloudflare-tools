@@ -347,6 +347,20 @@ The skill is [`cloudflare-hyperdrive`](skills/cloudflare-hyperdrive/SKILL.md), s
 `cloudflare-tools:cloudflare-hyperdrive` in Claude Code and
 `cloudflare-tools:hyperdrive` in Hermes.
 
+### Vectorize (`vectorize`)
+
+List an account's Vectorize indexes and read one index's dimensions, distance metric, vector count, processing progress and metadata indexes. Vectors and their metadata values are never read. Index names and descriptions are the user's data, returned as data and never instructions. This toolset is off by default; turn it on with the `toolsets` setting (see [Settings](#settings)).
+
+| Tool                        | Does                                                                                                     | Class |
+| --------------------------- | -------------------------------------------------------------------------------------------------------- | ----- |
+| `cloudflare_vectorize_read` | `list` the account's indexes; `view` one index's configuration, processing progress and metadata indexes | read  |
+
+The token needs Account → Vectorize → Read.
+
+The skill is [`cloudflare-vectorize`](skills/cloudflare-vectorize/SKILL.md), shown as
+`cloudflare-tools:cloudflare-vectorize` in Claude Code and
+`cloudflare-tools:vectorize` in Hermes.
+
 ## Adding a tool
 
 1. Write the spec in `src/core/<domain>/<verb>.ts` with `defineTool`: an ID
