@@ -15,6 +15,7 @@ import { cloudflarePagesDomainAdd } from "./core/pages/domain-add"
 import { cloudflarePagesDomainRemove } from "./core/pages/domain-remove"
 import { cloudflarePagesRead } from "./core/pages/read"
 import { cloudflarePagesRollback } from "./core/pages/rollback"
+import { cloudflareQueuesRead } from "./core/queues/read"
 import { cloudflareRulesAdd } from "./core/rules/add"
 import { cloudflareRulesDelete } from "./core/rules/delete"
 import { cloudflareRulesEdit } from "./core/rules/edit"
@@ -74,4 +75,5 @@ export const ALL_TOOLS: ToolSpec[] = [
   cloudflareEmailCatchAllEdit,
   cloudflareEmailAddressAdd,
   cloudflareEmailAddressDelete,
+  cloudflareQueuesRead,
 ]
