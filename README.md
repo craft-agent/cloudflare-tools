@@ -83,7 +83,15 @@ codex plugin add cloudflare-tools@craft-agent
 
 Codex turns `-` into `_` in server names, so it shows the tools as
 `mcp__cloudflare_tools__cloudflare_*`. It starts the MCP server in the plugin's
-install directory, which is never the caller's working tree.
+install directory and passes no roots, so the server takes each call's directory
+from what Codex sends with the call: its sandbox state, which the server asks
+for, else the one workspace it names.
+
+The plugin declares `default_tools_approval_mode = "writes"`: Codex asks before
+every tool not marked read-only. A user's
+`[plugins."<plugin>".mcp_servers.<server>]` setting can only tighten it. Setting
+`auto` there yields `prompt` (reads asked too), since Codex treats `auto` and
+`writes` as incomparable.
 
 ### Grok Build
 
@@ -426,6 +434,26 @@ The skill is [`cloudflare-registrar`](skills/cloudflare-registrar/SKILL.md), sho
 
 [`docs/conventions.md`](docs/conventions.md) has the rules each step follows.
 
+A package declares each option as `text`, `boolean`, `number`, `list`, `path`
+or `paths`, or as an object with `type` and optional bounds. For example, in
+`src/project.ts`:
+
+```ts
+options: {
+  notes_dir: "path",
+  note_limit: { type: "number", integer: true, min: 1, max: 50 },
+}
+```
+
+`integer: true` requires a whole number; `min` and `max` bound a number or
+count a `list` or `paths` value's items. An object with only `type` means the
+same as the type alone. Hermes's `OPTIONS` mirrors the declarations on one
+line, with double quotes and Python's `True` for `integer`:
+
+```python
+OPTIONS: dict[str, str | dict[str, object]] = {"notes_dir": "path", "note_limit": {"type": "number", "integer": True, "min": 1, "max": 50}}
+```
+
 ## Reads and writes
 
 Every read tool is named `<prefix>_<domain>_read`. Reads can run unasked;
@@ -444,8 +472,11 @@ Where a write is asked about, and where it is not:
 
 - **OpenCode** grants any action no rule names, so a write runs unasked unless
   a rule asks for it: add the `cloudflare_*` rule shown under [OpenCode](#opencode).
-- **Codex** under `codex exec`, and **Grok Build** under `grok -p`, refuse a
-  write they cannot ask about, unless it is allowed beforehand.
+- **Codex** asks before every write because of the plugin's approval mode.
+  Under `codex exec` it refuses with "MCP tool call requires approval, but
+  approval policy is never".
+- **Grok Build** under `grok -p` refuses a write it cannot ask about, unless it
+  is allowed beforehand.
 - **Grok Build** calls the plugin's tools through its `use_tool` tool, and the
   agent often names a tool without its server first. Grok checks the rules
   against the name as given, so the server-qualified rule alone does not match
@@ -474,7 +505,16 @@ variable, and an option or setting wins over the variable too.
 
 Lists are comma-separated in a flag or a variable. A package's own settings,
 listed in `options` in `src/project.ts`, take a row each here and are read the
-same way. Where each harness reads them:
+same way. A `path` is trimmed; `~` and `~/…` (also with the platform separator)
+stand for the home directory (`HOME` when it is absolute, else the account's).
+It must then be absolute and reaches the tool normalized,
+without a filesystem check. `paths` is a list of such paths, comma-separated
+in a flag or variable and an array of strings in a plugin option. Blank paths
+and lists with no items after trimming and dropping blanks count as unset.
+Bounds check only a given value, not an unset option. Refused values are
+`invalid_argument`, naming the flag, variable or option and what it must be.
+Hermes passes paths and lists to the command line, which checks the paths and
+bounds. Where each harness reads them:
 
 - **OpenCode** takes the plugin `options` shown above, with lists as arrays and
   `read_only` as a boolean, and falls back to the variables.
