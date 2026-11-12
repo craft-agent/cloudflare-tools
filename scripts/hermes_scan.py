@@ -1,10 +1,12 @@
 """Run Hermes Agent's own plugin install scanner on a tree.
 
-Hermes scans a plugin when it is installed, and a dangerous verdict blocks the
-install; `--force` does not override it. This script runs the same scanner
-(`tools/plugin_guard.py` from a hermes-agent checkout) on the tree a release
-carries, and exits 1 when Hermes would block it.
-High findings only warn, appearing in annotations and the job summary.
+Hermes scans a plugin when it is installed. Only a safe verdict installs
+unattended: a caution verdict asks first on a terminal and is refused where no
+one can answer, and a dangerous one is refused even with `--force`. This script
+runs the same scanner (`tools/plugin_guard.py` from a hermes-agent checkout) on
+the tree a release carries, and exits 1 unless the verdict is safe.
+The findings also appear in the job summary.
+Findings named by ACCEPTED_FINDINGS are listed as warnings and do not fail the run.
 """
 
 from __future__ import annotations
@@ -20,9 +22,11 @@ SCANNER_MODULE = Path("tools") / "plugin_guard.py"
 STRUCTURAL_FILE = "(directory)"
 SUMMARY_FILE_LIMIT = 5
 LISTED_SEVERITIES = (
-    ("critical", "error", "Blocking findings:"),
-    ("high", "warning", "Findings that make Hermes ask for confirmation:"),
+    ("critical", "Blocking findings:"),
+    ("high", "Findings that make Hermes ask for confirmation:"),
 )
+# RELEASING.md explains why these findings are accepted.
+ACCEPTED_FINDINGS = (("tunnel_service", "Cloudflare One Connector: cloudflared"),)
 
 
 def escape_data(value: str) -> str:
@@ -40,8 +44,28 @@ def location(finding: Any) -> str:
     return f"{finding.file}:{finding.line}" if finding.line > 0 else finding.file
 
 
-def annotation(level: str, finding: Any) -> str:
-    """Build the workflow command that annotates a finding."""
+def accepted(tree: Path, finding: Any) -> bool:
+    """Check an exact accepted phrase in the match or its source line."""
+    if finding.severity != "high":
+        return False
+    for pattern_id, phrase in ACCEPTED_FINDINGS:
+        if finding.pattern_id != pattern_id:
+            continue
+        if phrase in finding.match:
+            return True
+        if finding.line <= 0:
+            continue
+        try:
+            lines = (tree / finding.file).read_text(encoding="utf-8", errors="replace").splitlines()
+        except OSError:
+            continue
+        if finding.line <= len(lines) and phrase in lines[finding.line - 1]:
+            return True
+    return False
+
+
+def annotation(finding: Any, *, level: str = "error") -> str:
+    """Build the workflow command that annotates a finding at the given level."""
     properties = []
     if finding.file != STRUCTURAL_FILE:
         properties.append(f"file={escape_property(finding.file)}")
@@ -52,23 +76,24 @@ def annotation(level: str, finding: Any) -> str:
     return f"::{level} {','.join(properties)}::{message}"
 
 
-def write_summary(result: Any, reason: str) -> None:
+def write_summary(result: Any, reason: str, tree: Path) -> None:
     """Append the verdict and grouped high or critical findings to the job summary."""
     summary_path = os.environ.get("GITHUB_STEP_SUMMARY")
     if not summary_path:
         return
     lines = ["### Hermes install scan", "", f"**{result.verdict}** — {reason}", ""]
-    for severity, _, _ in LISTED_SEVERITIES:
-        patterns: dict[str, list[Any]] = {}
+    for severity, _ in LISTED_SEVERITIES:
+        patterns: dict[tuple[bool, str], list[Any]] = {}
         for finding in result.findings:
             if finding.severity == severity:
-                patterns.setdefault(finding.pattern_id, []).append(finding)
-        for pattern_id, findings in sorted(patterns.items()):
+                patterns.setdefault((accepted(tree, finding), finding.pattern_id), []).append(finding)
+        for (is_accepted, pattern_id), findings in sorted(patterns.items()):
             files = sorted({finding.file for finding in findings})
             listed_files = files[:SUMMARY_FILE_LIMIT]
             if len(files) > SUMMARY_FILE_LIMIT:
                 listed_files.append("…")
-            lines.append(f"- {severity} `{pattern_id}`: {len(findings)} finding(s) in {', '.join(listed_files)}")
+            label = f"accepted {severity}" if is_accepted else severity
+            lines.append(f"- {label} `{pattern_id}`: {len(findings)} finding(s) in {', '.join(listed_files)}")
     if result.verdict == "caution":
         lines.extend(["", "Hermes asks before installing this tree and refuses it without `--force` where it cannot ask."])
     with open(summary_path, "a", encoding="utf-8") as summary:
@@ -107,18 +132,32 @@ def main(argv: list[str] | None = None) -> int:
 
     annotate = os.environ.get("GITHUB_ACTIONS") == "true"
     findings = sorted(result.findings, key=lambda f: (f.file, f.line, f.pattern_id))
-    for severity, level, header in LISTED_SEVERITIES:
-        listed = [finding for finding in findings if finding.severity == severity]
+    accepted_findings = [finding for finding in findings if accepted(tree, finding)]
+    unaccepted_findings = [finding for finding in findings if finding not in accepted_findings]
+    for severity, header in LISTED_SEVERITIES:
+        listed = [finding for finding in unaccepted_findings if finding.severity == severity]
         if not listed:
             continue
         print(header)
         for finding in listed:
             print(f"  {location(finding)}: {finding.pattern_id} ({severity}) {finding.description}: {finding.match}")
             if annotate:
-                print(annotation(level, finding))
+                print(annotation(finding))
 
-    write_summary(result, reason)
-    return 1 if allowed is False else 0
+    if accepted_findings:
+        print("Accepted findings (see RELEASING.md):")
+        for finding in accepted_findings:
+            print(f"  {location(finding)}: {finding.pattern_id} ({finding.severity}) {finding.description}: {finding.match}")
+            if annotate:
+                print(annotation(finding, level="warning"))
+
+    write_summary(result, reason, tree)
+    if allowed is True:
+        return 0
+    if allowed is None and not any(finding.severity in ("high", "critical") for finding in unaccepted_findings):
+        print("Every finding that makes Hermes ask is accepted.")
+        return 0
+    return 1
 
 
 if __name__ == "__main__":

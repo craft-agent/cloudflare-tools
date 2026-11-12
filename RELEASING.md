@@ -80,26 +80,39 @@ one is wanted.
 
 ## Hermes install scan
 
-Hermes scans a plugin when it installs it, and a `dangerous` verdict blocks
-the install: `--force` does not override it. A package can pass every other
-check and still be uninstallable in Hermes, so the Tests workflow runs Hermes'
-own scanner (`tools/plugin_guard.py` of Hermes Agent) on the tree a release tag
-carries: the repository's files plus the built `dist/`. Release Drafter
-follows only a successful Tests run, so a tree Hermes would block never gets a
-draft.
+Hermes scans a plugin when it installs it, and only a `safe` verdict installs
+unattended. A `caution` verdict asks on a terminal and is refused where no one
+can answer (a headless run, the Desktop app) unless `--force` is given; a
+`dangerous` verdict is refused even with `--force`. A package can pass every
+other check and still not install from the README's command, so the Tests
+workflow runs Hermes' own scanner (`tools/plugin_guard.py` of Hermes Agent) on
+the tree a release tag carries: the repository's files plus the built `dist/`.
+It fails unless the verdict is `safe`, and Release Drafter follows only a
+successful Tests run, so such a tree never gets a draft.
 
-- **A blocking finding** fails the run and is listed by file, line and rule
-  (`scripts/hermes_scan.py`). A made-up credential in a fixture is the usual
-  cause: the `hardcoded_secret` rule matches a `token`, `secret`, `password` or
-  `api_key` key with a quoted value of 20 or more characters. Shorten the value
-  or move the fixture under a `tests/` directory, where findings weigh less.
-- **A high finding** gives a `caution` verdict: Hermes installs only after asking
-  in a terminal and refuses without `--force` where it cannot ask. The run only
-  warns, listing the findings in the job summary and as annotations.
+Each finding that decides the verdict is listed by file, line and rule
+(`scripts/hermes_scan.py`), in the job summary and as an error annotation:
+
+- **A blocking finding** (critical) makes the verdict `dangerous`. A made-up
+  credential in a fixture is the usual cause: the `hardcoded_secret` rule
+  matches a `token`, `secret`, `password` or `api_key` key with a quoted value
+  of 20 or more characters. Shorten the value or move the fixture under a
+  `tests/` directory, where findings weigh less.
+- **A finding that asks** (high) makes it `caution`. In a skill or other
+  Markdown, the usual cause is text Hermes reads as an inline shell command: a
+  `!` followed by a backtick and a command, as when a backtick-wrapped
+  `fixup!` is followed by a comma and another backtick. Hermes runs such text
+  through a shell when its `skills.inline_shell` setting is on. Reword it so no
+  `!` is followed by a backtick.
 - **The accepted caution** is the tunnel tools naming the permission
   "Cloudflare One Connector: cloudflared", Cloudflare's own name. Hermes's
-  `tunnel_service` rule matches `cloudflared`; keep the name exact and keep the
-  word out of other text, so no other high finding hides behind it.
+  `tunnel_service` rule matches `cloudflared`, so the verdict stays `caution`
+  and Hermes asks before installing, as the README says. The scan accepts
+  only those findings, the `tunnel_service` ones on a line with that exact
+  name (`ACCEPTED_FINDINGS` in `scripts/hermes_scan.py`): it lists them as
+  warnings and passes. Any other finding that asks still fails the run. Keep
+  the name exact and keep the word out of other text, so no other finding
+  hides behind it.
 - **The scanner is pinned** to one Hermes Agent commit, `HERMES_AGENT_COMMIT`
   in `.github/workflows/tests.yml`. Raise it deliberately, to a commit of
   Hermes Agent's default branch, and check that the Tests run still passes.
