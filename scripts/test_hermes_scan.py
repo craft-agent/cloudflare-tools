@@ -11,6 +11,7 @@ from pathlib import Path
 
 SCRIPT = Path(__file__).with_name("hermes_scan.py")
 SCANNER_DIR = os.environ.get("HERMES_AGENT_DIR")
+PERMISSION_PHRASE = "Cloudflare One Connector: cloud" + "flared"
 
 
 def run_scan(*args: str, **env: str) -> subprocess.CompletedProcess[str]:
@@ -44,18 +45,24 @@ class ScannerMissingTest(unittest.TestCase):
 
 
 class SummaryTest(unittest.TestCase):
-    def fake_scanner(self, root: str, verdict: str, files: list[str]) -> None:
+    def fake_scanner(
+        self, root: str, verdict: str, files: list[str] | None = None,
+        *, findings: list[tuple[str, str, int, str, str]] | None = None,
+    ) -> None:
+        if findings is None:
+            findings = [("fixture_rule", file, 1, "fixture", "high") for file in files or []]
         write(root, "tools/__init__.py", "")
         write(root, "tools/plugin_guard.py", (
             "from types import SimpleNamespace\n"
             "PLUGIN_SCANNER_VERSION = 'test'\n"
             "def scan_plugin(tree):\n"
-            f"    files = {files!r}\n"
-            "    findings = [SimpleNamespace(file=file, line=1, pattern_id='fixture_rule', "
-            "severity='high', description='Fixture finding', match='fixture') for file in files]\n"
+            f"    fixtures = {findings!r}\n"
+            "    findings = [SimpleNamespace(file=file, line=line, pattern_id=pattern_id, "
+            "severity=severity, description='Fixture finding', match=match) "
+            "for pattern_id, file, line, match, severity in fixtures]\n"
             f"    return SimpleNamespace(verdict={verdict!r}, findings=findings)\n"
             "def should_allow_plugin_install(result):\n"
-            "    return (True if result.verdict == 'safe' else None), 'Fixture reason'\n"
+            "    return {'safe': True, 'caution': None, 'dangerous': False}[result.verdict], 'Fixture reason'\n"
         ))
 
     def test_caution_summary_appends_grouped_findings_and_install_warning(self) -> None:
@@ -86,6 +93,80 @@ class SummaryTest(unittest.TestCase):
             text = summary.read_text(encoding="utf-8")
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertEqual(text, "### Hermes install scan\n\n**safe** — Fixture reason\n\n")
+
+    def test_accepted_caution_is_warned_and_summarized(self) -> None:
+        with tempfile.TemporaryDirectory() as scanner, tempfile.TemporaryDirectory() as tree:
+            self.fake_scanner(scanner, "caution", findings=[
+                ("tunnel_service", "permission.md", 1, PERMISSION_PHRASE, "high"),
+            ])
+            summary = Path(tree) / "summary.md"
+            result = run_scan("--scanner", scanner, tree, GITHUB_ACTIONS="true", GITHUB_STEP_SUMMARY=str(summary))
+            text = summary.read_text(encoding="utf-8")
+        self.assertEqual(result.returncode, 0, result.stdout)
+        self.assertIn("Accepted findings (see RELEASING.md):", result.stdout)
+        self.assertIn("Every finding that makes Hermes ask is accepted.", result.stdout)
+        self.assertIn("::warning file=permission.md,line=1,", result.stdout)
+        self.assertNotIn("::error", result.stdout)
+        self.assertIn("- accepted high `tunnel_service`: 1 finding(s) in permission.md", text)
+
+    def test_unaccepted_high_still_fails_beside_accepted_finding(self) -> None:
+        with tempfile.TemporaryDirectory() as scanner, tempfile.TemporaryDirectory() as tree:
+            self.fake_scanner(scanner, "caution", findings=[
+                ("tunnel_service", "permission.md", 1, PERMISSION_PHRASE, "high"),
+                ("fixture_rule", "fixture.ts", 2, "fixture", "high"),
+            ])
+            result = run_scan("--scanner", scanner, tree, GITHUB_ACTIONS="true")
+        self.assertEqual(result.returncode, 1, result.stdout)
+        self.assertIn("::error file=fixture.ts,line=2,", result.stdout)
+        self.assertIn("::warning file=permission.md,line=1,", result.stdout)
+
+    def test_tunnel_rule_without_permission_phrase_is_not_accepted(self) -> None:
+        with tempfile.TemporaryDirectory() as scanner, tempfile.TemporaryDirectory() as tree:
+            self.fake_scanner(scanner, "caution", findings=[
+                ("tunnel_service", "fixture.md", 1, "ngrok http 8080", "high"),
+            ])
+            write(tree, "fixture.md", "A tunnel command.\n")
+            result = run_scan("--scanner", scanner, tree)
+        self.assertEqual(result.returncode, 1, result.stdout)
+        self.assertNotIn("Accepted findings", result.stdout)
+
+    def test_permission_phrase_on_source_line_is_accepted(self) -> None:
+        with tempfile.TemporaryDirectory() as scanner, tempfile.TemporaryDirectory() as tree:
+            self.fake_scanner(scanner, "caution", findings=[
+                ("tunnel_service", "permission.md", 2, "truncated match", "high"),
+            ])
+            write(tree, "permission.md", f"Permissions\nThe token needs {PERMISSION_PHRASE}.\n")
+            result = run_scan("--scanner", scanner, tree)
+        self.assertEqual(result.returncode, 0, result.stdout)
+        self.assertIn("Accepted findings (see RELEASING.md):", result.stdout)
+
+    def test_missing_or_invalid_source_line_is_not_accepted(self) -> None:
+        for file, line in (("missing.md", 1), ("permission.md", 0), ("permission.md", -1), ("permission.md", 2)):
+            with self.subTest(file=file, line=line), tempfile.TemporaryDirectory() as scanner, tempfile.TemporaryDirectory() as tree:
+                self.fake_scanner(scanner, "caution", findings=[
+                    ("tunnel_service", file, line, "truncated match", "high"),
+                ])
+                write(tree, "permission.md", PERMISSION_PHRASE)
+                result = run_scan("--scanner", scanner, tree)
+            self.assertEqual(result.returncode, 1, result.stdout)
+
+    def test_critical_permission_finding_is_never_accepted(self) -> None:
+        with tempfile.TemporaryDirectory() as scanner, tempfile.TemporaryDirectory() as tree:
+            self.fake_scanner(scanner, "caution", findings=[
+                ("tunnel_service", "permission.md", 1, PERMISSION_PHRASE, "critical"),
+            ])
+            result = run_scan("--scanner", scanner, tree, GITHUB_ACTIONS="true")
+        self.assertEqual(result.returncode, 1, result.stdout)
+        self.assertIn("::error ", result.stdout)
+        self.assertNotIn("Accepted findings", result.stdout)
+
+    def test_dangerous_verdict_fails_even_with_only_accepted_findings(self) -> None:
+        with tempfile.TemporaryDirectory() as scanner, tempfile.TemporaryDirectory() as tree:
+            self.fake_scanner(scanner, "dangerous", findings=[
+                ("tunnel_service", "permission.md", 1, PERMISSION_PHRASE, "high"),
+            ])
+            result = run_scan("--scanner", scanner, tree)
+        self.assertEqual(result.returncode, 1, result.stdout)
 
 
 @unittest.skipUnless(SCANNER_DIR, "HERMES_AGENT_DIR does not name a hermes-agent checkout")
@@ -135,6 +216,13 @@ class ScanTest(unittest.TestCase):
             result = run_scan(tree, HERMES_AGENT_DIR=SCANNER_DIR or "", GITHUB_ACTIONS="true")
         self.assertEqual(result.returncode, 1, result.stdout)
         self.assertIn("::error file=src/fixture.ts,line=2,title=Hermes install scan%3A hardcoded_secret::", result.stdout)
+
+    def test_token_permission_caution_is_accepted(self) -> None:
+        with tempfile.TemporaryDirectory() as tree:
+            write(tree, "skills/demo/SKILL.md", f"The token needs Account → {PERMISSION_PHRASE} → Read.\n")
+            result = run_scan(tree, HERMES_AGENT_DIR=SCANNER_DIR or "")
+        self.assertEqual(result.returncode, 0, result.stdout)
+        self.assertIn("caution", result.stdout)
 
 
 if __name__ == "__main__":

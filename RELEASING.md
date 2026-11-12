@@ -106,8 +106,13 @@ Each finding that decides the verdict is listed by file, line and rule
   `!` is followed by a backtick.
 - **The accepted caution** is the tunnel tools naming the permission
   "Cloudflare One Connector: cloudflared", Cloudflare's own name. Hermes's
-  `tunnel_service` rule matches `cloudflared`; keep the name exact and keep the
-  word out of other text, so no other high finding hides behind it.
+  `tunnel_service` rule matches `cloudflared`, so the verdict stays `caution`
+  and Hermes asks before installing, as the README says. The scan accepts
+  only those findings, the `tunnel_service` ones on a line with that exact
+  name (`ACCEPTED_FINDINGS` in `scripts/hermes_scan.py`): it lists them as
+  warnings and passes. Any other finding that asks still fails the run. Keep
+  the name exact and keep the word out of other text, so no other finding
+  hides behind it.
 - **The scanner is pinned** to one Hermes Agent commit, `HERMES_AGENT_COMMIT`
   in `.github/workflows/tests.yml`. Raise it deliberately, to a commit of
   Hermes Agent's default branch, and check that the Tests run still passes.
