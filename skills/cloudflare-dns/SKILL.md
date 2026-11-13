@@ -7,6 +7,10 @@ metadata:
 
 # DNS
 
+Confirmations described below apply to attended runs. With `unattended` on,
+a write runs without asking only under a grant that covers it; otherwise it
+is refused. See the README's "Writes no one is there to approve" section.
+
 The read tool inspects the DNS records of a zone in the selected account, the add tool adds records to it, the edit tool changes existing ones, and the delete tool removes them:
 
 | Tool                           | Does                                                                                      | Writes                    |

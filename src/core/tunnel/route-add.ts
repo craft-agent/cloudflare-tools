@@ -150,7 +150,7 @@ export function defineTunnelRouteAdd(deps?: CloudflareDeps): RouteAddSpec {
     title: "Publish a hostname through a Cloudflare Tunnel",
     intent: "About to publish a hostname through a tunnel",
     description: [
-      "Publish a hostname, and optionally a path, through a dashboard-managed Cloudflare Tunnel to a local service: the rule goes into the tunnel's configuration just before its catch-all, and a proxied CNAME from the hostname to the tunnel is added unless it is already there; the tool always asks first, since the hostname is public once published.",
+      "Publish a hostname, and optionally a path, through a dashboard-managed Cloudflare Tunnel to a local service: the rule goes into the tunnel's configuration just before its catch-all, and a proxied CNAME from the hostname to the tunnel is added unless it is already there; the tool always asks first in attended runs, since the hostname is public once published.",
       "`service` is a URL such as http://localhost:8080, or unix:<path> or http_status:<code>; hello_world works only on locally managed tunnels.",
       "`path` is a regular expression in Go's syntax as Cloudflare takes it, sent unchanged.",
       "The tool refuses a hostname that has other DNS records, a rule that is already there or hidden by an earlier rule without a path, and a locally managed tunnel, whose hostnames change in a file on its machine; nothing is changed then.",

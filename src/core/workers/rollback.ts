@@ -184,7 +184,7 @@ export function defineWorkersRollback(deps?: CloudflareDeps): RollbackSpec {
     title: "Roll back a Cloudflare Worker",
     intent: "About to roll back a Worker",
     description: [
-      "Roll a Cloudflare Worker back to versions that served traffic before, in one new deployment; the tool always asks first.",
+      "Roll a Cloudflare Worker back to versions that served traffic before, in one new deployment; the tool always asks first in attended runs.",
       "The arguments come from cloudflare_workers_read deployments: `replaces` is the id of the first deployment (the one serving now), `versions` the versions and shares of an earlier deployment to return to.",
       "A version that never served is refused, and so is the split that serves now; `stale` means another deployment came first, so read the deployments again before trying again.",
       "Cloudflare refuses a rollback past a change of the Worker's secrets; this tool never forces it, and the user decides in Wrangler (wrangler rollback) or the dashboard.",

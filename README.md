@@ -150,6 +150,10 @@ Add the server to the host's MCP configuration. Flags go in `args`:
 
 ## Tools and skills
 
+Confirmations described below apply to attended runs. With `unattended` on,
+a write runs without asking only under a grant that covers it; otherwise it
+is refused. See [Writes no one is there to approve](#writes-no-one-is-there-to-approve).
+
 Each toolset comes with a skill that tells an agent how to use its tools. A
 skill names its toolset under `metadata` in its frontmatter
 (`metadata: { toolset: dns }`, written as a block). OpenCode V2 and Hermes
@@ -476,7 +480,8 @@ OPTIONS: dict[str, str | dict[str, object]] = {"notes_dir": "path", "note_limit"
 ## Reads and writes
 
 Every read tool is named `<prefix>_<domain>_read`. Reads can run unasked;
-writes are confirmed by the harness.
+in attended runs, writes are confirmed by the harness. With `unattended` on,
+writes instead need a covering grant, as described below.
 
 | Harness     | Reads without asking                                                                                                 |
 | ----------- | -------------------------------------------------------------------------------------------------------------------- |

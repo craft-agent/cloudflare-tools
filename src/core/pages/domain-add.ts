@@ -94,7 +94,7 @@ export function definePagesDomainAdd(deps?: CloudflareDeps): DomainAddSpec {
     title: "Add a custom domain to a Cloudflare Pages project",
     intent: "About to add a custom domain",
     description: [
-      "Add a custom domain, a hostname, to a Cloudflare Pages project; the tool always asks first, since visitors to the hostname get the project's site once it is live.",
+      "Add a custom domain, a hostname, to a Cloudflare Pages project; the tool always asks first in attended runs, since visitors to the hostname get the project's site once it is live.",
       "The hostname must be in a zone Cloudflare lets the account use; one it reserves or the account cannot use is refused.",
       "Adding creates no DNS record: the domain stays pending until a proxied CNAME record from the hostname to the project's pages.dev address exists (`cname` in the result), and then goes active in a few minutes; read cloudflare_pages_read domains for its status.",
       "DNS changes stay with the cloudflare_dns_* tools.",

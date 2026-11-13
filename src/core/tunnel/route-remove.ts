@@ -146,7 +146,7 @@ export function defineTunnelRouteRemove(deps?: CloudflareDeps): RouteRemoveSpec 
     title: "Withdraw a hostname from a Cloudflare Tunnel",
     intent: "About to withdraw a hostname from a tunnel",
     description: [
-      "Withdraw a hostname (and path) from a dashboard-managed Cloudflare Tunnel: the rule is removed from the tunnel's configuration, and the proxied CNAME from the hostname to the tunnel is deleted when no other rule of the tunnel still uses the hostname; the tool always asks first, since visitors stop reaching the service at once.",
+      "Withdraw a hostname (and path) from a dashboard-managed Cloudflare Tunnel: the rule is removed from the tunnel's configuration, and the proxied CNAME from the hostname to the tunnel is deleted when no other rule of the tunnel still uses the hostname; the tool always asks first in attended runs, since visitors stop reaching the service at once.",
       "Name the rule by `hostname` and `path` (left out, the rule without a path), as cloudflare_tunnel_read tunnel shows it; a rule the tunnel does not publish is not_found.",
       "DNS records that are not the proxied CNAME to this tunnel are never touched; `dns` reports them (`other`), or that there is none (`missing`), or the CNAME kept because another rule still publishes the hostname (`kept`).",
       "What remains of the ingress rules always ends with a catch-all: an http_status:404 one is added when the last rule would otherwise have a hostname or path.",

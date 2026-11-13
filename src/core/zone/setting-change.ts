@@ -84,7 +84,7 @@ export type SettingChangeVariant = {
   title: string
   intent: string
   description: string
-  /** Whether the tool may lower protection, and then always asks first; otherwise it refuses such a change. */
+  /** Whether the tool may lower protection, and then always asks first in attended runs; otherwise it refuses such a change. */
   weakens: boolean
 }
 

@@ -7,6 +7,10 @@ metadata:
 
 # Storage
 
+Confirmations described below apply to attended runs. With `unattended` on,
+a write runs without asking only under a grant that covers it; otherwise it
+is refused. See the README's "Writes no one is there to approve" section.
+
 The tools read the R2 buckets, Workers KV namespaces and D1 databases of the selected account by their names and metadata, create an empty one, and delete one that is empty:
 
 | Tool                        | Does                                                                                                                                  | Writes                                |
