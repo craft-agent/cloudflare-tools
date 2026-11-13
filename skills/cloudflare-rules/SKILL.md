@@ -7,6 +7,10 @@ metadata:
 
 # Rules
 
+Confirmations described below apply to attended runs. With `unattended` on,
+a write runs without asking only under a grant that covers it; otherwise it
+is refused. See the README's "Writes no one is there to approve" section.
+
 The tools work on the rules of one zone of the selected account, kept by Cloudflare's Ruleset Engine, one list of rules per phase:
 
 | Tool                      | Does                                                                         | Writes              |

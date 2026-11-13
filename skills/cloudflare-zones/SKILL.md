@@ -7,6 +7,10 @@ metadata:
 
 # Zones
 
+Confirmations described below apply to attended runs. With `unattended` on,
+a write runs without asking only under a grant that covers it; otherwise it
+is refused. See the README's "Writes no one is there to approve" section.
+
 The read tool inspects Cloudflare zones in the selected account; write tools change their settings, cache, and DNSSEC:
 
 | Tool                              | Does                                                                      | Writes                             |

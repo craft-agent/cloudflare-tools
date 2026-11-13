@@ -7,6 +7,10 @@ metadata:
 
 # Email Routing
 
+Confirmations described below apply to attended runs. With `unattended` on,
+a write runs without asking only under a grant that covers it; otherwise it
+is refused. See the README's "Writes no one is there to approve" section.
+
 The tools work on the Email Routing of the selected account:
 
 | Tool                              | Does                                                                              | Writes              |
