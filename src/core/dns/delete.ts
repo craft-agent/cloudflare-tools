@@ -159,7 +159,7 @@ export function defineDnsRecordDelete(deps?: CloudflareDeps): DeleteSpec {
     title: "Delete Cloudflare DNS records",
     intent: "About to delete DNS records",
     description: [
-      `Delete 1 to ${MAX_IDS} DNS records of a Cloudflare zone by id (cloudflare_dns_read list shows it) in one batch: all are deleted or none is, and the tool always asks first.`,
+      `Delete 1 to ${MAX_IDS} DNS records of a Cloudflare zone by id (cloudflare_dns_read list shows it) in one batch: all are deleted or none is, and the tool always asks first in attended runs.`,
       `add holds up to ${MAX_ADDS} records created in the same batch, in the form of cloudflare_dns_record_add and checked by its rules; Cloudflare runs the deletes first, so a replacement can take the deleted record's name.`,
       "A record's type cannot change in place: delete the old record and add the new one with the same name in one call; a swap works the same way.",
       "Records managed by another Cloudflare product (a Worker's custom domain, for one) are refused.",

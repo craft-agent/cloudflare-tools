@@ -35,7 +35,7 @@ export function defineZoneSettingWeaken(deps?: CloudflareDeps): SettingChangeSpe
         "Change 1 to 20 settings of a Cloudflare zone, in order, where a change lowers a visitor's protection:",
         "a lower step of ssl, min_tls_version or security_level,",
         "or turning off always_use_https, automatic_https_rewrites, tls_1_3 or email_obfuscation.",
-        "Always confirmed. Every setting is read first, and nothing is sent if a value is not accepted,",
+        "Always confirmed in attended runs. Every setting is read first, and nothing is sent if a value is not accepted,",
         "a setting is already at the value, or the zone's plan does not let you change it.",
         "If a later change fails, the result lists what was changed, the failure and the settings not sent.",
         "Zones are looked up only in the account's own zones.",

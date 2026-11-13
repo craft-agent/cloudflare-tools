@@ -96,7 +96,7 @@ export function definePagesDomainRemove(deps?: CloudflareDeps): DomainRemoveSpec
     title: "Remove a custom domain from a Cloudflare Pages project",
     intent: "About to remove a custom domain",
     description: [
-      "Remove a custom domain, a hostname, from a Cloudflare Pages project; the tool always asks first, since visitors to the hostname stop getting the site at once.",
+      "Remove a custom domain, a hostname, from a Cloudflare Pages project; the tool always asks first in attended runs, since visitors to the hostname stop getting the site at once.",
       "The hostname must be one of the project's domains, as cloudflare_pages_read domains lists them; the result returns it as it was.",
       "Removing deletes no DNS record, and DNS changes stay with the cloudflare_dns_* tools.",
       "`dns` holds the records left at that name in the account's zone: a CNAME to the project's pages.dev address now answers with an error page, so offer to delete it with cloudflare_dns_record_delete, asking the person first, since the record may be wanted for something else.",

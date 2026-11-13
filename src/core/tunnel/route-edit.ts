@@ -163,7 +163,7 @@ export function defineTunnelRouteEdit(deps?: CloudflareDeps): RouteEditSpec {
     title: "Change where a tunnel sends a hostname",
     intent: "About to change where a tunnel sends a hostname",
     description: [
-      "Change the service that a dashboard-managed Cloudflare Tunnel sends a hostname (and path) to; the tool always asks first, since the hostname's visitors get the new service at once.",
+      "Change the service that a dashboard-managed Cloudflare Tunnel sends a hostname (and path) to; the tool always asks first in attended runs, since the hostname's visitors get the new service at once.",
       "Name the rule by `hostname` and `path` (left out, the rule without a path) and give the service it goes to now as `replaces`, exactly as cloudflare_tunnel_read tunnel shows it: when the rule goes elsewhere by then the call is refused as stale, and a rule the tunnel does not publish is not_found.",
       "Only the rule's service changes; its other settings, the other rules and the configuration's other settings stay as they are.",
       "`service` is a URL such as http://localhost:9090, or unix:<path> or http_status:<code>; hello_world works only on locally managed tunnels.",

@@ -157,7 +157,7 @@ export function defineStorageDelete(deps?: CloudflareDeps): DeleteSpec {
     title: "Delete an empty Cloudflare R2 bucket, KV namespace or D1 database",
     intent: "About to delete an empty store",
     description: [
-      "Delete an R2 bucket, Workers KV namespace or D1 database, only when it is proven empty; the tool always asks first, since deleting is for good.",
+      "Delete an R2 bucket, Workers KV namespace or D1 database, only when it is proven empty; the tool always asks first in attended runs, since deleting is for good.",
       "Name the store by the id the lists give: `bucket` for r2, `namespace` for kv, `database` for d1; the other two are refused.",
       "The tool reads the store first (one that does not exist is not_found), then proves it empty: an R2 bucket holds no object, a KV namespace holds no key in its listing (up to 20 pages of 1000), a D1 database holds no table; a store that is not empty is refused and nothing is deleted.",
       "Cloudflare itself deletes a KV namespace or D1 database with its contents, so this check is what keeps them; what is written between the check and the delete is lost with the store.",

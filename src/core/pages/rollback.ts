@@ -99,7 +99,7 @@ export function definePagesRollback(deps?: CloudflareDeps): RollbackSpec {
     title: "Roll back a Cloudflare Pages project",
     intent: "About to roll back a Pages project",
     description: [
-      "Roll a Cloudflare Pages project's production back, or forward, to a production deployment that built successfully; the tool always asks first.",
+      "Roll a Cloudflare Pages project's production back, or forward, to a production deployment that built successfully; the tool always asks first in attended runs.",
       "The arguments come from cloudflare_pages_read deployments: `replaces` is the id of the deployment marked live (the one serving production now), `deployment` the id of the one to serve, older or newer.",
       "A preview, a skipped deployment and a failed build are refused, and so is the deployment serving now; `stale` means another deployment or rollback came first, so read the deployments again before trying again.",
       "No new deployment is made: the project serves the chosen one at once, and rolling back to the one it replaced undoes it.",
