@@ -18,6 +18,9 @@ provides_tools:
   - cloudflare_email_rule_add
   - cloudflare_email_rule_delete
   - cloudflare_email_rule_edit
+  - cloudflare_grant_create
+  - cloudflare_grant_read
+  - cloudflare_grant_revoke
   - cloudflare_hyperdrive_read
   - cloudflare_pages_domain_add
   - cloudflare_pages_domain_remove
