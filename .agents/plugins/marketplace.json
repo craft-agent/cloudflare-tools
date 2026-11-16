@@ -1,5 +1,5 @@
 {
-  "name": "craft-agent",
+  "name": "cloudflare-tools",
   "interface": {
     "displayName": "Craft Agent"
   },
